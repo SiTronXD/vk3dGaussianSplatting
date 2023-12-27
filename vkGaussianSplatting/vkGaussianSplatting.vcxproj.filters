@@ -438,4 +438,21 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Shaders\Common\AssocLegEfficientEval.glsl" />
+    <None Include="Resources\Shaders\Common\ColorTransformations.glsl" />
+    <None Include="Resources\Shaders\Common\Sh.glsl" />
+    <None Include="Resources\Shaders\Common\ShEfficientEval.glsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\DeferredLight.comp" />
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\PostProcess.comp" />
+    <CustomBuild Include="Resources\Shaders\FragmentShaders\DeferredGeom.frag" />
+    <CustomBuild Include="Resources\Shaders\FragmentShaders\DeferredGeomSkybox.frag" />
+    <CustomBuild Include="Resources\Shaders\FragmentShaders\Rsm.frag" />
+    <CustomBuild Include="Resources\Shaders\VertexShaders\DeferredGeom.vert" />
+    <CustomBuild Include="Resources\Shaders\VertexShaders\DeferredGeomSkybox.vert" />
+    <CustomBuild Include="Resources\Shaders\VertexShaders\Rsm.vert" />
+    <CustomBuild Include="Resources\Shaders\VertexShaders\ShadowMap.vert" />
+  </ItemGroup>
 </Project>
