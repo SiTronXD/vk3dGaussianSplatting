@@ -1,0 +1,118 @@
+#version 450
+
+#extension GL_GOOGLE_include_directive: require
+
+#include "../Common/Sh.glsl"
+#include "../Common/ColorTransformations.glsl"
+
+// LOCAL_SIZE has to be >= MAX_RSM_SIZE
+#define LOCAL_SIZE 16
+
+#define MAX_REFLECTION_LOD (8.0f - 1.0f)
+#define SHADOW_BIAS 0.005f
+#define SHADOW_MAP_SIZE 256.0f
+
+layout (local_size_x = LOCAL_SIZE, local_size_y = LOCAL_SIZE, local_size_z = 1) in;
+
+layout (binding = 0, rgba32f) uniform readonly image2D deferredPosition;
+layout (binding = 1, rgba32f) uniform readonly image2D deferredNormal;
+layout (binding = 2, r8ui) uniform readonly uimage2D deferredBrdf;
+
+layout (binding = 3, rgba16f) uniform image2D hdrImage;
+
+layout(binding = 4) uniform LightCamUBO 
+{
+	mat4 vp;
+	vec4 pos; // (x, y, z, shadow map size)
+	vec4 dir; // (x, y, z, 0.0f)
+} lightCamUbo;
+
+layout(push_constant) uniform PushConstantData
+{
+	uvec4 resolution;
+	vec4 camPos;
+} pc;
+
+float getShadowFactor(vec3 fragWorldPos, vec3 toLightDir, vec3 toLightVec)
+{
+	// Transform to light's coordinate space
+	vec4 lightWorldPos = lightCamUbo.vp * vec4(fragWorldPos, 1.0f);
+	lightWorldPos /= lightWorldPos.w;
+	lightWorldPos.y = -lightWorldPos.y;
+	lightWorldPos.xy = lightWorldPos.xy * 0.5f + vec2(0.5f);
+
+	// Sample depth texture
+	const float oneOverSize = 1.0f / SHADOW_MAP_SIZE;
+	vec2 smPos = lightWorldPos.xy * SHADOW_MAP_SIZE;
+	vec2 fractPos = fract(smPos);
+	vec2 corner0 = (floor(smPos) + vec2(0.5f)) / SHADOW_MAP_SIZE;
+	float lightDepth0 = texture(shadowMapTex, corner0).r;
+	float lightDepth1 = texture(shadowMapTex, corner0 + vec2(oneOverSize, 0.0f)).r;
+	float lightDepth2 = texture(shadowMapTex, corner0 + vec2(0.0f, oneOverSize)).r;
+	float lightDepth3 = texture(shadowMapTex, corner0 + vec2(oneOverSize, oneOverSize)).r;
+	float result0 = lightWorldPos.z - SHADOW_BIAS <= lightDepth0 ? 1.0f : 0.0f;
+	float result1 = lightWorldPos.z - SHADOW_BIAS <= lightDepth1 ? 1.0f : 0.0f;
+	float result2 = lightWorldPos.z - SHADOW_BIAS <= lightDepth2 ? 1.0f : 0.0f;
+	float result3 = lightWorldPos.z - SHADOW_BIAS <= lightDepth3 ? 1.0f : 0.0f;
+
+	float horizResult0 = mix(result0, result1, fractPos.x);
+	float horizResult1 = mix(result2, result3, fractPos.x);
+	float finalResult = mix(horizResult0, horizResult1, fractPos.y);
+
+	// Spotlight cone cutoff
+	float currentCutoff = dot(lightCamUbo.dir.xyz, -toLightDir);
+	finalResult *= smoothstep(0.0f, 1.0f, (currentCutoff - COS_HALF_FOV) * 10.0f / (1.0f - COS_HALF_FOV));
+
+	return finalResult;
+}
+
+void main()
+{
+	uvec2 index = gl_GlobalInvocationID.xy;
+	uvec2 localIndex = gl_LocalInvocationID.xy;
+	
+	vec3 lightPos = lightCamUbo.pos.xyz;
+	int rsmSize = int(lightCamUbo.pos.w + 0.5f);
+
+	// Insert HVL BRDF coefficients into shared memory
+	if(localIndex.x < rsmSize && localIndex.y < rsmSize)
+	{
+		insertHvlCoeffsIntoSharedMem(ivec2(localIndex), lightPos);
+	}
+	barrier();
+
+	// Make sure compute work is within bounds
+	if(index.x >= pc.resolution.x || index.y >= pc.resolution.y)
+		return;
+
+	// Load G-buffers
+	vec3 worldPos = imageLoad(deferredPosition, ivec2(index)).rgb;
+	vec4 worldNormal = imageLoad(deferredNormal, ivec2(index)).rgba;
+	uint xBrdfIndex = imageLoad(deferredBrdf, ivec2(index)).r;
+
+	// Color
+	vec3 color = vec3(0.0f);
+	bool renderEnvironment = worldNormal.w >= 0.0f;
+	if(!renderEnvironment)
+	{
+		// Skybox color
+		color = worldNormal.rgb;
+	}
+	else
+	{
+		// Environment color
+		vec3 toLightVec = lightPos - worldPos;
+		vec3 L = normalize(toLightVec);
+		vec3 V = normalize(pc.camPos.xyz - worldPos);
+
+		int numHvlsPerThread = rsmSize * rsmSize;
+		int startHvlIndex = 0;
+
+		// Indirect
+		color += getIndirectLight(worldPos, lightPos, worldNormal.xyz, V, rsmSize, xBrdfIndex, startHvlIndex, numHvlsPerThread);
+		color += getDirectLight(worldPos, lightPos, worldNormal.xyz, V, xBrdfIndex) * getShadowFactor(worldPos, L, toLightVec);
+	}
+	
+	// Write color
+	imageStore(hdrImage, ivec2(index), vec4(color, 1.0f));
+}

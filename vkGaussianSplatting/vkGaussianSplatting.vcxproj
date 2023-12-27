@@ -74,12 +74,18 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);NOMINMAX;GLM_FORCE_RADIANS;GLM_FORCE_DEPTH_ZERO_TO_ONE;GLM_FORCE_QUAT_DATA_WXYZ;_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)\Linking\Include;$(VULKAN_SDK)\Include\;$(ProjectDir)Engine\PCH\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(ProjectDir)\Linking\Lib\GLFW;$(VULKAN_SDK)\Lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -88,26 +94,38 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);NOMINMAX;GLM_FORCE_RADIANS;GLM_FORCE_DEPTH_ZERO_TO_ONE;GLM_FORCE_QUAT_DATA_WXYZ;_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)\Linking\Include;$(VULKAN_SDK)\Include\;$(ProjectDir)Engine\PCH\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(ProjectDir)\Linking\Lib\GLFW;$(VULKAN_SDK)\Lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);NOMINMAX;GLM_FORCE_RADIANS;GLM_FORCE_DEPTH_ZERO_TO_ONE;GLM_FORCE_QUAT_DATA_WXYZ;_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)\Linking\Include;$(VULKAN_SDK)\Include\;$(ProjectDir)Engine\PCH\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(ProjectDir)\Linking\Lib\GLFW;$(VULKAN_SDK)\Lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -116,18 +134,205 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);NOMINMAX;GLM_FORCE_RADIANS;GLM_FORCE_DEPTH_ZERO_TO_ONE;GLM_FORCE_QUAT_DATA_WXYZ;_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)\Linking\Include;$(VULKAN_SDK)\Include\;$(ProjectDir)Engine\PCH\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(ProjectDir)\Linking\Lib\GLFW;$(VULKAN_SDK)\Lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Engine\Application\Input.cpp" />
+    <ClCompile Include="Engine\Application\Scene.cpp" />
+    <ClCompile Include="Engine\Application\SceneManager.cpp" />
+    <ClCompile Include="Engine\Application\Time.cpp" />
+    <ClCompile Include="Engine\Application\Window.cpp" />
+    <ClCompile Include="Engine\Dev\Log.cpp" />
+    <ClCompile Include="Engine\Dev\StrHelper.cpp" />
+    <ClCompile Include="Engine\Engine.cpp" />
+    <ClCompile Include="Engine\Graphics\BRDFData.cpp" />
+    <ClCompile Include="Engine\Graphics\Buffer\Buffer.cpp" />
+    <ClCompile Include="Engine\Graphics\Buffer\IndexBuffer.cpp" />
+    <ClCompile Include="Engine\Graphics\Buffer\StorageBuffer.cpp" />
+    <ClCompile Include="Engine\Graphics\Buffer\UniformBuffer.cpp" />
+    <ClCompile Include="Engine\Graphics\Buffer\VertexBuffer.cpp" />
+    <ClCompile Include="Engine\Graphics\Camera.cpp" />
+    <ClCompile Include="Engine\Graphics\GfxResourceManager.cpp" />
+    <ClCompile Include="Engine\Graphics\GfxSettings.cpp" />
+    <ClCompile Include="Engine\Graphics\GfxState.cpp" />
+    <ClCompile Include="Engine\Graphics\GpuProperties.cpp" />
+    <ClCompile Include="Engine\Graphics\MaterialSet.cpp" />
+    <ClCompile Include="Engine\Graphics\Mesh.cpp" />
+    <ClCompile Include="Engine\Graphics\MeshData.cpp" />
+    <ClCompile Include="Engine\Graphics\Renderer.cpp" />
+    <ClCompile Include="Engine\Graphics\RSM.cpp" />
+    <ClCompile Include="Engine\Graphics\Shaders\ComputeShader.cpp" />
+    <ClCompile Include="Engine\Graphics\Shaders\FragmentShader.cpp" />
+    <ClCompile Include="Engine\Graphics\Shaders\Shader.cpp" />
+    <ClCompile Include="Engine\Graphics\Shaders\VertexShader.cpp" />
+    <ClCompile Include="Engine\Graphics\Subrenderer.cpp" />
+    <ClCompile Include="Engine\Graphics\Swapchain.cpp" />
+    <ClCompile Include="Engine\Graphics\Texture\Texture.cpp" />
+    <ClCompile Include="Engine\Graphics\Texture\Texture2D.cpp" />
+    <ClCompile Include="Engine\Graphics\Texture\TextureCube.cpp" />
+    <ClCompile Include="Engine\Graphics\Texture\TextureData.cpp" />
+    <ClCompile Include="Engine\Graphics\Texture\TextureDataFloat.cpp" />
+    <ClCompile Include="Engine\Graphics\Texture\TextureDataUchar.cpp" />
+    <ClCompile Include="Engine\Graphics\Vulkan\CommandBuffer.cpp" />
+    <ClCompile Include="Engine\Graphics\Vulkan\CommandBufferArray.cpp" />
+    <ClCompile Include="Engine\Graphics\Vulkan\CommandPool.cpp" />
+    <ClCompile Include="Engine\Graphics\Vulkan\DebugMessenger.cpp" />
+    <ClCompile Include="Engine\Graphics\Vulkan\DescriptorSetLayout.cpp" />
+    <ClCompile Include="Engine\Graphics\Vulkan\Device.cpp" />
+    <ClCompile Include="Engine\Graphics\Vulkan\FenceArray.cpp" />
+    <ClCompile Include="Engine\Graphics\Vulkan\Legacy\DescriptorPool.cpp" />
+    <ClCompile Include="Engine\Graphics\Vulkan\Legacy\RenderPass.cpp" />
+    <ClCompile Include="Engine\Graphics\Vulkan\PhysicalDevice.cpp" />
+    <ClCompile Include="Engine\Graphics\Vulkan\Pipeline.cpp" />
+    <ClCompile Include="Engine\Graphics\Vulkan\PipelineLayout.cpp" />
+    <ClCompile Include="Engine\Graphics\Vulkan\QueryPoolArray.cpp" />
+    <ClCompile Include="Engine\Graphics\Vulkan\QueueFamilies.cpp" />
+    <ClCompile Include="Engine\Graphics\Vulkan\SemaphoreArray.cpp" />
+    <ClCompile Include="Engine\Graphics\Vulkan\Surface.cpp" />
+    <ClCompile Include="Engine\Graphics\Vulkan\VulkanInstance.cpp" />
+    <ClCompile Include="Engine\PCH\pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Engine\ResourceManager.cpp" />
+    <ClCompile Include="Engine\SMath.cpp" />
+    <ClCompile Include="Linking\Include\imgui\imgui.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Linking\Include\imgui\imgui_demo.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Linking\Include\imgui\imgui_draw.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Linking\Include\imgui\imgui_impl_glfw.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Linking\Include\imgui\imgui_impl_vulkan.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Linking\Include\imgui\imgui_tables.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Linking\Include\imgui\imgui_widgets.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Scenes\DragonScene.cpp" />
+    <ClCompile Include="Scenes\ManyMeshesScene.cpp" />
+    <ClCompile Include="Scenes\SimpleScene.cpp" />
+    <ClCompile Include="Scenes\SponzaScene.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Engine\Application\Input.h" />
+    <ClInclude Include="Engine\Application\Scene.h" />
+    <ClInclude Include="Engine\Application\SceneManager.h" />
+    <ClInclude Include="Engine\Application\Time.h" />
+    <ClInclude Include="Engine\Application\Window.h" />
+    <ClInclude Include="Engine\Components.h" />
+    <ClInclude Include="Engine\Dev\Log.h" />
+    <ClInclude Include="Engine\Dev\StrHelper.h" />
+    <ClInclude Include="Engine\Engine.h" />
+    <ClInclude Include="Engine\Graphics\BRDFData.h" />
+    <ClInclude Include="Engine\Graphics\Buffer\Buffer.h" />
+    <ClInclude Include="Engine\Graphics\Buffer\IndexBuffer.h" />
+    <ClInclude Include="Engine\Graphics\Buffer\StorageBuffer.h" />
+    <ClInclude Include="Engine\Graphics\Buffer\UniformBuffer.h" />
+    <ClInclude Include="Engine\Graphics\Buffer\VertexBuffer.h" />
+    <ClInclude Include="Engine\Graphics\Camera.h" />
+    <ClInclude Include="Engine\Graphics\GfxAllocContext.h" />
+    <ClInclude Include="Engine\Graphics\GfxResourceManager.h" />
+    <ClInclude Include="Engine\Graphics\GfxSettings.h" />
+    <ClInclude Include="Engine\Graphics\GfxState.h" />
+    <ClInclude Include="Engine\Graphics\GpuProperties.h" />
+    <ClInclude Include="Engine\Graphics\MaterialSet.h" />
+    <ClInclude Include="Engine\Graphics\Mesh.h" />
+    <ClInclude Include="Engine\Graphics\MeshData.h" />
+    <ClInclude Include="Engine\Graphics\Renderer.h" />
+    <ClInclude Include="Engine\Graphics\RSM.h" />
+    <ClInclude Include="Engine\Graphics\ShaderStructs.h" />
+    <ClInclude Include="Engine\Graphics\Shaders\ComputeShader.h" />
+    <ClInclude Include="Engine\Graphics\Shaders\FragmentShader.h" />
+    <ClInclude Include="Engine\Graphics\Shaders\Shader.h" />
+    <ClInclude Include="Engine\Graphics\Shaders\VertexShader.h" />
+    <ClInclude Include="Engine\Graphics\Swapchain.h" />
+    <ClInclude Include="Engine\Graphics\Texture\Texture.h" />
+    <ClInclude Include="Engine\Graphics\Texture\Texture2D.h" />
+    <ClInclude Include="Engine\Graphics\Texture\TextureCube.h" />
+    <ClInclude Include="Engine\Graphics\Texture\TextureData.h" />
+    <ClInclude Include="Engine\Graphics\Texture\TextureDataFloat.h" />
+    <ClInclude Include="Engine\Graphics\Texture\TextureDataUchar.h" />
+    <ClInclude Include="Engine\Graphics\Vulkan\CommandBuffer.h" />
+    <ClInclude Include="Engine\Graphics\Vulkan\CommandBufferArray.h" />
+    <ClInclude Include="Engine\Graphics\Vulkan\CommandPool.h" />
+    <ClInclude Include="Engine\Graphics\Vulkan\DebugMessenger.h" />
+    <ClInclude Include="Engine\Graphics\Vulkan\DescriptorSet.h" />
+    <ClInclude Include="Engine\Graphics\Vulkan\DescriptorSetLayout.h" />
+    <ClInclude Include="Engine\Graphics\Vulkan\Device.h" />
+    <ClInclude Include="Engine\Graphics\Vulkan\FenceArray.h" />
+    <ClInclude Include="Engine\Graphics\Vulkan\Legacy\DescriptorPool.h" />
+    <ClInclude Include="Engine\Graphics\Vulkan\Legacy\RenderPass.h" />
+    <ClInclude Include="Engine\Graphics\Vulkan\PhysicalDevice.h" />
+    <ClInclude Include="Engine\Graphics\Vulkan\Pipeline.h" />
+    <ClInclude Include="Engine\Graphics\Vulkan\PipelineBarrier.h" />
+    <ClInclude Include="Engine\Graphics\Vulkan\PipelineLayout.h" />
+    <ClInclude Include="Engine\Graphics\Vulkan\QueryPoolArray.h" />
+    <ClInclude Include="Engine\Graphics\Vulkan\QueueFamilies.h" />
+    <ClInclude Include="Engine\Graphics\Vulkan\SemaphoreArray.h" />
+    <ClInclude Include="Engine\Graphics\Vulkan\Surface.h" />
+    <ClInclude Include="Engine\Graphics\Vulkan\VulkanInstance.h" />
+    <ClInclude Include="Engine\PCH\pch.h" />
+    <ClInclude Include="Engine\ResourceManager.h" />
+    <ClInclude Include="Engine\SMath.h" />
+    <ClInclude Include="Linking\Include\imgui\imconfig.h" />
+    <ClInclude Include="Linking\Include\imgui\imgui.h" />
+    <ClInclude Include="Linking\Include\imgui\imgui_impl_glfw.h" />
+    <ClInclude Include="Linking\Include\imgui\imgui_impl_vulkan.h" />
+    <ClInclude Include="Linking\Include\imgui\imgui_internal.h" />
+    <ClInclude Include="Linking\Include\imgui\imstb_rectpack.h" />
+    <ClInclude Include="Linking\Include\imgui\imstb_textedit.h" />
+    <ClInclude Include="Linking\Include\imgui\imstb_truetype.h" />
+    <ClInclude Include="Scenes\DragonScene.h" />
+    <ClInclude Include="Scenes\ManyMeshesScene.h" />
+    <ClInclude Include="Scenes\SimpleScene.h" />
+    <ClInclude Include="Scenes\SponzaScene.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

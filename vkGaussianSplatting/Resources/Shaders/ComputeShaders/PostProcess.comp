@@ -1,0 +1,36 @@
+#version 450
+
+#extension GL_GOOGLE_include_directive: require
+
+#include "../Common/ColorTransformations.glsl"
+
+layout (local_size_x = 16, local_size_y = 16) in;
+
+layout (binding = 0, rgba16f) uniform readonly image2D hdrImage;
+layout (binding = 1, rgba8) uniform image2D swapchainImage;
+
+layout(push_constant) uniform PushConstantData
+{
+	uvec4 resolution;
+} pc;
+
+void main()
+{
+	uvec2 index = gl_GlobalInvocationID.xy;
+
+	// Make sure compute work is within bounds
+	if(index.x >= pc.resolution.x || index.y >= pc.resolution.y)
+		return;
+
+	// Load HDR color
+	vec3 color = imageLoad(hdrImage, ivec2(index)).rgb;
+	color = max(color, vec3(0.0f));
+	
+	// Tone mapping and gamma correction
+	color = toneMap(color);
+	color = linearToSrgb(color);
+
+	// Write color
+	color = clamp(color, vec3(0.0f), vec3(1.0f));
+	imageStore(swapchainImage, ivec2(index), vec4(color, 1.0f));
+}
