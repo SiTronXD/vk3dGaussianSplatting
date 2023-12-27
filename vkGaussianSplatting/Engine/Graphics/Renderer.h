@@ -25,7 +25,6 @@
 #include "Mesh.h"
 #include "GfxAllocContext.h"
 #include "GfxResourceManager.h"
-#include "RSM.h"
 #include "BRDFData.h"
 
 // For imgui
@@ -91,27 +90,17 @@ private:
 	FenceArray inFlightFences;
 
 	UniformBuffer uniformBuffer;
-	StorageBuffer shCoefficientBuffer;
 
 	Window* window;
 	ResourceManager* resourceManager;
 
 	GfxResourceManager gfxResManager;
 
-	// Reflective shadow map
-	RSM rsm;
-
-	uint32_t skyboxTextureIndex;
-
 	void initVulkan();
 	void initVma();
 	void initImgui();
 
 	void createCamUbo();
-	void addShCoefficients(
-		const std::vector<std::vector<RGB>>& shCoeffs, 
-		std::vector<SHData>& outputShSets);
-	void createShCoefficientBuffer(Scene& scene);
 	void createSyncObjects();
 
 	void updateUniformBuffer(const Camera& camera);
@@ -129,8 +118,6 @@ private:
 		const Mesh& mesh, 
 		const Material& material,
 		PCD& pushConstantData);
-	void renderRSM(CommandBuffer& commandBuffer, Scene& scene);
-	void renderShadowMap(CommandBuffer& commandBuffer, Scene& scene);
 	void renderDeferredScene(CommandBuffer& commandBuffer, Scene& scene);
 	void computeDeferredLight(CommandBuffer& commandBuffer, const glm::vec3& camPos);
 	void renderImgui(CommandBuffer& commandBuffer, ImDrawData* imguiDrawData);
@@ -148,16 +135,12 @@ public:
 	void initForScene(Scene& scene);
 	void setWindow(Window& window);
 
-	void setSpotlightOrientation(const glm::vec3& position, const glm::vec3& lookAtPosition);
-
 	void startCleanup();
 	void cleanup();
 
 	void draw(Scene& scene);
 
 	void generateMemoryDump();
-
-	void setSkyboxTexture(uint32_t skyboxTextureIndex);
 
 	inline float getSwapchainAspectRatio() 
 		{ return (float) this->swapchain.getWidth() / this->swapchain.getHeight(); }

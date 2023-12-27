@@ -234,7 +234,6 @@
     <ClCompile Include="Engine\Graphics\Mesh.cpp" />
     <ClCompile Include="Engine\Graphics\MeshData.cpp" />
     <ClCompile Include="Engine\Graphics\Renderer.cpp" />
-    <ClCompile Include="Engine\Graphics\RSM.cpp" />
     <ClCompile Include="Engine\Graphics\Shaders\ComputeShader.cpp" />
     <ClCompile Include="Engine\Graphics\Shaders\FragmentShader.cpp" />
     <ClCompile Include="Engine\Graphics\Shaders\Shader.cpp" />
@@ -315,10 +314,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="Scenes\DragonScene.cpp" />
-    <ClCompile Include="Scenes\ManyMeshesScene.cpp" />
-    <ClCompile Include="Scenes\SimpleScene.cpp" />
-    <ClCompile Include="Scenes\SponzaScene.cpp" />
+    <ClCompile Include="Scenes\TestScene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Application\Input.h" />
@@ -346,7 +342,6 @@
     <ClInclude Include="Engine\Graphics\Mesh.h" />
     <ClInclude Include="Engine\Graphics\MeshData.h" />
     <ClInclude Include="Engine\Graphics\Renderer.h" />
-    <ClInclude Include="Engine\Graphics\RSM.h" />
     <ClInclude Include="Engine\Graphics\ShaderStructs.h" />
     <ClInclude Include="Engine\Graphics\Shaders\ComputeShader.h" />
     <ClInclude Include="Engine\Graphics\Shaders\FragmentShader.h" />
@@ -389,10 +384,7 @@
     <ClInclude Include="Linking\Include\imgui\imstb_rectpack.h" />
     <ClInclude Include="Linking\Include\imgui\imstb_textedit.h" />
     <ClInclude Include="Linking\Include\imgui\imstb_truetype.h" />
-    <ClInclude Include="Scenes\DragonScene.h" />
-    <ClInclude Include="Scenes\ManyMeshesScene.h" />
-    <ClInclude Include="Scenes\SimpleScene.h" />
-    <ClInclude Include="Scenes\SponzaScene.h" />
+    <ClInclude Include="Scenes\TestScene.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\Shaders\Common\AssocLegEfficientEval.glsl">
@@ -402,12 +394,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </None>
     <None Include="Resources\Shaders\Common\ColorTransformations.glsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
-    </None>
-    <None Include="Resources\Shaders\Common\Sh.glsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>

@@ -127,8 +127,6 @@ void Renderer::initVulkan()
 	this->createCamUbo();
 
 	this->gfxResManager.init(this->gfxAllocContext);
-
-	this->rsm.init(this->gfxAllocContext);
 }
 
 void Renderer::initVma()
@@ -219,13 +217,10 @@ void Renderer::cleanup()
 {
 	this->cleanupImgui();
 
-	this->rsm.cleanup();
-
 	this->gfxResManager.cleanup();
 
 	this->swapchain.cleanup();
 
-	this->shCoefficientBuffer.cleanup();
 	this->uniformBuffer.cleanup();
 
 	this->imageAvailableSemaphores.cleanup();
@@ -253,69 +248,11 @@ void Renderer::cleanup()
 	this->instance.cleanup();
 }
 
-void Renderer::setSpotlightOrientation(const glm::vec3& position, const glm::vec3& forwardDir)
-{
-	this->rsm.setOrientation(position, forwardDir);
-}
-
 void Renderer::createCamUbo()
 {
 	this->uniformBuffer.createDynamicCpuBuffer(
 		this->gfxAllocContext,
 		sizeof(CamUBO)
-	);
-}
-
-void Renderer::addShCoefficients(
-	const std::vector<std::vector<RGB>>& shCoeffs, 
-	std::vector<SHData>& outputShSets)
-{
-	// For each angle
-	for (size_t j = 0; j < shCoeffs.size(); ++j)
-	{
-		// For each coefficient
-		SHData newShData{};
-		for (size_t k = 0; k < shCoeffs[j].size(); ++k)
-		{
-			for (uint32_t n = 0; n < 3; ++n)
-			{
-				newShData.coefficients[k * 3 + n] = shCoeffs[j][k].rgb[n]; // R0 G0 B0 R1 G1 B1 R2 G2 B2
-			}
-		}
-
-		outputShSets.push_back(newShData);
-	}
-}
-
-void Renderer::createShCoefficientBuffer(Scene& scene)
-{
-	std::vector<SHData> shSets;
-
-	if (this->resourceManager->getNumBRDFs() == 0)
-	{
-		Log::error("This scene does not contain any materials.");
-	}
-
-	// For each BRDF data within a material
-	for (size_t i = 0; i < this->resourceManager->getNumBRDFs(); ++i)
-	{
-		// R0, G0, B0, R1, G1, B1, RC0, GC0, BC0, RC1, GC1, BC1, ...
-		this->addShCoefficients(
-			this->resourceManager->getBRDFData(i).getShCoefficientSets(), 
-			shSets
-		);
-		this->addShCoefficients(
-			this->resourceManager->getBRDFData(i).getShCoefficientCosSets(),
-			shSets
-		);
-	}
-
-	// Create sh coefficient buffer
-	VkDeviceSize bufferSize = sizeof(shSets[0]) * shSets.size();
-	this->shCoefficientBuffer.createStaticGpuBuffer(
-		this->gfxAllocContext,
-		bufferSize,
-		shSets.data()
 	);
 }
 
@@ -378,7 +315,6 @@ void Renderer::draw(Scene& scene)
 	}
 
 	this->updateUniformBuffer(scene.getCamera());
-	this->rsm.update();
 
 	// Only reset the fence if we are submitting work
 	this->inFlightFences.reset(GfxState::getFrameIndex());
@@ -568,11 +504,6 @@ void Renderer::generateMemoryDump()
 	vmaFreeStatsString(this->vmaAllocator, vmaDump);
 }
 
-void Renderer::setSkyboxTexture(uint32_t skyboxTextureIndex)
-{
-	this->skyboxTextureIndex = skyboxTextureIndex;
-}
-
 void Renderer::updateUniformBuffer(const Camera& camera)
 {
 	// Create ubo struct with matrix data
@@ -608,7 +539,7 @@ void Renderer::recordCommandBuffer(
 	);
 #endif
 
-	this->renderRSM(commandBuffer, scene);
+	//this->renderRSM(commandBuffer, scene);
 
 #ifdef RECORD_GPU_TIMES
 	commandBuffer.writeTimestamp(
@@ -623,7 +554,7 @@ void Renderer::recordCommandBuffer(
 	);
 #endif
 
-	this->renderShadowMap(commandBuffer, scene);
+	//this->renderShadowMap(commandBuffer, scene);
 
 #ifdef RECORD_GPU_TIMES
 	commandBuffer.writeTimestamp(
@@ -698,7 +629,6 @@ Renderer::Renderer()
 	: window(nullptr),
 	resourceManager(nullptr),
 	imguiIO(nullptr),
-	vmaAllocator(nullptr),
 
 #ifdef RECORD_GPU_TIMES
 	elapsedFrames(0.0f),
@@ -717,7 +647,7 @@ Renderer::Renderer()
 	avgCpuFrameTimeMs(0.0f),
 #endif
 
-	skyboxTextureIndex(~0u)
+	vmaAllocator(nullptr)
 {
 }
 
@@ -735,35 +665,12 @@ void Renderer::init(ResourceManager& resourceManager)
 
 void Renderer::initForScene(Scene& scene)
 {
-	this->createShCoefficientBuffer(scene);
-
-	// Add skybox as entity to scene
-	{
-		// Material
-		Material skyboxMaterial{};
-		std::strcpy(skyboxMaterial.vertexShader, "DeferredGeomSkybox.vert.spv");
-		std::strcpy(skyboxMaterial.fragmentShader, "DeferredGeomSkybox.frag.spv");
-		skyboxMaterial.albedoTextureId = this->skyboxTextureIndex;
-		skyboxMaterial.castShadows = false;
-
-		// Mesh
-		MeshComponent skyboxMesh{};
-		skyboxMesh.meshId = this->resourceManager->addMesh("Resources/Models/invertedCube.obj", skyboxMaterial);
-
-		// Entity
-		uint32_t skybox = scene.createEntity();
-		scene.setComponent<MeshComponent>(skybox, skyboxMesh);
-		scene.setComponent<Material>(skybox, skyboxMaterial);
-	}
-
 	// Materials
 	uint32_t whiteTextureId = this->resourceManager->addTexture("Resources/Textures/white.png");
 	auto tView = scene.getRegistry().view<Material>();
 	tView.each([&](Material& material)
 		{
 			// Pipelines for materials
-			material.rsmPipelineIndex = this->gfxResManager.getMaterialRsmPipelineIndex(material);
-			material.shadowMapPipelineIndex = this->gfxResManager.getMaterialShadowMapPipelineIndex(material);
 			material.deferredGeomPipelineIndex = this->gfxResManager.getMaterialPipelineIndex(material);
 		}
 	);

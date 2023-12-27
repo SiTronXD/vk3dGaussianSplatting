@@ -24,8 +24,6 @@ struct Material
 
 	uint32_t materialSetIndex = ~0u;
 
-	uint32_t rsmPipelineIndex = ~0u;
-	uint32_t shadowMapPipelineIndex = ~0u;
 	uint32_t deferredGeomPipelineIndex = ~0u;
 
 	Material()

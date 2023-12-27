@@ -2,13 +2,13 @@
 
 #include "../Engine/Application/Scene.h"
 
-class SponzaScene : public Scene
+class TestScene : public Scene
 {
 private:
-
+	
 public:
-	SponzaScene();
-	~SponzaScene();
+	TestScene();
+	~TestScene();
 
 	void init() override;
 	void update() override;

@@ -1,26 +1,21 @@
 #include "pch.h"
-#include "SimpleScene.h"
+#include "TestScene.h"
 #include "../Engine/ResourceManager.h"
 #include "../Engine/Graphics/Renderer.h"
 
 #include <imgui/imgui.h>
 
-SimpleScene::SimpleScene()
+TestScene::TestScene()
 {
 }
 
-SimpleScene::~SimpleScene()
+TestScene::~TestScene()
 {
 }
 
-void SimpleScene::init()
+void TestScene::init()
 {
 	this->camera.init(this->getWindow());
-
-	// Set skybox cube map
-	this->getRenderer().setSkyboxTexture(
-		this->getResourceManager().addCubeMap({ "Resources/Textures/grace_cross.hdr" })
-	);
 
 	uint32_t brdfId0 = this->getResourceManager().addBRDF("Resources/BRDFs/pink-fabric.shbrdf");
 	uint32_t brdfId1 = this->getResourceManager().addBRDF("Resources/BRDFs/red-fabric.shbrdf");
@@ -79,17 +74,9 @@ void SimpleScene::init()
 	// Initial camera setup
 	this->camera.setPosition(glm::vec3(-1.0f, 0.5f, 1.0f));
 	this->camera.setRotation(SMath::PI * 1.0f, -SMath::PI * 0.1f);
-	/*this->camera.setPosition(glm::vec3(2.0f, 2.0f, 2.0f));
-	this->camera.setRotation(SMath::PI * 1.25f, -SMath::PI * 0.25f);*/
-
-	// Initial light setup
-	this->getRenderer().setSpotlightOrientation(
-		glm::vec3(1.0f, 1.0f, 1.0f),
-		glm::vec3(0.0f, 0.0f, 0.0f)
-	);
 }
 
-void SimpleScene::update()
+void TestScene::update()
 {
 	this->camera.update();
 }

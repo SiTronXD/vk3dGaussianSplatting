@@ -22,13 +22,18 @@ void main()
 	if(index.x >= pc.resolution.x || index.y >= pc.resolution.y)
 		return;
 
-	// Load HDR color
-	vec3 color = imageLoad(hdrImage, ivec2(index)).rgb;
-	color = max(color, vec3(0.0f));
-	
-	// Tone mapping and gamma correction
-	color = toneMap(color);
-	color = linearToSrgb(color);
+	// UVs
+	vec2 uv = (vec2(index) / vec2(pc.resolution.xy)) * 2.0 - vec2(1.0);
+	uv.x *= float(pc.resolution.x) / float(pc.resolution.y);
+
+	// Gaussian
+	vec3 color = vec3(0.0f);
+	float gaussian = exp(-0.5 * length(uv * vec2(5.0f, 15.0f)));
+	color += gaussian * vec3(1.0f);
+
+	// Output 3D scene, for temporary debugging
+	/*color = imageLoad(hdrImage, ivec2(index)).rgb;
+	color = max(color, vec3(0.0f));*/
 
 	// Write color
 	color = clamp(color, vec3(0.0f), vec3(1.0f));

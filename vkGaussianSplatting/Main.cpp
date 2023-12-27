@@ -2,10 +2,7 @@
 #include <stdexcept>
 #include "Engine/Engine.h"
 
-#include "Scenes/SimpleScene.h"
-#include "Scenes/SponzaScene.h"
-#include "Scenes/DragonScene.h"
-#include "Scenes/ManyMeshesScene.h"
+#include "Scenes/TestScene.h"
 
 int main()
 {
@@ -17,7 +14,7 @@ int main()
 	// Create engine within it's own scope
 	{
 		Engine engine;
-		engine.init(new SponzaScene());
+		engine.init(new TestScene());
 	}
 
 	// Display validation errors right after exit

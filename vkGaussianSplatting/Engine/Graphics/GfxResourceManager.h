@@ -22,8 +22,6 @@ public:
 	void init(const GfxAllocContext& gfxAllocContext);
 	void cleanup();
 
-	uint32_t getMaterialRsmPipelineIndex(const Material& material);
-	uint32_t getMaterialShadowMapPipelineIndex(const Material& material);
 	uint32_t getMaterialPipelineIndex(const Material& material);
 
 	inline const PipelineLayout& getGraphicsPipelineLayout() const { return this->graphicsPipelineLayout; }
