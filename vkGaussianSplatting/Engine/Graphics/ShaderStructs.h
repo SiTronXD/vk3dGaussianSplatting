@@ -31,7 +31,9 @@ struct DeferredLightPCD
 
 struct PostProcessPCD
 {
-	glm::uvec4 resolution; // uvec4(width, height, 0, 0)
+	//glm::uvec4 resolution; // uvec4(width, height, 0, 0)
+	glm::mat4 viewMat;
+	glm::mat4 projMat;
 };
 
 struct PrefilterPCD

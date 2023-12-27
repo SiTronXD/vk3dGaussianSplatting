@@ -595,7 +595,7 @@ void Renderer::recordCommandBuffer(
 #endif
 
 	//this->renderImgui(commandBuffer, imguiDrawData);
-	this->computePostProcess(commandBuffer, imageIndex);
+	this->computePostProcess(commandBuffer, scene.getCamera().getViewMatrix(), scene.getCamera().getProjectionMatrix(), imageIndex);
 
 #ifdef RECORD_GPU_TIMES
 	commandBuffer.writeTimestamp(

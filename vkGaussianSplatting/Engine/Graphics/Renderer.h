@@ -121,7 +121,7 @@ private:
 	void renderDeferredScene(CommandBuffer& commandBuffer, Scene& scene);
 	void computeDeferredLight(CommandBuffer& commandBuffer, const glm::vec3& camPos);
 	void renderImgui(CommandBuffer& commandBuffer, ImDrawData* imguiDrawData);
-	void computePostProcess(CommandBuffer& commandBuffer, uint32_t imageIndex);
+	void computePostProcess(CommandBuffer& commandBuffer, const glm::mat4& viewMat, const glm::mat4& projMat, uint32_t imageIndex);
 
 	inline const VkDevice& getVkDevice() const { return this->device.getVkDevice(); }
 

@@ -402,7 +402,10 @@ void Renderer::renderImgui(CommandBuffer& commandBuffer, ImDrawData* imguiDrawDa
 	commandBuffer.endRendering();
 }
 
-void Renderer::computePostProcess(CommandBuffer& commandBuffer, uint32_t imageIndex)
+void Renderer::computePostProcess(CommandBuffer& commandBuffer,
+	const glm::mat4& viewMat,
+	const glm::mat4& projMat,
+	uint32_t imageIndex)
 {
 	// Transition HDR and swapchain image
 	VkImageMemoryBarrier2 postProcessMemoryBarriers[2] =
@@ -461,13 +464,15 @@ void Renderer::computePostProcess(CommandBuffer& commandBuffer, uint32_t imageIn
 
 	// Push constant
 	PostProcessPCD postProcessData{};
-	postProcessData.resolution =
+	/*postProcessData.resolution =
 		glm::uvec4(
 			this->swapchain.getVkExtent().width,
 			this->swapchain.getVkExtent().height,
 			0u,
 			0u
-		);
+		);*/
+	postProcessData.viewMat = viewMat;
+	postProcessData.projMat = projMat;
 	commandBuffer.pushConstant(
 		this->postProcessPipelineLayout,
 		(void*)&postProcessData
@@ -475,8 +480,8 @@ void Renderer::computePostProcess(CommandBuffer& commandBuffer, uint32_t imageIn
 
 	// Run compute shader
 	commandBuffer.dispatch(
-		(postProcessData.resolution.x + 16 - 1) / 16,
-		(postProcessData.resolution.y + 16 - 1) / 16
+		(this->swapchain.getVkExtent().width + 16 - 1) / 16,
+		(this->swapchain.getVkExtent().height + 16 - 1) / 16
 	);
 
 	// Transition swapchain image layout for presentation
