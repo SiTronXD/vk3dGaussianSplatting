@@ -80,6 +80,7 @@ void main()
 
 		// x^T * Sigma^(-1) * x
 		vec2 d = gaussianPosScreen.xy - vec2(index);
+		d.y = -d.y;
 		vec3 cov = vec3(sigmaPrime[0][0], sigmaPrime[0][1], sigmaPrime[1][1]);
 		float det = (cov.x * cov.z - cov.y * cov.y);
 
