@@ -89,7 +89,8 @@ private:
 	SemaphoreArray postProcessFinishedSemaphores;
 	FenceArray inFlightFences;
 
-	UniformBuffer uniformBuffer;
+	UniformBuffer camUBO;
+	StorageBuffer gaussiansSBO;
 
 	Window* window;
 	ResourceManager* resourceManager;

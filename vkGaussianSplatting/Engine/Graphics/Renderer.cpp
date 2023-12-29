@@ -111,6 +111,8 @@ void Renderer::initVulkan()
 	this->postProcessPipelineLayout.createPipelineLayout(
 		this->device,
 		{
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+
 			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT },
 		},
@@ -221,7 +223,8 @@ void Renderer::cleanup()
 
 	this->swapchain.cleanup();
 
-	this->uniformBuffer.cleanup();
+	this->gaussiansSBO.cleanup();
+	this->camUBO.cleanup();
 
 	this->imageAvailableSemaphores.cleanup();
 	this->postProcessFinishedSemaphores.cleanup();
@@ -250,7 +253,7 @@ void Renderer::cleanup()
 
 void Renderer::createCamUbo()
 {
-	this->uniformBuffer.createDynamicCpuBuffer(
+	this->camUBO.createDynamicCpuBuffer(
 		this->gfxAllocContext,
 		sizeof(CamUBO)
 	);
@@ -512,7 +515,7 @@ void Renderer::updateUniformBuffer(const Camera& camera)
 	camUbo.pos = glm::vec4(camera.getPosition(), 1.0f);
 
 	// Update buffer contents
-	this->uniformBuffer.updateBuffer(&camUbo);
+	this->camUBO.updateBuffer(&camUbo);
 }
 
 void Renderer::recordCommandBuffer(
@@ -681,6 +684,21 @@ void Renderer::initForScene(Scene& scene)
 		{
 			return lhs.deferredGeomPipelineIndex < rhs.deferredGeomPipelineIndex;
 		}
+	);
+
+	// Gaussians
+	GaussianData gaussian0{};
+	gaussian0.position = glm::vec4(0.0f, 3.0f, 0.0f, 0.0f);
+	gaussian0.scale = glm::vec4(0.1f, 0.2f, 0.3f, 0.0f);
+
+	std::vector<GaussianData> gaussiansData;
+	gaussiansData.push_back(gaussian0);
+
+	// Gaussians SBO
+	this->gaussiansSBO.createStaticGpuBuffer(
+		this->gfxAllocContext,
+		sizeof(gaussiansData[0]) * gaussiansData.size(),
+		gaussiansData.data()
 	);
 }
 

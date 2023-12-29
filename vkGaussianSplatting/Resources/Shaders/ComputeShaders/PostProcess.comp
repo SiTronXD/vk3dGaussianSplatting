@@ -6,8 +6,18 @@
 
 layout (local_size_x = 16, local_size_y = 16) in;
 
-layout (binding = 0, rgba16f) uniform readonly image2D hdrImage;
-layout (binding = 1, rgba8) uniform image2D swapchainImage;
+struct GaussianData
+{
+	vec4 position;
+	vec4 scale;
+};
+layout(binding = 0) readonly buffer GaussiansBuffer
+{
+	GaussianData gaussians[];
+} gaussiansBuffer;
+
+layout (binding = 1, rgba16f) uniform readonly image2D hdrImage;
+layout (binding = 2, rgba8) uniform image2D swapchainImage;
 
 layout(push_constant) uniform PushConstantData
 {
@@ -41,8 +51,9 @@ void main()
 	color = vec3(1.0f) - color;
 	color *= 0.3f;
 
-	// Gaussian	position
-	vec3 gPosW = vec3(0.0f, 3.0f, 0.0f);
+	// Gaussian	data
+	vec3 gScale = gaussiansBuffer.gaussians[0].scale.xyz;
+	vec3 gPosW = gaussiansBuffer.gaussians[0].position.xyz;
 	vec4 gPosV = pc.viewMat * vec4(gPosW, 1.0f);
 
 	// "Frustum culling"
@@ -55,13 +66,12 @@ void main()
 		gaussianPosScreen.xy *= vec2(width, height);
 
 		// Sigma = R * S * S^T * R^T
-		const float scale = 0.1f;
 		mat3x3 rotMat = mat3x3(	1.0f, 0.0f, 0.0f,
 								0.0f, 1.0f, 0.0f,
 								0.0f, 0.0f, 1.0f);
-		mat3x3 scaleMat = mat3x3(1.0f, 0.0f, 0.0f,
-								 0.0f, 2.0f, 0.0f,
-								 0.0f, 0.0f, 3.0f) * scale;
+		mat3x3 scaleMat = mat3x3(gScale.x,	0.0f,		0.0f,
+								 0.0f,		gScale.y,	0.0f,
+								 0.0f,		0.0f,		gScale.z);
 		mat3x3 sigma = rotMat * scaleMat * transpose(scaleMat) * transpose(rotMat);
 
 		// SigmaPrime = J * W * Sigma * W^T * J^T

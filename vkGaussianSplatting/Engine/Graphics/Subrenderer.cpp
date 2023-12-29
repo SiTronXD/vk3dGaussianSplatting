@@ -192,9 +192,9 @@ void Renderer::renderDeferredScene(CommandBuffer& commandBuffer, Scene& scene)
 		// Common descriptor set bindings
 
 		// Binding 0
-		VkDescriptorBufferInfo uboInfo{};
-		uboInfo.buffer = this->uniformBuffer.getVkBuffer(GfxState::getFrameIndex());
-		uboInfo.range = this->uniformBuffer.getBufferSize();
+		VkDescriptorBufferInfo camUboInfo{};
+		camUboInfo.buffer = this->camUBO.getVkBuffer(GfxState::getFrameIndex());
+		camUboInfo.range = this->camUBO.getBufferSize();
 
 		// Binding 1
 		VkDescriptorImageInfo albedoImageInfo{};
@@ -202,7 +202,7 @@ void Renderer::renderDeferredScene(CommandBuffer& commandBuffer, Scene& scene)
 
 		std::array<VkWriteDescriptorSet, 2> writeDescriptorSets
 		{
-			DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &uboInfo),
+			DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &camUboInfo),
 
 			DescriptorSet::writeImage(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, nullptr)
 		};
@@ -440,20 +440,27 @@ void Renderer::computePostProcess(CommandBuffer& commandBuffer,
 	commandBuffer.bindPipeline(this->postProcessPipeline);
 
 	// Binding 0
+	VkDescriptorBufferInfo inputGaussiansInfo{};
+	inputGaussiansInfo.buffer = this->gaussiansSBO.getVkBuffer();
+	inputGaussiansInfo.range = this->gaussiansSBO.getBufferSize();
+
+	// Binding 1
 	VkDescriptorImageInfo inputImageInfo{};
 	inputImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 	inputImageInfo.imageView = this->swapchain.getHdrTexture().getVkImageView();
 
-	// Binding 1
+	// Binding 2
 	VkDescriptorImageInfo outputImageInfo{};
 	outputImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 	outputImageInfo.imageView = this->swapchain.getVkImageView(imageIndex);
 
 	// Descriptor set
-	std::array<VkWriteDescriptorSet, 2> computeWriteDescriptorSets
+	std::array<VkWriteDescriptorSet, 3> computeWriteDescriptorSets
 	{
-		DescriptorSet::writeImage(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &inputImageInfo),
-		DescriptorSet::writeImage(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &outputImageInfo)
+		DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansInfo),
+
+		DescriptorSet::writeImage(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &inputImageInfo),
+		DescriptorSet::writeImage(2, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &outputImageInfo)
 	};
 	commandBuffer.pushDescriptorSet(
 		this->postProcessPipelineLayout,
