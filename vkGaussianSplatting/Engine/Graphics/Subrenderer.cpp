@@ -27,8 +27,6 @@ void Renderer::renderMeshWithBrdf(
 	PCD& pushConstantData)
 {
 	const std::vector<Submesh>& submeshes = mesh.getSubmeshes();
-	const std::vector<SubmeshMaterial>& submeshMaterials = 
-		this->resourceManager->getMaterialSet(material.materialSetIndex).getMaterialSet();
 
 	// Record binding vertex/index buffer
 	commandBuffer.bindVertexBuffer(mesh.getVertexBuffer());
@@ -37,8 +35,6 @@ void Renderer::renderMeshWithBrdf(
 	// Record draws
 	for (size_t i = 0, numSubmeshes = submeshes.size(); i < numSubmeshes; ++i)
 	{
-		// BRDF index per submesh
-		pushConstantData.brdfProperties.x = submeshMaterials[i].brdfIndex;
 		commandBuffer.pushConstant(
 			this->gfxResManager.getGraphicsPipelineLayout(), // Can be fixed with shader reflection
 			&pushConstantData

@@ -156,9 +156,6 @@
     <ClCompile Include="Engine\Graphics\GpuProperties.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Graphics\MaterialSet.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Engine\Graphics\Mesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -356,9 +353,6 @@
     <ClInclude Include="Engine\Graphics\GpuProperties.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Graphics\MaterialSet.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Engine\Graphics\Mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -415,19 +409,12 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\Shaders\Common\AssocLegEfficientEval.glsl" />
-    <None Include="Resources\Shaders\Common\ShEfficientEval.glsl" />
     <None Include="Resources\Shaders\Common\ColorTransformations.glsl" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="Resources\Shaders\ComputeShaders\DeferredLight.comp" />
     <CustomBuild Include="Resources\Shaders\ComputeShaders\PostProcess.comp" />
     <CustomBuild Include="Resources\Shaders\FragmentShaders\DeferredGeom.frag" />
-    <CustomBuild Include="Resources\Shaders\FragmentShaders\DeferredGeomSkybox.frag" />
-    <CustomBuild Include="Resources\Shaders\FragmentShaders\Rsm.frag" />
     <CustomBuild Include="Resources\Shaders\VertexShaders\DeferredGeom.vert" />
-    <CustomBuild Include="Resources\Shaders\VertexShaders\DeferredGeomSkybox.vert" />
-    <CustomBuild Include="Resources\Shaders\VertexShaders\Rsm.vert" />
-    <CustomBuild Include="Resources\Shaders\VertexShaders\ShadowMap.vert" />
   </ItemGroup>
 </Project>

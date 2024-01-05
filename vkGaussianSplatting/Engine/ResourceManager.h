@@ -2,7 +2,6 @@
 
 #include <unordered_map>
 #include <vector>
-#include "Graphics/MaterialSet.h"
 #include "Graphics/Mesh.h"
 #include "Graphics/BRDFData.h"
 #include "Graphics/Texture/Texture.h"
@@ -25,7 +24,6 @@ private:
 	std::vector<std::shared_ptr<Texture>> textures;
 	std::vector<Mesh> meshes;
 	std::vector<BRDFData> brdfs;
-	std::vector<MaterialSet> materialSets;
 
 	const GfxAllocContext* gfxAllocContext;
 
@@ -44,12 +42,10 @@ public:
 	uint32_t addEmptyTexture();
 	uint32_t addCubeMap(const std::vector<std::string>& filePaths);
 	uint32_t addBRDF(const std::string& filePath);
-	uint32_t addMaterial(const Mesh& mesh);
 
 	inline Mesh& getMesh(uint32_t meshID) { return this->meshes[meshID]; }
 	inline Texture* getTexture(uint32_t textureID) { return this->textures[textureID].get(); }
 	inline BRDFData& getBRDFData(uint32_t brdfID) { return this->brdfs[brdfID]; }
-	inline MaterialSet& getMaterialSet(uint32_t materialSetID) { return this->materialSets[materialSetID]; }
 
 	inline size_t getNumMeshes() const { return this->meshes.size(); }
 	inline size_t getNumTextures() const { return this->textures.size(); }

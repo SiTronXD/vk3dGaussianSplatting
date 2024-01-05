@@ -70,7 +70,7 @@ uint32_t ResourceManager::addMesh(
 	);
 
 	// Material
-	uint32_t defaultMaterialIndex = this->addMaterial(createdMesh);
+	uint32_t defaultMaterialIndex = 0;
 	outputMeshMaterial.materialSetIndex = defaultMaterialIndex;
 
 	this->nameToMesh.insert({ filePath, { createdMeshIndex, defaultMaterialIndex } });
@@ -207,14 +207,4 @@ uint32_t ResourceManager::addBRDF(const std::string& filePath)
 	}
 
 	return createdBrdfIndex;
-}
-
-uint32_t ResourceManager::addMaterial(const Mesh& mesh)
-{
-	uint32_t materialIndex = uint32_t(this->materialSets.size());
-
-	this->materialSets.push_back(MaterialSet());
-	this->materialSets[materialIndex].createMaterialSet(mesh);
-
-	return materialIndex;
 }

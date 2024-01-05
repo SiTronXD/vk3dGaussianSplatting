@@ -17,9 +17,6 @@ void TestScene::init()
 {
 	this->camera.init(this->getWindow());
 
-	uint32_t brdfId0 = this->getResourceManager().addBRDF("Resources/BRDFs/pink-fabric.shbrdf");
-	uint32_t brdfId1 = this->getResourceManager().addBRDF("Resources/BRDFs/red-fabric.shbrdf");
-
 	uint32_t whiteTextureId = this->getResourceManager().addTexture("Resources/Textures/white.png");
 
 	// Test entity
@@ -36,11 +33,6 @@ void TestScene::init()
 
 		MeshComponent& modelMesh = this->getComponent<MeshComponent>(testEntity);
 		modelMesh.meshId = this->getResourceManager().addMesh("Resources/Models/sphereTest.obj", material);
-
-		// Modify brdf index
-		SubmeshMaterial submeshMaterial{};
-		submeshMaterial.brdfIndex = brdfId0;
-		this->getResourceManager().getMaterialSet(material.materialSetIndex).applyUniformSubmeshMaterial(submeshMaterial);
 	}
 
 	// Walls
@@ -64,11 +56,6 @@ void TestScene::init()
 
 		MeshComponent& modelMesh = this->getComponent<MeshComponent>(testEntity);
 		modelMesh.meshId = this->getResourceManager().addMesh("Resources/Models/box.obj", material);
-
-		// Modify brdf index
-		SubmeshMaterial submeshMaterial{};
-		submeshMaterial.brdfIndex = brdfId1;
-		this->getResourceManager().getMaterialSet(material.materialSetIndex).applyUniformSubmeshMaterial(submeshMaterial);
 	}
 
 	// Initial camera setup
