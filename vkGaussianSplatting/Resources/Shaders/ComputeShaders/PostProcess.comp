@@ -6,6 +6,7 @@
 
 layout (local_size_x = 16, local_size_y = 16) in;
 
+// SBO
 struct GaussianData
 {
 	vec4 position;
@@ -16,21 +17,26 @@ layout(binding = 0) readonly buffer GaussiansBuffer
 	GaussianData gaussians[];
 } gaussiansBuffer;
 
-layout (binding = 1, rgba16f) uniform readonly image2D hdrImage;
-layout (binding = 2, rgba8) uniform image2D swapchainImage;
+// UBO
+layout(binding = 1) uniform UniformBufferObject 
+{
+	mat4 viewMat;
+	mat4 projMat;
+} ubo;
 
+layout (binding = 2, rgba16f) uniform readonly image2D hdrImage;
+layout (binding = 3, rgba8) uniform image2D swapchainImage;
+
+// Push constant
 layout(push_constant) uniform PushConstantData
 {
-	//uvec4 resolution;
-	mat4x4 viewMat;
-	mat4x4 projMat;
+	uvec4 resolution;
 } pc;
 
 void main()
 {
 	uvec2 index = gl_GlobalInvocationID.xy;
-
-	uvec2 res = uvec2(1280, 720);
+	uvec2 res = pc.resolution.xy;
 
 	// Make sure compute work is within bounds
 	if(index.x >= res.x || index.y >= res.y)
@@ -51,15 +57,17 @@ void main()
 	color = vec3(1.0f) - color;
 	color *= 0.3f;
 
+	const mat4 viewMat = ubo.viewMat;
+
 	// Gaussian	data
 	vec3 gScale = gaussiansBuffer.gaussians[0].scale.xyz;
 	vec3 gPosW = gaussiansBuffer.gaussians[0].position.xyz;
-	vec4 gPosV = pc.viewMat * vec4(gPosW, 1.0f);
+	vec4 gPosV = viewMat * vec4(gPosW, 1.0f);
 
 	// "Frustum culling"
 	if(gPosV.z < 0.0f)
 	{
-		vec4 gaussianPosScreen = pc.projMat * gPosV;
+		vec4 gaussianPosScreen = ubo.projMat * gPosV;
 		gaussianPosScreen.xyz /= gaussianPosScreen.w;
 		gaussianPosScreen.y = -gaussianPosScreen.y;
 		gaussianPosScreen.xy = (gaussianPosScreen.xy + vec2(1.0f)) * 0.5f;
@@ -75,9 +83,9 @@ void main()
 		mat3x3 sigma = rotMat * scaleMat * transpose(scaleMat) * transpose(rotMat);
 
 		// SigmaPrime = J * W * Sigma * W^T * J^T
-		mat3x3 W = mat3x3(	pc.viewMat[0][0], pc.viewMat[0][1], pc.viewMat[0][2],
-							pc.viewMat[1][0], pc.viewMat[1][1], pc.viewMat[1][2],
-							pc.viewMat[2][0], pc.viewMat[2][1], pc.viewMat[2][2]);
+		mat3x3 W = mat3x3(	viewMat[0][0], viewMat[0][1], viewMat[0][2],
+							viewMat[1][0], viewMat[1][1], viewMat[1][2],
+							viewMat[2][0], viewMat[2][1], viewMat[2][2]);
 	
 		float tanFovY = tan(3.1415f * 0.5f * 0.5f);
 		float tanFovX = tanFovY * aspectRatio;

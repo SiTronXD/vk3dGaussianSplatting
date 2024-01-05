@@ -89,7 +89,12 @@ private:
 	SemaphoreArray postProcessFinishedSemaphores;
 	FenceArray inFlightFences;
 
+
+	// TODO: remove once gaussan rendering pipeline is finished
 	UniformBuffer camUBO;
+
+
+	UniformBuffer gaussiansCamUBO;
 	StorageBuffer gaussiansSBO;
 
 	Window* window;

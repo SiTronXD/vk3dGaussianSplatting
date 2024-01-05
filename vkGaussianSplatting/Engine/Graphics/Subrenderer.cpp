@@ -441,22 +441,29 @@ void Renderer::computePostProcess(CommandBuffer& commandBuffer,
 	inputGaussiansInfo.range = this->gaussiansSBO.getBufferSize();
 
 	// Binding 1
+	VkDescriptorBufferInfo inputCamUboInfo{};
+	inputCamUboInfo.buffer = this->gaussiansCamUBO.getVkBuffer();
+	inputCamUboInfo.range = this->gaussiansCamUBO.getBufferSize();
+
+	// Binding 2
 	VkDescriptorImageInfo inputImageInfo{};
 	inputImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 	inputImageInfo.imageView = this->swapchain.getHdrTexture().getVkImageView();
 
-	// Binding 2
+	// Binding 3
 	VkDescriptorImageInfo outputImageInfo{};
 	outputImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 	outputImageInfo.imageView = this->swapchain.getVkImageView(imageIndex);
 
 	// Descriptor set
-	std::array<VkWriteDescriptorSet, 3> computeWriteDescriptorSets
+	std::array<VkWriteDescriptorSet, 4> computeWriteDescriptorSets
 	{
 		DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansInfo),
 
-		DescriptorSet::writeImage(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &inputImageInfo),
-		DescriptorSet::writeImage(2, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &outputImageInfo)
+		DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &inputCamUboInfo),
+
+		DescriptorSet::writeImage(2, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &inputImageInfo),
+		DescriptorSet::writeImage(3, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &outputImageInfo)
 	};
 	commandBuffer.pushDescriptorSet(
 		this->postProcessPipelineLayout,
@@ -466,19 +473,19 @@ void Renderer::computePostProcess(CommandBuffer& commandBuffer,
 	);
 
 	// Push constant
-	PostProcessPCD postProcessData{};
-	/*postProcessData.resolution =
+	RenderGaussiansPCD renderGaussiansPcData{};
+	renderGaussiansPcData.resolution =
 		glm::uvec4(
 			this->swapchain.getVkExtent().width,
 			this->swapchain.getVkExtent().height,
 			0u,
 			0u
-		);*/
-	postProcessData.viewMat = viewMat;
-	postProcessData.projMat = projMat;
+		);
+	//postProcessData.viewMat = viewMat;
+	//postProcessData.projMat = projMat;
 	commandBuffer.pushConstant(
 		this->postProcessPipelineLayout,
-		(void*)&postProcessData
+		(void*)&renderGaussiansPcData
 	);
 
 	// Run compute shader

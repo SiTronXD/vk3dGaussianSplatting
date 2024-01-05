@@ -113,11 +113,13 @@ void Renderer::initVulkan()
 		{
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+
 			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT },
 		},
 		VK_SHADER_STAGE_COMPUTE_BIT,
-		sizeof(PostProcessPCD)
+		sizeof(RenderGaussiansPCD)
 	);
 	this->postProcessPipeline.createComputePipeline(
 		this->device, 
@@ -224,6 +226,7 @@ void Renderer::cleanup()
 	this->swapchain.cleanup();
 
 	this->gaussiansSBO.cleanup();
+	this->gaussiansCamUBO.cleanup();
 	this->camUBO.cleanup();
 
 	this->imageAvailableSemaphores.cleanup();
@@ -256,6 +259,10 @@ void Renderer::createCamUbo()
 	this->camUBO.createDynamicCpuBuffer(
 		this->gfxAllocContext,
 		sizeof(CamUBO)
+	);
+	this->gaussiansCamUBO.createDynamicCpuBuffer(
+		this->gfxAllocContext,
+		sizeof(RenderGaussiansUBO)
 	);
 }
 
@@ -516,6 +523,14 @@ void Renderer::updateUniformBuffer(const Camera& camera)
 
 	// Update buffer contents
 	this->camUBO.updateBuffer(&camUbo);
+
+
+
+	RenderGaussiansUBO gaussiansCamUbo{};
+	gaussiansCamUbo.viewMat = camera.getViewMatrix();
+	gaussiansCamUbo.projMat = camera.getProjectionMatrix();
+
+	this->gaussiansCamUBO.updateBuffer(&gaussiansCamUbo);
 }
 
 void Renderer::recordCommandBuffer(
