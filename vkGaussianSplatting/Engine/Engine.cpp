@@ -32,7 +32,7 @@ Engine::~Engine()
 void Engine::init(Scene* initialScene)
 {
 	// Init subsystems
-	this->window.init(this->renderer, "Harmonics Virtual Lights", 1280, 720);
+	this->window.init(this->renderer, "3D Gaussian Splatting", 1280, 720);
 	this->renderer.init(this->resourceManager);
 	this->resourceManager.init(this->renderer.getGfxAllocContext());
 	this->sceneManager.init(this->window, this->renderer, this->resourceManager);

@@ -27,7 +27,7 @@ struct DeferredLightPCD
 
 struct RenderGaussiansPCD
 {
-	glm::uvec4 resolution; // uvec4(width, height, 0, 0)
+	glm::uvec4 resolution; // uvec4(width, height, numGaussians, 0)
 };
 
 struct RenderGaussiansUBO

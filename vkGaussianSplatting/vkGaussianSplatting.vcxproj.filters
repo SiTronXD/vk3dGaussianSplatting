@@ -413,7 +413,7 @@
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="Resources\Shaders\ComputeShaders\DeferredLight.comp" />
-    <CustomBuild Include="Resources\Shaders\ComputeShaders\PostProcess.comp" />
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\RenderGaussians.comp" />
     <CustomBuild Include="Resources\Shaders\FragmentShaders\DeferredGeom.frag" />
     <CustomBuild Include="Resources\Shaders\VertexShaders\DeferredGeom.vert" />
   </ItemGroup>

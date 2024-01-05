@@ -279,7 +279,7 @@
     <CustomBuild Include="Resources\Shaders\ComputeShaders\DeferredLight.comp">
       <FileType>Document</FileType>
     </CustomBuild>
-    <CustomBuild Include="Resources\Shaders\ComputeShaders\PostProcess.comp">
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\RenderGaussians.comp">
       <FileType>Document</FileType>
     </CustomBuild>
     <CustomBuild Include="Resources\Shaders\FragmentShaders\DeferredGeom.frag">

@@ -72,8 +72,8 @@ private:
 	// Compute
 	PipelineLayout deferredLightPipelineLayout;
 	Pipeline deferredLightPipeline;
-	PipelineLayout postProcessPipelineLayout;
-	Pipeline postProcessPipeline;
+	PipelineLayout renderGaussiansPipelineLayout;
+	Pipeline renderGaussiansPipeline;
 
 	CommandPool commandPool;
 	CommandPool singleTimeCommandPool;
@@ -86,7 +86,7 @@ private:
 	ImGuiIO* imguiIO;
 
 	SemaphoreArray imageAvailableSemaphores;
-	SemaphoreArray postProcessFinishedSemaphores;
+	SemaphoreArray renderGaussiansFinishedSemaphores;
 	FenceArray inFlightFences;
 
 
@@ -96,6 +96,8 @@ private:
 
 	UniformBuffer gaussiansCamUBO;
 	StorageBuffer gaussiansSBO;
+
+	uint32_t numGaussians;
 
 	Window* window;
 	ResourceManager* resourceManager;
@@ -118,7 +120,6 @@ private:
 	void resizeWindow();
 	void cleanupImgui();
 
-	void renderMesh(CommandBuffer& commandBuffer, const Mesh& mesh);
 	void renderMeshWithBrdf(
 		CommandBuffer& commandBuffer, 
 		const Mesh& mesh, 
@@ -127,7 +128,7 @@ private:
 	void renderDeferredScene(CommandBuffer& commandBuffer, Scene& scene);
 	void computeDeferredLight(CommandBuffer& commandBuffer, const glm::vec3& camPos);
 	void renderImgui(CommandBuffer& commandBuffer, ImDrawData* imguiDrawData);
-	void computePostProcess(CommandBuffer& commandBuffer, const glm::mat4& viewMat, const glm::mat4& projMat, uint32_t imageIndex);
+	void computeRenderGaussians(CommandBuffer& commandBuffer, uint32_t imageIndex);
 
 	inline const VkDevice& getVkDevice() const { return this->device.getVkDevice(); }
 

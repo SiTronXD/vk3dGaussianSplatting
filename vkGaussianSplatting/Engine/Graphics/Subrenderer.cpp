@@ -4,22 +4,6 @@
 #include "Texture/TextureCube.h"
 #include "../Components.h"
 
-void Renderer::renderMesh(CommandBuffer& commandBuffer, const Mesh& mesh)
-{
-	const std::vector<Submesh>& submeshes = mesh.getSubmeshes();
-
-	// Record binding vertex/index buffer
-	commandBuffer.bindVertexBuffer(mesh.getVertexBuffer());
-	commandBuffer.bindIndexBuffer(mesh.getIndexBuffer());
-
-	// Record draws
-	for (size_t i = 0, numSubmeshes = submeshes.size(); i < numSubmeshes; ++i)
-	{
-		const Submesh& currentSubmesh = submeshes[i];
-		commandBuffer.drawIndexed(currentSubmesh.numIndices, currentSubmesh.startIndex);
-	}
-}
-
 void Renderer::renderMeshWithBrdf(
 	CommandBuffer& commandBuffer, 
 	const Mesh& mesh, 
@@ -398,13 +382,12 @@ void Renderer::renderImgui(CommandBuffer& commandBuffer, ImDrawData* imguiDrawDa
 	commandBuffer.endRendering();
 }
 
-void Renderer::computePostProcess(CommandBuffer& commandBuffer,
-	const glm::mat4& viewMat,
-	const glm::mat4& projMat,
+void Renderer::computeRenderGaussians(
+	CommandBuffer& commandBuffer,
 	uint32_t imageIndex)
 {
 	// Transition HDR and swapchain image
-	VkImageMemoryBarrier2 postProcessMemoryBarriers[2] =
+	VkImageMemoryBarrier2 renderGaussiansMemoryBarriers[2] =
 	{
 		// HDR
 		PipelineBarrier::imageMemoryBarrier2(
@@ -430,10 +413,10 @@ void Renderer::computePostProcess(CommandBuffer& commandBuffer,
 			VK_IMAGE_ASPECT_COLOR_BIT
 		)
 	};
-	commandBuffer.memoryBarrier(postProcessMemoryBarriers, 2);
+	commandBuffer.memoryBarrier(renderGaussiansMemoryBarriers, 2);
 
 	// Compute pipeline
-	commandBuffer.bindPipeline(this->postProcessPipeline);
+	commandBuffer.bindPipeline(this->renderGaussiansPipeline);
 
 	// Binding 0
 	VkDescriptorBufferInfo inputGaussiansInfo{};
@@ -466,7 +449,7 @@ void Renderer::computePostProcess(CommandBuffer& commandBuffer,
 		DescriptorSet::writeImage(3, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &outputImageInfo)
 	};
 	commandBuffer.pushDescriptorSet(
-		this->postProcessPipelineLayout,
+		this->renderGaussiansPipelineLayout,
 		0,
 		uint32_t(computeWriteDescriptorSets.size()),
 		computeWriteDescriptorSets.data()
@@ -478,13 +461,11 @@ void Renderer::computePostProcess(CommandBuffer& commandBuffer,
 		glm::uvec4(
 			this->swapchain.getVkExtent().width,
 			this->swapchain.getVkExtent().height,
-			0u,
+			this->numGaussians,
 			0u
 		);
-	//postProcessData.viewMat = viewMat;
-	//postProcessData.projMat = projMat;
 	commandBuffer.pushConstant(
-		this->postProcessPipelineLayout,
+		this->renderGaussiansPipelineLayout,
 		(void*)&renderGaussiansPcData
 	);
 

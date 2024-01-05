@@ -107,8 +107,8 @@ void Renderer::initVulkan()
 		"Resources/Shaders/DeferredLight.comp.spv"
 	);
 
-	// Post process compute pipelines
-	this->postProcessPipelineLayout.createPipelineLayout(
+	// Render gaussians compute pipelines
+	this->renderGaussiansPipelineLayout.createPipelineLayout(
 		this->device,
 		{
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
@@ -121,10 +121,10 @@ void Renderer::initVulkan()
 		VK_SHADER_STAGE_COMPUTE_BIT,
 		sizeof(RenderGaussiansPCD)
 	);
-	this->postProcessPipeline.createComputePipeline(
+	this->renderGaussiansPipeline.createComputePipeline(
 		this->device, 
-		this->postProcessPipelineLayout, 
-		"Resources/Shaders/PostProcess.comp.spv"
+		this->renderGaussiansPipelineLayout,
+		"Resources/Shaders/RenderGaussians.comp.spv"
 	);
 
 	this->createSyncObjects();
@@ -230,7 +230,7 @@ void Renderer::cleanup()
 	this->camUBO.cleanup();
 
 	this->imageAvailableSemaphores.cleanup();
-	this->postProcessFinishedSemaphores.cleanup();
+	this->renderGaussiansFinishedSemaphores.cleanup();
 	this->inFlightFences.cleanup();
 
 #ifdef RECORD_GPU_TIMES
@@ -239,8 +239,8 @@ void Renderer::cleanup()
 
 	this->singleTimeCommandPool.cleanup();
 	this->commandPool.cleanup();
-	this->postProcessPipeline.cleanup();
-	this->postProcessPipelineLayout.cleanup();
+	this->renderGaussiansPipeline.cleanup();
+	this->renderGaussiansPipelineLayout.cleanup();
 	this->deferredLightPipeline.cleanup();
 	this->deferredLightPipelineLayout.cleanup();
 	
@@ -272,7 +272,7 @@ void Renderer::createSyncObjects()
 		this->device, 
 		GfxSettings::FRAMES_IN_FLIGHT
 	);
-	this->postProcessFinishedSemaphores.create(
+	this->renderGaussiansFinishedSemaphores.create(
 		this->device,
 		GfxSettings::FRAMES_IN_FLIGHT
 	);
@@ -359,7 +359,7 @@ void Renderer::draw(Scene& scene)
 	submitInfo.pCommandBuffers = 
 		&this->commandBuffers[GfxState::getFrameIndex()].getVkCommandBuffer();
 
-	VkSemaphore signalSemaphores[] = { this->postProcessFinishedSemaphores[GfxState::getFrameIndex()] };
+	VkSemaphore signalSemaphores[] = { this->renderGaussiansFinishedSemaphores[GfxState::getFrameIndex()] };
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
@@ -613,7 +613,10 @@ void Renderer::recordCommandBuffer(
 #endif
 
 	//this->renderImgui(commandBuffer, imguiDrawData);
-	this->computePostProcess(commandBuffer, scene.getCamera().getViewMatrix(), scene.getCamera().getProjectionMatrix(), imageIndex);
+	this->computeRenderGaussians(
+		commandBuffer, 
+		imageIndex
+	);
 
 #ifdef RECORD_GPU_TIMES
 	commandBuffer.writeTimestamp(
@@ -701,13 +704,16 @@ void Renderer::initForScene(Scene& scene)
 		}
 	);
 
-	// Gaussians
-	GaussianData gaussian0{};
-	gaussian0.position = glm::vec4(0.0f, 3.0f, 0.0f, 0.0f);
-	gaussian0.scale = glm::vec4(0.1f, 0.2f, 0.3f, 0.0f);
-
+	// Gaussians data
 	std::vector<GaussianData> gaussiansData;
-	gaussiansData.push_back(gaussian0);
+	for (int i = 0; i < 4; ++i) 
+	{
+		GaussianData gaussian0{};
+		gaussian0.position = glm::vec4(0.0f + (float) i, 3.0f, 0.0f, 0.0f);
+		gaussian0.scale = glm::vec4(0.1f, 0.2f, 0.3f, 0.0f);
+
+		gaussiansData.push_back(gaussian0);
+	}
 
 	// Gaussians SBO
 	this->gaussiansSBO.createStaticGpuBuffer(
@@ -715,6 +721,8 @@ void Renderer::initForScene(Scene& scene)
 		sizeof(gaussiansData[0]) * gaussiansData.size(),
 		gaussiansData.data()
 	);
+
+	this->numGaussians = (uint32_t) gaussiansData.size();
 }
 
 void Renderer::setWindow(Window& window)
