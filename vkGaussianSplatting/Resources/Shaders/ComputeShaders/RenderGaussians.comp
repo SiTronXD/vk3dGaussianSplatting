@@ -50,6 +50,7 @@ void main()
 	uv.x *= aspectRatio;
 
 	vec3 color = vec3(0.0f);
+	float Ti = 1.0f;
 
 	// Overlay 3D scene, for temporary debugging
 	color = imageLoad(hdrImage, ivec2(index)).rgb;
@@ -58,63 +59,72 @@ void main()
 	color *= 0.3f;
 
 	const mat4 viewMat = ubo.viewMat;
+	const uint numGaussians = pc.resolution.z;
 
-	// Gaussian	data
-	vec3 gScale = gaussiansBuffer.gaussians[0].scale.xyz;
-	vec3 gPosW = gaussiansBuffer.gaussians[0].position.xyz;
-	vec4 gPosV = viewMat * vec4(gPosW, 1.0f);
-
-	// "Frustum culling"
-	if(gPosV.z < 0.0f)
+	// Loop through gaussians and render them
+	for(int i = 0; i < numGaussians; ++i)
 	{
-		vec4 gaussianPosScreen = ubo.projMat * gPosV;
-		gaussianPosScreen.xyz /= gaussianPosScreen.w;
-		gaussianPosScreen.y = -gaussianPosScreen.y;
-		gaussianPosScreen.xy = (gaussianPosScreen.xy + vec2(1.0f)) * 0.5f;
-		gaussianPosScreen.xy *= vec2(width, height);
+		// Gaussian	data
+		float gAlpha = 1.0f; // TODO: should be a property part of the gaussian buffer
+		vec3 gColor = vec3(1.0f); // TODO: should be a property part of the gaussian buffer (SH)
+		vec3 gScale = gaussiansBuffer.gaussians[i].scale.xyz;
+		vec3 gPosW = gaussiansBuffer.gaussians[i].position.xyz;
+		vec4 gPosV = viewMat * vec4(gPosW, 1.0f);
 
-		// Sigma = R * S * S^T * R^T
-		mat3x3 rotMat = mat3x3(	1.0f, 0.0f, 0.0f,
-								0.0f, 1.0f, 0.0f,
-								0.0f, 0.0f, 1.0f);
-		mat3x3 scaleMat = mat3x3(gScale.x,	0.0f,		0.0f,
-								 0.0f,		gScale.y,	0.0f,
-								 0.0f,		0.0f,		gScale.z);
-		mat3x3 sigma = rotMat * scaleMat * transpose(scaleMat) * transpose(rotMat);
-
-		// SigmaPrime = J * W * Sigma * W^T * J^T
-		mat3x3 W = mat3x3(	viewMat[0][0], viewMat[0][1], viewMat[0][2],
-							viewMat[1][0], viewMat[1][1], viewMat[1][2],
-							viewMat[2][0], viewMat[2][1], viewMat[2][2]);
-	
-		float tanFovY = tan(3.1415f * 0.5f * 0.5f);
-		float tanFovX = tanFovY * aspectRatio;
-		float focalX = width / (2.0f * tanFovX);
-		float focalY = height / (2.0f * tanFovY);
-		mat3x3 J = mat3x3(	focalX / gPosV.z, 0.0f, -(focalX * gPosV.x) / (gPosV.z * gPosV.z),
-							0.0f, focalY / gPosV.z, -(focalY * gPosV.y) / (gPosV.z * gPosV.z),
-							0.0f, 0.0f, 0.0f);
-		mat3x3 sigmaPrime = (J) * (W) * (sigma) * transpose(W) * transpose(J);
-
-		// x^T * Sigma^(-1) * x
-		vec2 d = gaussianPosScreen.xy - vec2(index);
-		d.y = -d.y;
-		vec3 cov = vec3(sigmaPrime[0][0], sigmaPrime[0][1], sigmaPrime[1][1]);
-		float det = (cov.x * cov.z - cov.y * cov.y);
-
-		if(det != 0.0f)
+		// "Frustum culling"
+		if(gPosV.z < 0.0f)
 		{
-			float det_inv = 1.f / det;
-			vec3 conO = vec3(cov.z * det_inv, -cov.y * det_inv, cov.x * det_inv);
-			
-			// exp(-0.5f * x^T * Sigma^(-1) * x)
-			float f = -0.5f * (conO.x * d.x * d.x + conO.z * d.y * d.y) - conO.y * d.x * d.y;
-			float gaussian = exp(f);
-			
-			// Apply gaussian
-			color += gaussian * vec3(1.0f, 1.0f, 1.0f);
+			vec4 gaussianPosScreen = ubo.projMat * gPosV;
+			gaussianPosScreen.xyz /= gaussianPosScreen.w;
+			gaussianPosScreen.y = -gaussianPosScreen.y;
+			gaussianPosScreen.xy = (gaussianPosScreen.xy + vec2(1.0f)) * 0.5f;
+			gaussianPosScreen.xy *= vec2(width, height);
 
-			//color += length(d) < 20.0f ? vec3(1.0f) : vec3(0.0f);
+			// Sigma = R * S * S^T * R^T
+			mat3x3 rotMat = mat3x3(	1.0f, 0.0f, 0.0f,
+									0.0f, 1.0f, 0.0f,
+									0.0f, 0.0f, 1.0f);
+			mat3x3 scaleMat = mat3x3(gScale.x,	0.0f,		0.0f,
+									 0.0f,		gScale.y,	0.0f,
+									 0.0f,		0.0f,		gScale.z);
+			mat3x3 sigma = rotMat * scaleMat * transpose(scaleMat) * transpose(rotMat);
+
+			// SigmaPrime = J * W * Sigma * W^T * J^T
+			mat3x3 W = mat3x3(	viewMat[0][0], viewMat[0][1], viewMat[0][2],
+								viewMat[1][0], viewMat[1][1], viewMat[1][2],
+								viewMat[2][0], viewMat[2][1], viewMat[2][2]);
+	
+			float tanFovY = tan(3.1415f * 0.5f * 0.5f);
+			float tanFovX = tanFovY * aspectRatio;
+			float focalX = width / (2.0f * tanFovX);
+			float focalY = height / (2.0f * tanFovY);
+			mat3x3 J = mat3x3(	focalX / gPosV.z, 0.0f, -(focalX * gPosV.x) / (gPosV.z * gPosV.z),
+								0.0f, focalY / gPosV.z, -(focalY * gPosV.y) / (gPosV.z * gPosV.z),
+								0.0f, 0.0f, 0.0f);
+			mat3x3 sigmaPrime = (J) * (W) * (sigma) * transpose(W) * transpose(J);
+
+			// x^T * Sigma^(-1) * x
+			vec2 d = gaussianPosScreen.xy - vec2(index);
+			d.y = -d.y;
+			vec3 cov = vec3(sigmaPrime[0][0], sigmaPrime[0][1], sigmaPrime[1][1]);
+			float det = (cov.x * cov.z - cov.y * cov.y);
+
+			if(det != 0.0f)
+			{
+				float det_inv = 1.f / det;
+				vec3 conO = vec3(cov.z * det_inv, -cov.y * det_inv, cov.x * det_inv);
+			
+				// exp(-0.5f * x^T * Sigma^(-1) * x)
+				float f = -0.5f * (conO.x * d.x * d.x + conO.z * d.y * d.y) - conO.y * d.x * d.y;
+				float alpha = gAlpha * exp(f);
+				float nextT = Ti * (1.0f - alpha);
+			
+				// Apply gaussian
+				color += Ti * alpha * gColor;
+				Ti = nextT;
+
+				//color += length(d) < 20.0f ? vec3(1.0f) : vec3(0.0f);
+			}
 		}
 	}
 

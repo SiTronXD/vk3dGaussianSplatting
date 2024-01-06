@@ -53,6 +53,7 @@
       <AdditionalIncludeDirectories>$(ProjectDir)\Linking\Include;$(VULKAN_SDK)\Include\;$(ProjectDir)Engine\PCH\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
