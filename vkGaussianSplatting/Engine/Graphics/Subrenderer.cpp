@@ -382,6 +382,92 @@ void Renderer::renderImgui(CommandBuffer& commandBuffer, ImDrawData* imguiDrawDa
 	commandBuffer.endRendering();
 }
 
+void Renderer::computeSortGaussians(CommandBuffer& commandBuffer)
+{
+	// Transition HDR and swapchain image
+	/*VkImageMemoryBarrier2 renderGaussiansMemoryBarriers[2] =
+	{
+		// HDR
+		PipelineBarrier::imageMemoryBarrier2(
+			VK_ACCESS_SHADER_WRITE_BIT,
+			VK_ACCESS_SHADER_READ_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_IMAGE_LAYOUT_GENERAL,
+			VK_IMAGE_LAYOUT_GENERAL,
+			this->swapchain.getHdrTexture().getVkImage(),
+			VK_IMAGE_ASPECT_COLOR_BIT
+		),
+
+		// Swapchain image
+		PipelineBarrier::imageMemoryBarrier2(
+			VK_ACCESS_NONE,
+			VK_ACCESS_SHADER_WRITE_BIT,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_GENERAL,
+			this->swapchain.getVkImage(imageIndex),
+			VK_IMAGE_ASPECT_COLOR_BIT
+		)
+	};
+	commandBuffer.memoryBarrier(renderGaussiansMemoryBarriers, 2);*/
+
+	// Compute pipeline
+	commandBuffer.bindPipeline(this->sortGaussiansPipeline);
+
+	// Binding 0
+	VkDescriptorBufferInfo inputOutputGaussiansSortInfo{};
+	inputOutputGaussiansSortInfo.buffer = this->gaussiansSortListSBO.getVkBuffer();
+	inputOutputGaussiansSortInfo.range = this->gaussiansSortListSBO.getBufferSize();
+
+	// Descriptor set
+	std::array<VkWriteDescriptorSet, 1> computeWriteDescriptorSets
+	{
+		DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputOutputGaussiansSortInfo)
+	};
+	commandBuffer.pushDescriptorSet(
+		this->sortGaussiansPipelineLayout,
+		0,
+		uint32_t(computeWriteDescriptorSets.size()),
+		computeWriteDescriptorSets.data()
+	);
+
+	// Push constant
+	/*RenderGaussiansPCD renderGaussiansPcData{};
+	renderGaussiansPcData.resolution =
+		glm::uvec4(
+			this->swapchain.getVkExtent().width,
+			this->swapchain.getVkExtent().height,
+			this->numGaussians,
+			0u
+		);
+	commandBuffer.pushConstant(
+		this->renderGaussiansPipelineLayout,
+		(void*)&renderGaussiansPcData
+	);*/
+
+	// Make sure number of elements is power of two
+	assert((uint32_t) (this->numSortElements & (this->numSortElements - 1)) == 0u);
+
+	// Run compute shader
+	commandBuffer.dispatch(
+		this->numSortElements
+	);
+
+	// Transition swapchain image layout for presentation
+	/*commandBuffer.memoryBarrier(
+		VK_ACCESS_SHADER_WRITE_BIT,
+		VK_ACCESS_NONE,
+		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+		VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+		VK_IMAGE_LAYOUT_GENERAL,
+		VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+		this->swapchain.getVkImage(imageIndex),
+		VK_IMAGE_ASPECT_COLOR_BIT
+	);*/
+}
+
 void Renderer::computeRenderGaussians(
 	CommandBuffer& commandBuffer,
 	uint32_t imageIndex)

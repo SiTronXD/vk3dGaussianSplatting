@@ -82,7 +82,7 @@ void Buffer::createStagingBuffer(
 	);
 }
 
-void Buffer::createStaticGpuBuffer(
+void Buffer::createGpuBuffer(
 	const GfxAllocContext& gfxAllocContext, 
 	const VkBufferUsageFlags& usageFlags,
 	const VkDeviceSize& bufferSize, 

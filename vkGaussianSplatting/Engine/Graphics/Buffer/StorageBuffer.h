@@ -5,7 +5,7 @@
 class StorageBuffer : public Buffer
 {
 public:
-	void createStaticGpuBuffer(
+	void createGpuBuffer(
 		const GfxAllocContext& gfxAllocContext,
 		VkDeviceSize bufferSize,
 		void* data);

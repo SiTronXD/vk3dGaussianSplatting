@@ -81,7 +81,7 @@ void Renderer::initVulkan()
 	this->queryPools.create(this->device, GfxSettings::FRAMES_IN_FLIGHT, 9);
 #endif
 
-	// Deferred light compute pipelines
+	// Deferred light compute pipeline
 	this->deferredLightPipelineLayout.createPipelineLayout(
 		this->device,
 		{
@@ -107,7 +107,22 @@ void Renderer::initVulkan()
 		"Resources/Shaders/DeferredLight.comp.spv"
 	);
 
-	// Render gaussians compute pipelines
+	// Sort gaussians compute pipeline
+	this->sortGaussiansPipelineLayout.createPipelineLayout(
+		this->device,
+		{
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
+		},
+		VK_SHADER_STAGE_COMPUTE_BIT,
+		0
+	);
+	this->sortGaussiansPipeline.createComputePipeline(
+		this->device,
+		this->sortGaussiansPipelineLayout,
+		"Resources/Shaders/BitonicMergeSort.comp.spv"
+	);
+
+	// Render gaussians compute pipeline
 	this->renderGaussiansPipelineLayout.createPipelineLayout(
 		this->device,
 		{
@@ -225,6 +240,7 @@ void Renderer::cleanup()
 
 	this->swapchain.cleanup();
 
+	this->gaussiansSortListSBO.cleanup();
 	this->gaussiansSBO.cleanup();
 	this->gaussiansCamUBO.cleanup();
 	this->camUBO.cleanup();
@@ -241,6 +257,8 @@ void Renderer::cleanup()
 	this->commandPool.cleanup();
 	this->renderGaussiansPipeline.cleanup();
 	this->renderGaussiansPipelineLayout.cleanup();
+	this->sortGaussiansPipeline.cleanup();
+	this->sortGaussiansPipelineLayout.cleanup();
 	this->deferredLightPipeline.cleanup();
 	this->deferredLightPipelineLayout.cleanup();
 	
@@ -256,11 +274,11 @@ void Renderer::cleanup()
 
 void Renderer::createCamUbo()
 {
-	this->camUBO.createDynamicCpuBuffer(
+	this->camUBO.createCpuGpuBuffer(
 		this->gfxAllocContext,
 		sizeof(CamUBO)
 	);
-	this->gaussiansCamUBO.createDynamicCpuBuffer(
+	this->gaussiansCamUBO.createCpuGpuBuffer(
 		this->gfxAllocContext,
 		sizeof(RenderGaussiansUBO)
 	);
@@ -612,6 +630,10 @@ void Renderer::recordCommandBuffer(
 	);
 #endif
 
+	this->computeSortGaussians(
+		commandBuffer
+	);
+
 	//this->renderImgui(commandBuffer, imguiDrawData);
 	this->computeRenderGaussians(
 		commandBuffer, 
@@ -668,7 +690,9 @@ Renderer::Renderer()
 	avgCpuFrameTimeMs(0.0f),
 #endif
 
-	vmaAllocator(nullptr)
+	vmaAllocator(nullptr),
+	numGaussians(0),
+	numSortElements(0)
 {
 }
 
@@ -716,13 +740,40 @@ void Renderer::initForScene(Scene& scene)
 	}
 
 	// Gaussians SBO
-	this->gaussiansSBO.createStaticGpuBuffer(
+	this->gaussiansSBO.createGpuBuffer(
 		this->gfxAllocContext,
 		sizeof(gaussiansData[0]) * gaussiansData.size(),
 		gaussiansData.data()
 	);
 
 	this->numGaussians = (uint32_t) gaussiansData.size();
+
+	// Gaussians list SBO for sorting
+	std::vector<GaussianSortData> sortElements =
+	{
+		{ glm::uvec4( 5, 0, 0, 0) },
+		{ glm::uvec4( 2, 0, 0, 0) },
+		{ glm::uvec4( 1, 0, 0, 0) },
+		{ glm::uvec4(12, 0, 0, 0) },
+		{ glm::uvec4( 3, 0, 0, 0) },
+		{ glm::uvec4(11, 0, 0, 0) },
+		{ glm::uvec4( 6, 0, 0, 0) },
+		{ glm::uvec4( 4, 0, 0, 0) },
+		{ glm::uvec4(10, 0, 0, 0) },
+		{ glm::uvec4( 0, 0, 0, 0) },
+		{ glm::uvec4(14, 0, 0, 0) },
+		{ glm::uvec4( 7, 0, 0, 0) },
+		{ glm::uvec4( 8, 0, 0, 0) },
+		{ glm::uvec4(13, 0, 0, 0) },
+		{ glm::uvec4( 9, 0, 0, 0) },
+		{ glm::uvec4(15, 0, 0, 0) }
+	};
+	this->gaussiansSortListSBO.createGpuBuffer(
+		this->gfxAllocContext,
+		sizeof(sortElements[0]) * sortElements.size(),
+		sortElements.data()
+	);
+	this->numSortElements = (uint32_t) sortElements.size();
 }
 
 void Renderer::setWindow(Window& window)

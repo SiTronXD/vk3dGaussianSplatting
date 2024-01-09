@@ -289,6 +289,9 @@
     <CustomBuild Include="Resources\Shaders\VertexShaders\DeferredGeom.vert">
       <FileType>Document</FileType>
     </CustomBuild>
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\BitonicMergeSort.comp">
+      <FileType>Document</FileType>
+    </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

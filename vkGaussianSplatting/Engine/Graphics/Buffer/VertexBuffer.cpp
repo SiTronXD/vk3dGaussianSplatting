@@ -6,7 +6,7 @@ void VertexBuffer::createVertexBuffer(
 	const std::vector<Vertex>& vertices)
 {
 	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-	Buffer::createStaticGpuBuffer(
+	Buffer::createGpuBuffer(
 		gfxAllocContext,
 		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 		bufferSize,

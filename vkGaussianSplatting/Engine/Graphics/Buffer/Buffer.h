@@ -25,7 +25,7 @@ private:
 		VmaAllocation& bufferMemory);
 
 protected:
-	void createStaticGpuBuffer(
+	void createGpuBuffer(
 		const GfxAllocContext& gfxAllocContext,
 		const VkBufferUsageFlags& usageFlags,
 		const VkDeviceSize& bufferSize,

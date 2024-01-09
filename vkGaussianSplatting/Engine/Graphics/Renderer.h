@@ -72,6 +72,10 @@ private:
 	// Compute
 	PipelineLayout deferredLightPipelineLayout;
 	Pipeline deferredLightPipeline;
+
+	PipelineLayout sortGaussiansPipelineLayout;
+	Pipeline sortGaussiansPipeline;
+
 	PipelineLayout renderGaussiansPipelineLayout;
 	Pipeline renderGaussiansPipeline;
 
@@ -96,8 +100,10 @@ private:
 
 	UniformBuffer gaussiansCamUBO;
 	StorageBuffer gaussiansSBO;
+	StorageBuffer gaussiansSortListSBO;
 
 	uint32_t numGaussians;
+	uint32_t numSortElements; // Todo: replace with numGaussians once sorting is completely implemented
 
 	Window* window;
 	ResourceManager* resourceManager;
@@ -128,6 +134,7 @@ private:
 	void renderDeferredScene(CommandBuffer& commandBuffer, Scene& scene);
 	void computeDeferredLight(CommandBuffer& commandBuffer, const glm::vec3& camPos);
 	void renderImgui(CommandBuffer& commandBuffer, ImDrawData* imguiDrawData);
+	void computeSortGaussians(CommandBuffer& commandBuffer);
 	void computeRenderGaussians(CommandBuffer& commandBuffer, uint32_t imageIndex);
 
 	inline const VkDevice& getVkDevice() const { return this->device.getVkDevice(); }

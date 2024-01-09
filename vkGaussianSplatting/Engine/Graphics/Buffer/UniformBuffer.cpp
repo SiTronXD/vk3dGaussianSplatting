@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "UniformBuffer.h"
 
-void UniformBuffer::createDynamicCpuBuffer(
+void UniformBuffer::createCpuGpuBuffer(
 	const GfxAllocContext& gfxAllocContext,
 	const VkDeviceSize& bufferSize)
 {

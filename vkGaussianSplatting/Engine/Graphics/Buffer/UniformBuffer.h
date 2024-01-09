@@ -5,7 +5,7 @@
 class UniformBuffer : public Buffer
 {
 public:
-	void createDynamicCpuBuffer(
+	void createCpuGpuBuffer(
 		const GfxAllocContext& gfxAllocContext,
 		const VkDeviceSize& bufferSize
 	);

@@ -6,7 +6,7 @@ void IndexBuffer::createIndexBuffer(
 	const std::vector<uint32_t>& indices)
 {
 	VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
-	Buffer::createStaticGpuBuffer(
+	Buffer::createGpuBuffer(
 		gfxAllocContext,
 		VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 		bufferSize,

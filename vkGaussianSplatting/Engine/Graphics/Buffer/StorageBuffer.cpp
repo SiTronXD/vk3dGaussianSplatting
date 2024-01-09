@@ -1,12 +1,12 @@
 #include "pch.h"
 #include "StorageBuffer.h"
 
-void StorageBuffer::createStaticGpuBuffer(
+void StorageBuffer::createGpuBuffer(
 	const GfxAllocContext& gfxAllocContext, 
 	VkDeviceSize bufferSize, 
 	void* data)
 {
-	Buffer::createStaticGpuBuffer(
+	Buffer::createGpuBuffer(
 		gfxAllocContext,
 		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
 		bufferSize,

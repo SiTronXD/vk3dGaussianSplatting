@@ -41,3 +41,8 @@ struct GaussianData
 	glm::vec4 position; // vec4(x, y, z, 0.0f)
 	glm::vec4 scale; // vec4(x, y, z, 0.0f)
 };
+
+struct GaussianSortData
+{
+	glm::uvec4 num; // uvec4(num, 0, 0, 0)
+};
