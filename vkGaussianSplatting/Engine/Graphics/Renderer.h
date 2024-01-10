@@ -47,7 +47,7 @@ class Renderer
 private:
 	const float WAIT_ELAPSED_FRAMES_FOR_AVG = 500.0f;
 
-	const uint32_t BMS_WORK_GROUP_SIZE = 4;
+	const uint32_t BMS_WORK_GROUP_SIZE = 8;
 
 	VulkanInstance instance;
 	DebugMessenger debugMessenger;

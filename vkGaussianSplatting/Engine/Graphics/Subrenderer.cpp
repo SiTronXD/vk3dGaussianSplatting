@@ -384,6 +384,12 @@ void Renderer::renderImgui(CommandBuffer& commandBuffer, ImDrawData* imguiDrawDa
 
 void Renderer::computeSortGaussians(CommandBuffer& commandBuffer)
 {
+	// Make sure number of elements is power of two
+	assert((uint32_t)(this->numSortElements & (this->numSortElements - 1)) == 0u);
+
+	// Make sure number of elements is large enough
+	assert(this->numSortElements >= BMS_WORK_GROUP_SIZE * 2);
+
 	commandBuffer.bufferMemoryBarrier(
 		VK_ACCESS_NONE,
 		VK_ACCESS_SHADER_WRITE_BIT,
@@ -413,10 +419,7 @@ void Renderer::computeSortGaussians(CommandBuffer& commandBuffer)
 		computeWriteDescriptorSets.data()
 	);
 
-	// Make sure number of elements is power of two
-	assert((uint32_t) (this->numSortElements & (this->numSortElements - 1)) == 0u);
-
-	uint32_t h = BMS_WORK_GROUP_SIZE /* 2*/;
+	uint32_t h = BMS_WORK_GROUP_SIZE * 2;
 
 	this->dispatchBms(
 		commandBuffer, 
@@ -436,7 +439,7 @@ void Renderer::computeSortGaussians(CommandBuffer& commandBuffer)
 
 		for (uint32_t hh = h / 2; hh > 1; hh /= 2)
 		{
-			if (hh <= BMS_WORK_GROUP_SIZE /* 2*/)
+			if (hh <= BMS_WORK_GROUP_SIZE * 2)
 			{
 				this->dispatchBms(
 					commandBuffer,
@@ -575,8 +578,9 @@ void Renderer::dispatchBms(CommandBuffer& commandBuffer, BmsSubAlgorithm subAlgo
 	);
 
 	// Run compute shader
+	// Divide workload by 2, since 1 thread works on pairs of elements
 	commandBuffer.dispatch(
-		this->numSortElements / BMS_WORK_GROUP_SIZE
+		this->numSortElements / BMS_WORK_GROUP_SIZE / 2
 	);
 
 	commandBuffer.bufferMemoryBarrier(
