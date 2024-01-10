@@ -436,7 +436,7 @@ void Renderer::computeSortGaussians(CommandBuffer& commandBuffer)
 
 		for (uint32_t hh = h / 2; hh > 1; hh /= 2)
 		{
-			if (hh >= BMS_WORK_GROUP_SIZE /* 2*/)
+			if (hh <= BMS_WORK_GROUP_SIZE /* 2*/)
 			{
 				this->dispatchBms(
 					commandBuffer,

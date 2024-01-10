@@ -3,7 +3,7 @@
 // Each thread controls a pair of elements
 // (The total number of threads should equal to half of the total number of elements)
 // Local size is divided by 2, to avoid cases where the number of elements is smaller than a thread group
-#define DESIRED_WORK_GROUP_SIZE 16
+#define DESIRED_WORK_GROUP_SIZE 4
 #define WORK_GROUP_SIZE (DESIRED_WORK_GROUP_SIZE / 2)
 
 #define ALG_LOCAL_BMS 0
