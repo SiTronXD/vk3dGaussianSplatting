@@ -169,7 +169,7 @@ void Texture::transitionImageLayout(
 	subresourceRange.levelCount = this->mipLevels;
 	subresourceRange.baseArrayLayer = 0;
 	subresourceRange.layerCount = layers;
-	commandBuffer.memoryBarrier(
+	commandBuffer.imageMemoryBarrier(
 		srcAccessMask,
 		dstAccessMask,
 		srcStageMask,

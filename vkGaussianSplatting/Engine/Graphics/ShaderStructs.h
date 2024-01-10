@@ -25,6 +25,11 @@ struct DeferredLightPCD
 
 
 
+struct SortGaussiansPCD
+{
+	glm::uvec4 data; // uvec4(algorithm type, h, 0, 0)
+};
+
 struct RenderGaussiansPCD
 {
 	glm::uvec4 resolution; // uvec4(width, height, numGaussians, 0)

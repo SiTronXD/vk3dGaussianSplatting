@@ -219,7 +219,7 @@ bool TextureCube::createCubeMapMipMaps()
 		subresourceRange.baseMipLevel = i - 1;
 
 		// Mip N-1
-		commandBuffer.memoryBarrier(
+		commandBuffer.imageMemoryBarrier(
 			VK_ACCESS_TRANSFER_WRITE_BIT,
 			VK_ACCESS_TRANSFER_READ_BIT,
 			VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -251,7 +251,7 @@ bool TextureCube::createCubeMapMipMaps()
 		);
 
 		// Mip N-1
-		commandBuffer.memoryBarrier(
+		commandBuffer.imageMemoryBarrier(
 			VK_ACCESS_TRANSFER_READ_BIT,
 			VK_ACCESS_SHADER_READ_BIT,
 			VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -268,7 +268,7 @@ bool TextureCube::createCubeMapMipMaps()
 
 	// Last mip
 	subresourceRange.baseMipLevel = this->mipLevels - 1;
-	commandBuffer.memoryBarrier(
+	commandBuffer.imageMemoryBarrier(
 		VK_ACCESS_TRANSFER_WRITE_BIT,
 		VK_ACCESS_SHADER_READ_BIT,
 		VK_PIPELINE_STAGE_TRANSFER_BIT,

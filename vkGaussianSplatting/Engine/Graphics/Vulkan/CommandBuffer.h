@@ -58,7 +58,7 @@ public:
 		VkPipelineStageFlagBits pipelineStage, 
 		uint32_t queryIndex);
 
-	void memoryBarrier(
+	void imageMemoryBarrier(
 		VkAccessFlags2 srcAccessMask,
 		VkAccessFlags2 dstAccessMask,
 		VkPipelineStageFlags2 srcStageMask,
@@ -67,7 +67,7 @@ public:
 		VkImageLayout newLayout,
 		VkImage image,
 		VkImageAspectFlags imageAspectFlags);
-	void memoryBarrier(
+	void imageMemoryBarrier(
 		VkAccessFlags2 srcAccessMask,
 		VkAccessFlags2 dstAccessMask,
 		VkPipelineStageFlags2 srcStageMask,
@@ -76,9 +76,20 @@ public:
 		VkImageLayout newLayout,
 		VkImage image,
 		const VkImageSubresourceRange& subresourceRange);
-	void memoryBarrier(
+	void imageMemoryBarrier(
 		const VkImageMemoryBarrier2* memoryBarriers,
 		uint32_t numMemoryBarriers);
+	void bufferMemoryBarrier(
+		VkAccessFlags2 srcAccessMask,
+		VkAccessFlags2 dstAccessMask,
+		VkPipelineStageFlags2 srcStageMask,
+		VkPipelineStageFlags2 dstStageMask,
+		VkBuffer buffer,
+		VkDeviceSize size);
+	void bufferMemoryBarrier(
+		const VkBufferMemoryBarrier2* memoryBarriers,
+		uint32_t numMemoryBarriers
+	);
 
 	void endRenderPass();
 	void endRendering();

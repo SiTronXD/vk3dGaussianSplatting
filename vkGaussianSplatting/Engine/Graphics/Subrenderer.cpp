@@ -116,7 +116,7 @@ void Renderer::renderDeferredScene(CommandBuffer& commandBuffer, Scene& scene)
 			VK_IMAGE_ASPECT_DEPTH_BIT
 		)
 	};
-	commandBuffer.memoryBarrier(memoryBarriers.data(), uint32_t(memoryBarriers.size()));
+	commandBuffer.imageMemoryBarrier(memoryBarriers.data(), uint32_t(memoryBarriers.size()));
 
 	// Clear values for color and depth
 	std::array<VkClearValue, 4> clearValues{};
@@ -288,7 +288,7 @@ void Renderer::computeDeferredLight(CommandBuffer& commandBuffer, const glm::vec
 			VK_IMAGE_ASPECT_COLOR_BIT
 		)
 	};
-	commandBuffer.memoryBarrier(deferredLightMemoryBarriers.data(), uint32_t(deferredLightMemoryBarriers.size()));
+	commandBuffer.imageMemoryBarrier(deferredLightMemoryBarriers.data(), uint32_t(deferredLightMemoryBarriers.size()));
 
 	// Compute pipeline
 	commandBuffer.bindPipeline(this->deferredLightPipeline);
@@ -384,34 +384,14 @@ void Renderer::renderImgui(CommandBuffer& commandBuffer, ImDrawData* imguiDrawDa
 
 void Renderer::computeSortGaussians(CommandBuffer& commandBuffer)
 {
-	// Transition HDR and swapchain image
-	/*VkImageMemoryBarrier2 renderGaussiansMemoryBarriers[2] =
-	{
-		// HDR
-		PipelineBarrier::imageMemoryBarrier2(
-			VK_ACCESS_SHADER_WRITE_BIT,
-			VK_ACCESS_SHADER_READ_BIT,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			VK_IMAGE_LAYOUT_GENERAL,
-			VK_IMAGE_LAYOUT_GENERAL,
-			this->swapchain.getHdrTexture().getVkImage(),
-			VK_IMAGE_ASPECT_COLOR_BIT
-		),
-
-		// Swapchain image
-		PipelineBarrier::imageMemoryBarrier2(
-			VK_ACCESS_NONE,
-			VK_ACCESS_SHADER_WRITE_BIT,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_IMAGE_LAYOUT_GENERAL,
-			this->swapchain.getVkImage(imageIndex),
-			VK_IMAGE_ASPECT_COLOR_BIT
-		)
-	};
-	commandBuffer.memoryBarrier(renderGaussiansMemoryBarriers, 2);*/
+	commandBuffer.bufferMemoryBarrier(
+		VK_ACCESS_NONE,
+		VK_ACCESS_SHADER_WRITE_BIT,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+		this->gaussiansSortListSBO.getVkBuffer(),
+		this->gaussiansSortListSBO.getBufferSize()
+	);
 
 	// Compute pipeline
 	commandBuffer.bindPipeline(this->sortGaussiansPipeline);
@@ -433,39 +413,48 @@ void Renderer::computeSortGaussians(CommandBuffer& commandBuffer)
 		computeWriteDescriptorSets.data()
 	);
 
-	// Push constant
-	/*RenderGaussiansPCD renderGaussiansPcData{};
-	renderGaussiansPcData.resolution =
-		glm::uvec4(
-			this->swapchain.getVkExtent().width,
-			this->swapchain.getVkExtent().height,
-			this->numGaussians,
-			0u
-		);
-	commandBuffer.pushConstant(
-		this->renderGaussiansPipelineLayout,
-		(void*)&renderGaussiansPcData
-	);*/
-
 	// Make sure number of elements is power of two
 	assert((uint32_t) (this->numSortElements & (this->numSortElements - 1)) == 0u);
 
-	// Run compute shader
-	commandBuffer.dispatch(
-		this->numSortElements
+	uint32_t h = BMS_WORK_GROUP_SIZE /* 2*/;
+
+	this->dispatchBms(
+		commandBuffer, 
+		BmsSubAlgorithm::LOCAL_BMS, 
+		h
 	);
 
-	// Transition swapchain image layout for presentation
-	/*commandBuffer.memoryBarrier(
-		VK_ACCESS_SHADER_WRITE_BIT,
-		VK_ACCESS_NONE,
-		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-		VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-		VK_IMAGE_LAYOUT_GENERAL,
-		VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-		this->swapchain.getVkImage(imageIndex),
-		VK_IMAGE_ASPECT_COLOR_BIT
-	);*/
+	h *= 2;
+
+	for ( ; h <= this->numSortElements; h *= 2)
+	{
+		this->dispatchBms(
+			commandBuffer,
+			BmsSubAlgorithm::BIG_FLIP,
+			h
+		);
+
+		for (uint32_t hh = h / 2; hh > 1; hh /= 2)
+		{
+			if (hh >= BMS_WORK_GROUP_SIZE /* 2*/)
+			{
+				this->dispatchBms(
+					commandBuffer,
+					BmsSubAlgorithm::LOCAL_DISPERSE,
+					hh
+				);
+				break;
+			}
+			else
+			{
+				this->dispatchBms(
+					commandBuffer,
+					BmsSubAlgorithm::BIG_DISPERSE,
+					hh
+				);
+			}
+		}
+	}
 }
 
 void Renderer::computeRenderGaussians(
@@ -499,7 +488,7 @@ void Renderer::computeRenderGaussians(
 			VK_IMAGE_ASPECT_COLOR_BIT
 		)
 	};
-	commandBuffer.memoryBarrier(renderGaussiansMemoryBarriers, 2);
+	commandBuffer.imageMemoryBarrier(renderGaussiansMemoryBarriers, 2);
 
 	// Compute pipeline
 	commandBuffer.bindPipeline(this->renderGaussiansPipeline);
@@ -562,7 +551,7 @@ void Renderer::computeRenderGaussians(
 	);
 
 	// Transition swapchain image layout for presentation
-	commandBuffer.memoryBarrier(
+	commandBuffer.imageMemoryBarrier(
 		VK_ACCESS_SHADER_WRITE_BIT,
 		VK_ACCESS_NONE,
 		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
@@ -571,5 +560,31 @@ void Renderer::computeRenderGaussians(
 		VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
 		this->swapchain.getVkImage(imageIndex),
 		VK_IMAGE_ASPECT_COLOR_BIT
+	);
+}
+
+void Renderer::dispatchBms(CommandBuffer& commandBuffer, BmsSubAlgorithm subAlgorithm, uint32_t h)
+{
+	// Push constant
+	SortGaussiansPCD sortGaussiansPcData{};
+	sortGaussiansPcData.data.x = static_cast<uint32_t>(subAlgorithm);
+	sortGaussiansPcData.data.y = h;
+	commandBuffer.pushConstant(
+		this->sortGaussiansPipelineLayout,
+		(void*)&sortGaussiansPcData
+	);
+
+	// Run compute shader
+	commandBuffer.dispatch(
+		this->numSortElements / BMS_WORK_GROUP_SIZE
+	);
+
+	commandBuffer.bufferMemoryBarrier(
+		VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+		VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+		this->gaussiansSortListSBO.getVkBuffer(),
+		this->gaussiansSortListSBO.getBufferSize()
 	);
 }

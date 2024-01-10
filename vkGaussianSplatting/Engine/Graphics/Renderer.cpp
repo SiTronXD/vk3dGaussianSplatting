@@ -114,7 +114,7 @@ void Renderer::initVulkan()
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
 		},
 		VK_SHADER_STAGE_COMPUTE_BIT,
-		0
+		sizeof(SortGaussiansPCD)
 	);
 	this->sortGaussiansPipeline.createComputePipeline(
 		this->device,

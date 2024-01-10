@@ -178,7 +178,7 @@ void CommandBuffer::writeTimestamp(
 	vkCmdWriteTimestamp(this->commandBuffer, pipelineStage, queryPool, queryIndex);
 }
 
-void CommandBuffer::memoryBarrier(
+void CommandBuffer::imageMemoryBarrier(
 	VkAccessFlags2 srcAccessMask,
 	VkAccessFlags2 dstAccessMask,
 	VkPipelineStageFlags2 srcStageMask,
@@ -199,10 +199,10 @@ void CommandBuffer::memoryBarrier(
 		image,
 		imageAspectFlags
 	);
-	this->memoryBarrier(&imageMemoryBarrier, 1);
+	this->imageMemoryBarrier(&imageMemoryBarrier, 1);
 }
 
-void CommandBuffer::memoryBarrier(
+void CommandBuffer::imageMemoryBarrier(
 	VkAccessFlags2 srcAccessMask,
 	VkAccessFlags2 dstAccessMask,
 	VkPipelineStageFlags2 srcStageMask,
@@ -223,10 +223,10 @@ void CommandBuffer::memoryBarrier(
 		image,
 		subresourceRange
 	);
-	this->memoryBarrier(&imageMemoryBarrier, 1);
+	this->imageMemoryBarrier(&imageMemoryBarrier, 1);
 }
 
-void CommandBuffer::memoryBarrier(
+void CommandBuffer::imageMemoryBarrier(
 	const VkImageMemoryBarrier2* memoryBarriers,
 	uint32_t numMemoryBarriers)
 {
@@ -235,6 +235,36 @@ void CommandBuffer::memoryBarrier(
 	//depInfo.dependencyFlags = ;
 	depInfo.imageMemoryBarrierCount = numMemoryBarriers;
 	depInfo.pImageMemoryBarriers = memoryBarriers;
+	vkCmdPipelineBarrier2(this->commandBuffer, &depInfo);
+}
+
+void CommandBuffer::bufferMemoryBarrier(
+	VkAccessFlags2 srcAccessMask, 
+	VkAccessFlags2 dstAccessMask, 
+	VkPipelineStageFlags2 srcStageMask, 
+	VkPipelineStageFlags2 dstStageMask, 
+	VkBuffer buffer, 
+	VkDeviceSize size)
+{
+	VkBufferMemoryBarrier2 bufferMemoryBarrier = PipelineBarrier::bufferMemoryBarrier2(
+		srcAccessMask,
+		dstAccessMask,
+		srcStageMask,
+		dstStageMask,
+		buffer,
+		size
+	);
+	this->bufferMemoryBarrier(&bufferMemoryBarrier, 1);
+}
+
+void CommandBuffer::bufferMemoryBarrier(
+	const VkBufferMemoryBarrier2* memoryBarriers,
+	uint32_t numMemoryBarriers)
+{
+	// Pipeline barrier 2
+	VkDependencyInfo depInfo{ VK_STRUCTURE_TYPE_DEPENDENCY_INFO };
+	depInfo.bufferMemoryBarrierCount = numMemoryBarriers;
+	depInfo.pBufferMemoryBarriers = memoryBarriers;
 	vkCmdPipelineBarrier2(this->commandBuffer, &depInfo);
 }
 

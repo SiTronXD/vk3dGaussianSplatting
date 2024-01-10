@@ -1,20 +1,181 @@
 #version 450
 
-layout (local_size_x = 16, local_size_y = 16) in;
+// Each thread controls a pair of elements
+// (The total number of threads should equal to half of the total number of elements)
+// Local size is divided by 2, to avoid cases where the number of elements is smaller than a thread group
+#define DESIRED_WORK_GROUP_SIZE 16
+#define WORK_GROUP_SIZE (DESIRED_WORK_GROUP_SIZE / 2)
+
+#define ALG_LOCAL_BMS 0
+#define ALG_LOCAL_DISPERSE 1
+#define ALG_BIG_FLIP 2
+#define ALG_BIG_DISPERSE 3
+
+layout (local_size_x = WORK_GROUP_SIZE, local_size_y = 1) in;
 
 // SBO
 struct GaussianSortData
 {
-	uvec4 num;
+	uvec4 num; // uvec4(num, 0, 0, 0)
 };
 layout(binding = 0) buffer GaussiansSortListBuffer
 {
 	GaussianSortData sortData[];
-} gaussiansSortListBuffer;
+} listBuffer;
+
+// Push constant
+layout(push_constant) uniform PushConstantData
+{
+	uvec4 data; // uvec4(algorithm type, h, 0, 0)
+} pc;
+
+// 1024 * 16 = 16384 bytes are guaranteed to be available in Vulkan
+// vec2(value to sort, id)
+shared uvec2 localValues[WORK_GROUP_SIZE * 2];
+
+void localCompareAndSwap(uvec2 id)
+{
+	if(localValues[id.x].x > localValues[id.y].x)
+	{
+		uvec2 temp = localValues[id.x];
+		localValues[id.x] = localValues[id.y];
+		localValues[id.y] = temp;
+	}
+}
+
+void globalCompareAndSwap(uvec2 id)
+{
+	if(listBuffer.sortData[id.x].num.x > listBuffer.sortData[id.y].num.x)
+	{
+		uvec2 temp = listBuffer.sortData[id.x].num.xy;
+		listBuffer.sortData[id.x].num.xy = listBuffer.sortData[id.y].num.xy;
+		listBuffer.sortData[id.y].num.xy = temp;
+	}
+}
+
+void localFlip(uint h)
+{
+	uint t = gl_LocalInvocationID.x;
+
+	uint halfH = h / 2;
+	uint tModHH = t % halfH;
+	uint q = uint((2 * t) / h) * h;
+
+	uvec2 indices = uvec2(
+		q + tModHH,
+		q + h - tModHH - 1
+	);
+
+	barrier();
+
+	localCompareAndSwap(indices);
+}
+
+void localDisperse(uint h)
+{
+	uint t = gl_LocalInvocationID.x;
+
+	for( ; h > 1; h /= 2)
+	{
+		uint halfH = h / 2;
+		uint tModHH = t % halfH;
+		uint q = uint((2 * t) / h) * h;
+
+		uvec2 indices = uvec2(
+			q + tModHH,
+			q + tModHH + halfH
+		);
+
+		barrier();
+
+		localCompareAndSwap(indices);
+	}
+}
+
+void bigFlip(uint h)
+{
+	uint t = gl_GlobalInvocationID.x;
+
+	uint halfH = h / 2;
+	uint tModHH = t % halfH;
+	uint q = uint((2 * t) / h) * h;
+
+	uvec2 indices = uvec2(
+		q + tModHH,
+		q + h - tModHH - 1
+	);
+
+	globalCompareAndSwap(indices);
+}
+
+void bigDisperse(uint h)
+{
+	uint t = gl_GlobalInvocationID.x;
+
+	uint halfH = h / 2;
+	uint tModHH = t % halfH;
+	uint q = uint((2 * t) / h) * h;
+
+	uvec2 indices = uvec2(
+		q + tModHH,
+		q + tModHH + halfH
+	);
+
+	globalCompareAndSwap(indices);
+}
+
+// Regular bitonic mergesort within thread group
+void localBms(uint h)
+{
+	for(uint hh = 2; hh <= h; hh *= 2)
+	{
+		localFlip(hh);
+		localDisperse(hh / 2);
+	}
+}
 
 void main()
 {
-	uint index = gl_GlobalInvocationID.x;
+	uint algType = pc.data.x;
+	uint h = pc.data.y;
+	
+	// Global offset for local work group
+	uint offset = WORK_GROUP_SIZE * gl_WorkGroupID.x;
+	uint t = gl_LocalInvocationID.x;
 
-	gaussiansSortListBuffer.sortData[index].num.w = gaussiansSortListBuffer.sortData[index].num.w + 1u;
+	// Copy values into shared memory for local sub algorithms
+	// (otherwise work directly in buffer memory)
+	if(algType <= ALG_LOCAL_DISPERSE)
+	{
+		localValues[t * 2]		= listBuffer.sortData[(offset + t) * 2].num.xy;
+		localValues[t * 2 + 1]	= listBuffer.sortData[(offset + t) * 2 + 1].num.xy;
+	}
+
+	switch(algType) 
+	{
+	case ALG_LOCAL_BMS:
+		localBms(h);
+		break;
+
+	case ALG_LOCAL_DISPERSE:
+		localDisperse(h);
+		break;
+
+	case ALG_BIG_FLIP:
+		bigFlip(h);
+		break;
+
+	case ALG_BIG_DISPERSE:
+		bigDisperse(h);
+		break;
+	}
+
+	// Copy values from shared memory into buffer
+	if(algType <= ALG_LOCAL_DISPERSE)
+	{
+		barrier();
+
+		listBuffer.sortData[(offset + t) * 2].num.xy		= localValues[t * 2];
+		listBuffer.sortData[(offset + t) * 2 + 1].num.xy	= localValues[t * 2 + 1];
+	}
 }

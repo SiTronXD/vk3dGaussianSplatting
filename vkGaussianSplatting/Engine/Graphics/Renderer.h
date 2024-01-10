@@ -34,10 +34,20 @@
 class ResourceManager;
 class DescriptorPool;
 
+enum class BmsSubAlgorithm
+{
+	LOCAL_BMS = 0,
+	LOCAL_DISPERSE = 1,
+	BIG_FLIP = 2,
+	BIG_DISPERSE = 3
+};
+
 class Renderer
 {
 private:
 	const float WAIT_ELAPSED_FRAMES_FOR_AVG = 500.0f;
+
+	const uint32_t BMS_WORK_GROUP_SIZE = 16;
 
 	VulkanInstance instance;
 	DebugMessenger debugMessenger;
@@ -136,6 +146,8 @@ private:
 	void renderImgui(CommandBuffer& commandBuffer, ImDrawData* imguiDrawData);
 	void computeSortGaussians(CommandBuffer& commandBuffer);
 	void computeRenderGaussians(CommandBuffer& commandBuffer, uint32_t imageIndex);
+
+	void dispatchBms(CommandBuffer& commandBuffer, BmsSubAlgorithm subAlgorithm, uint32_t h);
 
 	inline const VkDevice& getVkDevice() const { return this->device.getVkDevice(); }
 
