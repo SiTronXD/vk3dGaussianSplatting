@@ -25,6 +25,12 @@ struct DeferredLightPCD
 
 
 
+struct InitSortListPCD
+{
+	glm::mat4 viewMat;
+	glm::vec4 clipPlanes; // vec4(nearPlane, farPlane, numGaussians, 0)
+};
+
 struct SortGaussiansPCD
 {
 	glm::uvec4 data; // uvec4(algorithm type, h, 0, 0)

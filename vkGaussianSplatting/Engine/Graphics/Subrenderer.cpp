@@ -382,6 +382,60 @@ void Renderer::renderImgui(CommandBuffer& commandBuffer, ImDrawData* imguiDrawDa
 	commandBuffer.endRendering();
 }
 
+void Renderer::computeInitSortList(
+	CommandBuffer& commandBuffer, 
+	const Camera& camera)
+{
+	commandBuffer.bufferMemoryBarrier(
+		VK_ACCESS_NONE,
+		VK_ACCESS_SHADER_WRITE_BIT,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+		this->gaussiansSortListSBO.getVkBuffer(),
+		this->gaussiansSortListSBO.getBufferSize()
+	);
+
+	// Compute pipeline
+	commandBuffer.bindPipeline(this->initSortListPipeline);
+
+	// Binding 0
+	VkDescriptorBufferInfo inputGaussiansBufferInfo{};
+	inputGaussiansBufferInfo.buffer = this->gaussiansSBO.getVkBuffer();
+	inputGaussiansBufferInfo.range = this->gaussiansSBO.getBufferSize();
+
+	// Binding 1
+	VkDescriptorBufferInfo outputGaussiansSortInfo{};
+	outputGaussiansSortInfo.buffer = this->gaussiansSortListSBO.getVkBuffer();
+	outputGaussiansSortInfo.range = this->gaussiansSortListSBO.getBufferSize();
+
+	// Descriptor set
+	std::array<VkWriteDescriptorSet, 2> computeWriteDescriptorSets
+	{
+		DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansBufferInfo),
+		DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputGaussiansSortInfo)
+	};
+	commandBuffer.pushDescriptorSet(
+		this->initSortListPipelineLayout,
+		0,
+		uint32_t(computeWriteDescriptorSets.size()),
+		computeWriteDescriptorSets.data()
+	);
+
+	// Push constant
+	InitSortListPCD initSortListPcData{};
+	initSortListPcData.viewMat = camera.getViewMatrix();
+	initSortListPcData.clipPlanes = glm::vec4(camera.NEAR_PLANE, camera.FAR_PLANE, (float) this->numGaussians, 0.0f);
+	commandBuffer.pushConstant(
+		this->initSortListPipelineLayout,
+		(void*)&initSortListPcData
+	);
+
+	// Run compute shader
+	commandBuffer.dispatch(
+		(this->numSortElements + INIT_LIST_WORK_GROUP_SIZE - 1) / INIT_LIST_WORK_GROUP_SIZE
+	);
+}
+
 void Renderer::computeSortGaussians(CommandBuffer& commandBuffer)
 {
 	// Make sure number of elements is power of two
@@ -391,9 +445,9 @@ void Renderer::computeSortGaussians(CommandBuffer& commandBuffer)
 	assert(this->numSortElements >= BMS_WORK_GROUP_SIZE * 2);
 
 	commandBuffer.bufferMemoryBarrier(
-		VK_ACCESS_NONE,
 		VK_ACCESS_SHADER_WRITE_BIT,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 		this->gaussiansSortListSBO.getVkBuffer(),
 		this->gaussiansSortListSBO.getBufferSize()

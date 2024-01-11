@@ -38,8 +38,8 @@ void Camera::updateMatrices()
 		this->projectionMatrix = glm::perspective(
 			glm::radians(90.0f),
 			this->window->getAspectRatio(),
-			0.1f,
-			100.0f
+			Camera::NEAR_PLANE,
+			Camera::FAR_PLANE
 		);
 	}
 }

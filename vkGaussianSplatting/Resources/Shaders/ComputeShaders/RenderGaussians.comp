@@ -2,16 +2,11 @@
 
 #extension GL_GOOGLE_include_directive: require
 
-#include "../Common/ColorTransformations.glsl"
+#include "../Common/GaussiansStructs.glsl"
 
 layout (local_size_x = 16, local_size_y = 16) in;
 
 // SBO
-struct GaussianData
-{
-	vec4 position;
-	vec4 scale;
-};
 layout(binding = 0) readonly buffer GaussiansBuffer
 {
 	GaussianData gaussians[];

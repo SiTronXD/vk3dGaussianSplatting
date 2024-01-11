@@ -107,6 +107,22 @@ void Renderer::initVulkan()
 		"Resources/Shaders/DeferredLight.comp.spv"
 	);
 
+	// Init sort list compute pipeline
+	this->initSortListPipelineLayout.createPipelineLayout(
+		this->device,
+		{
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
+		},
+		VK_SHADER_STAGE_COMPUTE_BIT,
+		sizeof(InitSortListPCD)
+	);
+	this->initSortListPipeline.createComputePipeline(
+		this->device,
+		this->initSortListPipelineLayout,
+		"Resources/Shaders/InitSortList.comp.spv"
+	);
+
 	// Sort gaussians compute pipeline
 	this->sortGaussiansPipelineLayout.createPipelineLayout(
 		this->device,
@@ -259,6 +275,8 @@ void Renderer::cleanup()
 	this->renderGaussiansPipelineLayout.cleanup();
 	this->sortGaussiansPipeline.cleanup();
 	this->sortGaussiansPipelineLayout.cleanup();
+	this->initSortListPipeline.cleanup();
+	this->initSortListPipelineLayout.cleanup();
 	this->deferredLightPipeline.cleanup();
 	this->deferredLightPipelineLayout.cleanup();
 	
@@ -630,6 +648,11 @@ void Renderer::recordCommandBuffer(
 	);
 #endif
 
+	this->computeInitSortList(
+		commandBuffer,
+		scene.getCamera()
+	);
+
 	this->computeSortGaussians(
 		commandBuffer
 	);
@@ -730,7 +753,7 @@ void Renderer::initForScene(Scene& scene)
 
 	// Gaussians data
 	std::vector<GaussianData> gaussiansData;
-	for (int i = 0; i < 4; ++i) 
+	for (int i = 0; i < 16; ++i) 
 	{
 		GaussianData gaussian0{};
 		gaussian0.position = glm::vec4(0.0f + (float) i, 3.0f, 0.0f, 0.0f);

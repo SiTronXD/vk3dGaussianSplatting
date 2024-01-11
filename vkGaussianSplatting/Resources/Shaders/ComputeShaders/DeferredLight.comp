@@ -2,7 +2,6 @@
 
 #extension GL_GOOGLE_include_directive: require
 
-// LOCAL_SIZE has to be >= MAX_RSM_SIZE
 #define LOCAL_SIZE 16
 
 #define MAX_REFLECTION_LOD (8.0f - 1.0f)
@@ -26,7 +25,6 @@ layout(push_constant) uniform PushConstantData
 void main()
 {
 	uvec2 index = gl_GlobalInvocationID.xy;
-	uvec2 localIndex = gl_LocalInvocationID.xy;
 	
 	// Make sure compute work is within bounds
 	if(index.x >= pc.resolution.x || index.y >= pc.resolution.y)

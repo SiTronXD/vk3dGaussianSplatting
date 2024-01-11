@@ -47,6 +47,7 @@ class Renderer
 private:
 	const float WAIT_ELAPSED_FRAMES_FOR_AVG = 500.0f;
 
+	const uint32_t INIT_LIST_WORK_GROUP_SIZE = 32;
 	const uint32_t BMS_WORK_GROUP_SIZE = 8;
 
 	VulkanInstance instance;
@@ -82,6 +83,9 @@ private:
 	// Compute
 	PipelineLayout deferredLightPipelineLayout;
 	Pipeline deferredLightPipeline;
+
+	PipelineLayout initSortListPipelineLayout;
+	Pipeline initSortListPipeline;
 
 	PipelineLayout sortGaussiansPipelineLayout;
 	Pipeline sortGaussiansPipeline;
@@ -144,6 +148,7 @@ private:
 	void renderDeferredScene(CommandBuffer& commandBuffer, Scene& scene);
 	void computeDeferredLight(CommandBuffer& commandBuffer, const glm::vec3& camPos);
 	void renderImgui(CommandBuffer& commandBuffer, ImDrawData* imguiDrawData);
+	void computeInitSortList(CommandBuffer& commandBuffer, const Camera& camera);
 	void computeSortGaussians(CommandBuffer& commandBuffer);
 	void computeRenderGaussians(CommandBuffer& commandBuffer, uint32_t imageIndex);
 

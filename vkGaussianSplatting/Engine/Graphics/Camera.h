@@ -28,6 +28,9 @@ private:
 	void recalculate();
 
 public:
+	const float NEAR_PLANE = 0.1f;
+	const float FAR_PLANE = 100.0f;
+
 	Camera();
 	~Camera();
 

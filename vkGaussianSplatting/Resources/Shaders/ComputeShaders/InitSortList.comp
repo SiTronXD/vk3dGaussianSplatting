@@ -1,0 +1,50 @@
+#version 450
+
+#extension GL_GOOGLE_include_directive: require
+
+#include "../Common/GaussiansStructs.glsl"
+
+#define LOCAL_SIZE 32
+
+// 2^32 - 1
+#define MAX_UINT32 4294967295u
+
+layout (local_size_x = LOCAL_SIZE, local_size_y = 1) in;
+
+// SBO
+layout(binding = 0) readonly buffer GaussiansBuffer
+{
+	GaussianData gaussians[];
+} gaussiansBuffer;
+
+// SBO
+layout(binding = 1) buffer GaussiansSortListBuffer
+{
+	GaussianSortData sortData[];
+} listBuffer;
+
+// Push constant
+layout(push_constant) uniform PushConstantData
+{
+	mat4 viewMat;
+	vec4 clipPlanes; // vec4(nearPlane, farPlane, numGaussians, 0)
+} pc;
+
+void main()
+{
+	uint threadIndex = gl_GlobalInvocationID.x;
+	uint numGaussians = uint(pc.clipPlanes.z + 0.5f);
+	
+	// Make sure compute work is within bounds
+	if(threadIndex >= numGaussians) 
+		return;
+
+	vec4 viewSpacePos = pc.viewMat * vec4(gaussiansBuffer.gaussians[threadIndex].position.xyz, 1.0f);
+	float normalizedDepth = (-viewSpacePos.z - pc.clipPlanes.x) / (pc.clipPlanes.y - pc.clipPlanes.x);
+	normalizedDepth = clamp(normalizedDepth, 0.0f, 1.0f);
+
+	uint key = uint(normalizedDepth * float(MAX_UINT32));
+
+	listBuffer.sortData[threadIndex].num.x = key;
+	listBuffer.sortData[threadIndex].num.y = threadIndex;
+}

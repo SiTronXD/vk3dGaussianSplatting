@@ -1,5 +1,9 @@
 #version 450
 
+#extension GL_GOOGLE_include_directive: require
+
+#include "../Common/GaussiansStructs.glsl"
+
 // This has to match the BMS_WORK_GROUP_SIZE in Renderer.h
 #define WORK_GROUP_SIZE 8
 
@@ -11,10 +15,6 @@
 layout (local_size_x = WORK_GROUP_SIZE, local_size_y = 1) in;
 
 // SBO
-struct GaussianSortData
-{
-	uvec4 num; // uvec4(num, 0, 0, 0)
-};
 layout(binding = 0) buffer GaussiansSortListBuffer
 {
 	GaussianSortData sortData[];

@@ -292,6 +292,14 @@
     <CustomBuild Include="Resources\Shaders\ComputeShaders\BitonicMergeSort.comp">
       <FileType>Document</FileType>
     </CustomBuild>
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\InitSortList.comp">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <None Include="Resources\Shaders\Common\GaussiansStructs.glsl">
+      <FileType>Document</FileType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </None>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
