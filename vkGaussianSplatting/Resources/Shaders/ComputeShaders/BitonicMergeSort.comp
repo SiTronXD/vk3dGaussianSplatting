@@ -42,11 +42,11 @@ void localCompareAndSwap(uvec2 id)
 
 void globalCompareAndSwap(uvec2 id)
 {
-	if(listBuffer.sortData[id.x].num.x > listBuffer.sortData[id.y].num.x)
+	if(listBuffer.sortData[id.x].data.x > listBuffer.sortData[id.y].data.x)
 	{
-		uvec2 temp = listBuffer.sortData[id.x].num.xy;
-		listBuffer.sortData[id.x].num.xy = listBuffer.sortData[id.y].num.xy;
-		listBuffer.sortData[id.y].num.xy = temp;
+		uvec2 temp = listBuffer.sortData[id.x].data.xy;
+		listBuffer.sortData[id.x].data.xy = listBuffer.sortData[id.y].data.xy;
+		listBuffer.sortData[id.y].data.xy = temp;
 	}
 }
 
@@ -144,8 +144,8 @@ void main()
 	// (otherwise work directly in buffer memory)
 	if(algType <= ALG_LOCAL_DISPERSE)
 	{
-		localValues[t * 2]		= listBuffer.sortData[(offset + t) * 2].num.xy;
-		localValues[t * 2 + 1]	= listBuffer.sortData[(offset + t) * 2 + 1].num.xy;
+		localValues[t * 2]		= listBuffer.sortData[(offset + t) * 2].data.xy;
+		localValues[t * 2 + 1]	= listBuffer.sortData[(offset + t) * 2 + 1].data.xy;
 	}
 
 	switch(algType) 
@@ -172,7 +172,7 @@ void main()
 	{
 		barrier();
 
-		listBuffer.sortData[(offset + t) * 2].num.xy		= localValues[t * 2];
-		listBuffer.sortData[(offset + t) * 2 + 1].num.xy	= localValues[t * 2 + 1];
+		listBuffer.sortData[(offset + t) * 2].data.xy		= localValues[t * 2];
+		listBuffer.sortData[(offset + t) * 2 + 1].data.xy	= localValues[t * 2 + 1];
 	}
 }

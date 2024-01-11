@@ -51,9 +51,10 @@ struct GaussianData
 {
 	glm::vec4 position; // vec4(x, y, z, 0.0f)
 	glm::vec4 scale; // vec4(x, y, z, 0.0f)
+	glm::vec4 color; // TODO: remove once SH are implemented
 };
 
 struct GaussianSortData
 {
-	glm::uvec4 num; // uvec4(num, 0, 0, 0)
+	glm::uvec4 data; // uvec4(sortKey, gaussianIndex, 0, 0)
 };

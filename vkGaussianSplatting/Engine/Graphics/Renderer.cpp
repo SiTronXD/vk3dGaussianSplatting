@@ -143,6 +143,7 @@ void Renderer::initVulkan()
 		this->device,
 		{
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 
@@ -714,8 +715,7 @@ Renderer::Renderer()
 #endif
 
 	vmaAllocator(nullptr),
-	numGaussians(0),
-	numSortElements(0)
+	numGaussians(0)
 {
 }
 
@@ -755,11 +755,17 @@ void Renderer::initForScene(Scene& scene)
 	std::vector<GaussianData> gaussiansData;
 	for (int i = 0; i < 16; ++i) 
 	{
-		GaussianData gaussian0{};
-		gaussian0.position = glm::vec4(0.0f + (float) i, 3.0f, 0.0f, 0.0f);
-		gaussian0.scale = glm::vec4(0.1f, 0.2f, 0.3f, 0.0f);
+		GaussianData gaussian{};
+		gaussian.position = glm::vec4(0.0f + (float) i, 3.0f, 0.0f, 0.0f);
+		gaussian.scale = glm::vec4(0.1f, 0.2f, 0.3f, 0.0f);
+		gaussian.color = glm::vec4(
+			(rand() % 10000) / 10000.0f,
+			(rand() % 10000) / 10000.0f,
+			(rand() % 10000) / 10000.0f,
+			1.0f
+		);
 
-		gaussiansData.push_back(gaussian0);
+		gaussiansData.push_back(gaussian);
 	}
 
 	// Gaussians SBO
@@ -772,31 +778,12 @@ void Renderer::initForScene(Scene& scene)
 	this->numGaussians = (uint32_t) gaussiansData.size();
 
 	// Gaussians list SBO for sorting
-	std::vector<GaussianSortData> sortElements =
-	{
-		{ glm::uvec4( 5, 0, 0, 0) },
-		{ glm::uvec4( 2, 0, 0, 0) },
-		{ glm::uvec4( 1, 0, 0, 0) },
-		{ glm::uvec4(12, 0, 0, 0) },
-		{ glm::uvec4( 3, 0, 0, 0) },
-		{ glm::uvec4(11, 0, 0, 0) },
-		{ glm::uvec4( 6, 0, 0, 0) },
-		{ glm::uvec4( 4, 0, 0, 0) },
-		{ glm::uvec4(10, 0, 0, 0) },
-		{ glm::uvec4( 0, 0, 0, 0) },
-		{ glm::uvec4(14, 0, 0, 0) },
-		{ glm::uvec4( 7, 0, 0, 0) },
-		{ glm::uvec4( 8, 0, 0, 0) },
-		{ glm::uvec4(13, 0, 0, 0) },
-		{ glm::uvec4( 9, 0, 0, 0) },
-		{ glm::uvec4(15, 0, 0, 0) }
-	};
+	std::vector<GaussianSortData> sortData(this->numGaussians); // Dummy data
 	this->gaussiansSortListSBO.createGpuBuffer(
 		this->gfxAllocContext,
-		sizeof(sortElements[0]) * sortElements.size(),
-		sortElements.data()
+		sizeof(sortData[0]) * sortData.size(),
+		sortData.data()
 	);
-	this->numSortElements = (uint32_t) sortElements.size();
 }
 
 void Renderer::setWindow(Window& window)

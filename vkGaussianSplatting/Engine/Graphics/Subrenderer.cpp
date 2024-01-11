@@ -432,17 +432,17 @@ void Renderer::computeInitSortList(
 
 	// Run compute shader
 	commandBuffer.dispatch(
-		(this->numSortElements + INIT_LIST_WORK_GROUP_SIZE - 1) / INIT_LIST_WORK_GROUP_SIZE
+		(this->numGaussians + INIT_LIST_WORK_GROUP_SIZE - 1) / INIT_LIST_WORK_GROUP_SIZE
 	);
 }
 
 void Renderer::computeSortGaussians(CommandBuffer& commandBuffer)
 {
 	// Make sure number of elements is power of two
-	assert((uint32_t)(this->numSortElements & (this->numSortElements - 1)) == 0u);
+	assert((uint32_t)(this->numGaussians & (this->numGaussians - 1)) == 0u);
 
 	// Make sure number of elements is large enough
-	assert(this->numSortElements >= BMS_WORK_GROUP_SIZE * 2);
+	assert(this->numGaussians >= BMS_WORK_GROUP_SIZE * 2);
 
 	commandBuffer.bufferMemoryBarrier(
 		VK_ACCESS_SHADER_WRITE_BIT,
@@ -483,7 +483,7 @@ void Renderer::computeSortGaussians(CommandBuffer& commandBuffer)
 
 	h *= 2;
 
-	for ( ; h <= this->numSortElements; h *= 2)
+	for ( ; h <= this->numGaussians; h *= 2)
 	{
 		this->dispatchBms(
 			commandBuffer,
@@ -556,29 +556,35 @@ void Renderer::computeRenderGaussians(
 	inputGaussiansInfo.range = this->gaussiansSBO.getBufferSize();
 
 	// Binding 1
+	VkDescriptorBufferInfo inputGaussiansSortListInfo{};
+	inputGaussiansSortListInfo.buffer = this->gaussiansSortListSBO.getVkBuffer();
+	inputGaussiansSortListInfo.range = this->gaussiansSortListSBO.getBufferSize();
+
+	// Binding 2
 	VkDescriptorBufferInfo inputCamUboInfo{};
 	inputCamUboInfo.buffer = this->gaussiansCamUBO.getVkBuffer();
 	inputCamUboInfo.range = this->gaussiansCamUBO.getBufferSize();
 
-	// Binding 2
+	// Binding 3
 	VkDescriptorImageInfo inputImageInfo{};
 	inputImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 	inputImageInfo.imageView = this->swapchain.getHdrTexture().getVkImageView();
 
-	// Binding 3
+	// Binding 4
 	VkDescriptorImageInfo outputImageInfo{};
 	outputImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 	outputImageInfo.imageView = this->swapchain.getVkImageView(imageIndex);
 
 	// Descriptor set
-	std::array<VkWriteDescriptorSet, 4> computeWriteDescriptorSets
+	std::array<VkWriteDescriptorSet, 5> computeWriteDescriptorSets
 	{
 		DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansInfo),
+		DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansSortListInfo),
 
-		DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &inputCamUboInfo),
+		DescriptorSet::writeBuffer(2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &inputCamUboInfo),
 
-		DescriptorSet::writeImage(2, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &inputImageInfo),
-		DescriptorSet::writeImage(3, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &outputImageInfo)
+		DescriptorSet::writeImage(3, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &inputImageInfo),
+		DescriptorSet::writeImage(4, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &outputImageInfo)
 	};
 	commandBuffer.pushDescriptorSet(
 		this->renderGaussiansPipelineLayout,
@@ -634,7 +640,7 @@ void Renderer::dispatchBms(CommandBuffer& commandBuffer, BmsSubAlgorithm subAlgo
 	// Run compute shader
 	// Divide workload by 2, since 1 thread works on pairs of elements
 	commandBuffer.dispatch(
-		this->numSortElements / BMS_WORK_GROUP_SIZE / 2
+		this->numGaussians / BMS_WORK_GROUP_SIZE / 2
 	);
 
 	commandBuffer.bufferMemoryBarrier(

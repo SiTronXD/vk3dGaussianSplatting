@@ -117,7 +117,6 @@ private:
 	StorageBuffer gaussiansSortListSBO;
 
 	uint32_t numGaussians;
-	uint32_t numSortElements; // Todo: replace with numGaussians once sorting is completely implemented
 
 	Window* window;
 	ResourceManager* resourceManager;

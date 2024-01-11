@@ -12,15 +12,21 @@ layout(binding = 0) readonly buffer GaussiansBuffer
 	GaussianData gaussians[];
 } gaussiansBuffer;
 
+// SBO
+layout(binding = 1) buffer GaussiansSortListBuffer
+{
+	GaussianSortData sortData[];
+} listBuffer;
+
 // UBO
-layout(binding = 1) uniform UniformBufferObject 
+layout(binding = 2) uniform UniformBufferObject 
 {
 	mat4 viewMat;
 	mat4 projMat;
 } ubo;
 
-layout (binding = 2, rgba16f) uniform readonly image2D hdrImage;
-layout (binding = 3, rgba8) uniform image2D swapchainImage;
+layout (binding = 3, rgba16f) uniform readonly image2D hdrImage;
+layout (binding = 4, rgba8) uniform image2D swapchainImage;
 
 // Push constant
 layout(push_constant) uniform PushConstantData
@@ -59,11 +65,13 @@ void main()
 	// Loop through gaussians and render them
 	for(int i = 0; i < numGaussians; ++i)
 	{
+		uint gaussianIndex = listBuffer.sortData[i].data.y;
+
 		// Gaussian	data
 		float gAlpha = 1.0f; // TODO: should be a property part of the gaussian buffer
-		vec3 gColor = vec3(1.0f); // TODO: should be a property part of the gaussian buffer (SH)
-		vec3 gScale = gaussiansBuffer.gaussians[i].scale.xyz;
-		vec3 gPosW = gaussiansBuffer.gaussians[i].position.xyz;
+		vec3 gColor = gaussiansBuffer.gaussians[gaussianIndex].color.xyz; // TODO: should eventually use SH
+		vec3 gScale = gaussiansBuffer.gaussians[gaussianIndex].scale.xyz;
+		vec3 gPosW = gaussiansBuffer.gaussians[gaussianIndex].position.xyz;
 		vec4 gPosV = viewMat * vec4(gPosW, 1.0f);
 
 		// "Frustum culling"
@@ -117,8 +125,6 @@ void main()
 				// Apply gaussian
 				color += Ti * alpha * gColor;
 				Ti = nextT;
-
-				//color += length(d) < 20.0f ? vec3(1.0f) : vec3(0.0f);
 			}
 		}
 	}

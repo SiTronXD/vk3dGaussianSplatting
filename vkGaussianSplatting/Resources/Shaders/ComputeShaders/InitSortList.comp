@@ -45,6 +45,6 @@ void main()
 
 	uint key = uint(normalizedDepth * float(MAX_UINT32));
 
-	listBuffer.sortData[threadIndex].num.x = key;
-	listBuffer.sortData[threadIndex].num.y = threadIndex;
+	listBuffer.sortData[threadIndex].data.x = key;
+	listBuffer.sortData[threadIndex].data.y = threadIndex;
 }
