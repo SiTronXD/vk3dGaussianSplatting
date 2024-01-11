@@ -204,42 +204,11 @@ void Swapchain::createSwapchain(
 
 void Swapchain::createFramebuffers()
 {
-	// Deferred outputs
-	this->deferredPositionTexture.createAsRenderableTexture(
-		*this->gfxAllocContext,
-		this->getWidth(),
-		this->getHeight(),
-		Swapchain::DEFERRED_POSITION_FORMAT,
-		VK_IMAGE_USAGE_STORAGE_BIT
-	);
-	this->deferredNormalTexture.createAsRenderableTexture(
-		*this->gfxAllocContext,
-		this->getWidth(),
-		this->getHeight(),
-		Swapchain::DEFERRED_NORMAL_FORMAT,
-		VK_IMAGE_USAGE_STORAGE_BIT
-	);
-	this->deferredBrdfIndexTexture.createAsRenderableTexture(
-		*this->gfxAllocContext,
-		this->getWidth(),
-		this->getHeight(),
-		Swapchain::DEFERRED_BRDF_INDEX_FORMAT,
-		VK_IMAGE_USAGE_STORAGE_BIT
-	);
-
-	// Create HDR/depth textures
-	this->hdrTexture.createAsRenderableTexture(
-		*this->gfxAllocContext,
-		this->getWidth(),
-		this->getHeight(),
-		Swapchain::HDR_FORMAT,
-		VK_IMAGE_USAGE_STORAGE_BIT
-	);
-	this->depthTexture.createAsDepthTexture(
+	/*this->depthTexture.createAsDepthTexture(
 		*this->gfxAllocContext,
 		this->getWidth(),
 		this->getHeight()
-	);
+	);*/
 }
 
 void Swapchain::recreate()
@@ -280,9 +249,5 @@ void Swapchain::cleanup()
 
 void Swapchain::cleanupFramebuffers()
 {
-	this->deferredPositionTexture.cleanup();
-	this->deferredNormalTexture.cleanup();
-	this->deferredBrdfIndexTexture.cleanup();
-	this->hdrTexture.cleanup();
-	this->depthTexture.cleanup();
+	//this->depthTexture.cleanup();
 }

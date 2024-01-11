@@ -4,11 +4,11 @@
 #include "Texture/TextureCube.h"
 #include "../Components.h"
 
-void Renderer::renderImgui(CommandBuffer& commandBuffer, ImDrawData* imguiDrawData)
+void Renderer::renderImgui(CommandBuffer& commandBuffer, ImDrawData* imguiDrawData, uint32_t imageIndex)
 {
 	// Imgui using dynamic rendering
 	VkRenderingAttachmentInfo imguiColorAttachment{ VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO };
-	imguiColorAttachment.imageView = this->swapchain.getHdrTexture().getVkImageView();
+	imguiColorAttachment.imageView = this->swapchain.getVkImageView(imageIndex);
 	imguiColorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 	imguiColorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 	imguiColorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -172,22 +172,9 @@ void Renderer::computeRenderGaussians(
 	CommandBuffer& commandBuffer,
 	uint32_t imageIndex)
 {
-	// Transition HDR and swapchain image
-	VkImageMemoryBarrier2 renderGaussiansMemoryBarriers[2] =
+	// Transition swapchain image layout
+	std::array<VkImageMemoryBarrier2, 1> renderGaussiansMemoryBarriers =
 	{
-		// HDR
-		PipelineBarrier::imageMemoryBarrier2(
-			VK_ACCESS_SHADER_WRITE_BIT,
-			VK_ACCESS_SHADER_READ_BIT,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			VK_IMAGE_LAYOUT_GENERAL,
-			VK_IMAGE_LAYOUT_GENERAL,
-			this->swapchain.getHdrTexture().getVkImage(),
-			VK_IMAGE_ASPECT_COLOR_BIT
-		),
-
-		// Swapchain image
 		PipelineBarrier::imageMemoryBarrier2(
 			VK_ACCESS_NONE,
 			VK_ACCESS_SHADER_WRITE_BIT,
@@ -199,7 +186,10 @@ void Renderer::computeRenderGaussians(
 			VK_IMAGE_ASPECT_COLOR_BIT
 		)
 	};
-	commandBuffer.imageMemoryBarrier(renderGaussiansMemoryBarriers, 2);
+	commandBuffer.imageMemoryBarrier(
+		renderGaussiansMemoryBarriers.data(), 
+		renderGaussiansMemoryBarriers.size()
+	);
 
 	// Compute pipeline
 	commandBuffer.bindPipeline(this->renderGaussiansPipeline);
@@ -293,7 +283,7 @@ void Renderer::dispatchBms(CommandBuffer& commandBuffer, BmsSubAlgorithm subAlgo
 
 	commandBuffer.bufferMemoryBarrier(
 		VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
-		VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+		VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, // TODO: should only be read after last dispatch
 		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 		this->gaussiansSortListSBO.getVkBuffer(),

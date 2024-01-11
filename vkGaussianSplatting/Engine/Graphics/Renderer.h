@@ -126,7 +126,7 @@ private:
 	void resizeWindow();
 	void cleanupImgui();
 
-	void renderImgui(CommandBuffer& commandBuffer, ImDrawData* imguiDrawData);
+	void renderImgui(CommandBuffer& commandBuffer, ImDrawData* imguiDrawData, uint32_t imageIndex);
 	void computeInitSortList(CommandBuffer& commandBuffer, const Camera& camera);
 	void computeSortGaussians(CommandBuffer& commandBuffer);
 	void computeRenderGaussians(CommandBuffer& commandBuffer, uint32_t imageIndex);

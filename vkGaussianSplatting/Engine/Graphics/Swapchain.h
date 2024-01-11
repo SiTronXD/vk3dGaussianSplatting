@@ -18,13 +18,7 @@ private:
 	std::vector<VkImage> images;
 	std::vector<VkImageView> imageViews;
 
-	// Deferred G-buffers
-	Texture2D deferredPositionTexture;
-	Texture2D deferredNormalTexture;
-	Texture2D deferredBrdfIndexTexture;
-
-	Texture2D hdrTexture;
-	Texture2D depthTexture;
+	//Texture2D depthTexture;
 
 	uint32_t minImageCount;
 
@@ -45,11 +39,6 @@ private:
 		VkExtent2D& output);
 
 public:
-	static const VkFormat DEFERRED_POSITION_FORMAT = VK_FORMAT_R32G32B32A32_SFLOAT;
-	static const VkFormat DEFERRED_NORMAL_FORMAT = VK_FORMAT_R32G32B32A32_SFLOAT;
-	static const VkFormat DEFERRED_BRDF_INDEX_FORMAT = VK_FORMAT_R8_UINT;
-	static const VkFormat HDR_FORMAT = VK_FORMAT_R16G16B16A16_SFLOAT;
-
 	Swapchain();
 	~Swapchain();
 
@@ -74,9 +63,5 @@ public:
 	inline const uint32_t& getMinImageCount() const { return this->minImageCount; }
 	inline const size_t getImageCount() const { return this->images.size(); }
 
-	inline const Texture& getDeferredPositionTexture() const { return this->deferredPositionTexture; }
-	inline const Texture& getDeferredNormalTexture() const { return this->deferredNormalTexture; }
-	inline const Texture& getDeferredBrdfTexture() const { return this->deferredBrdfIndexTexture; }
-	inline const Texture& getHdrTexture() const { return this->hdrTexture; }
-	inline const Texture& getDepthTexture() const { return this->depthTexture; }
+	//inline const Texture& getDepthTexture() const { return this->depthTexture; }
 };

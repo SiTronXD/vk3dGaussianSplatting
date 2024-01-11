@@ -165,7 +165,7 @@ void Renderer::initImgui()
 	this->imguiPipeline.createImguiPipeline(
 		this->device,
 		this->imguiPipelineLayout,
-		this->swapchain.getHdrTexture().getVkFormat(),
+		this->swapchain.getVkFormat(),
 		Texture::getDepthBufferFormat()
 	);
 
