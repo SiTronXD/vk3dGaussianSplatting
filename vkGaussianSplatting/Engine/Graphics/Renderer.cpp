@@ -9,6 +9,8 @@
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
 
+#include <happly.h>
+
 const std::vector<const char*> validationLayers =
 {
 	"VK_LAYER_KHRONOS_validation"
@@ -683,14 +685,58 @@ void Renderer::init(ResourceManager& resourceManager)
 	this->initImgui();
 }
 
-void Renderer::initForScene(Scene& scene)
+void Renderer::loadGaussiansFromFile(std::vector<GaussianData>& outputGaussianData)
 {
+	// Load ply file
+	happly::PLYData plyData("D:/DownloadedAssets/GaussianFiles/bicycle/point_cloud/iteration_7000/point_cloud.ply");
+
+	std::vector<std::string> names = plyData.getElementNames();
+	std::vector<float> gPositionsX = plyData.getElement(names[0]).getProperty<float>("x");
+	std::vector<float> gPositionsY = plyData.getElement(names[0]).getProperty<float>("y");
+	std::vector<float> gPositionsZ = plyData.getElement(names[0]).getProperty<float>("z");
+
+	uint32_t realNumGaussians = (uint32_t)gPositionsX.size();
+
+	this->numGaussians = 1024 * 4;
+	outputGaussianData.resize(this->numGaussians);
+	for (uint32_t i = 0; i < this->numGaussians; ++i)
+	{
+		uint32_t randomIndex = rand() % gPositionsX.size();
+
+		GaussianData gaussian{};
+		gaussian.position = glm::vec4(
+			gPositionsX[randomIndex],
+			gPositionsY[randomIndex] * -1.0f,
+			gPositionsZ[randomIndex],
+			0.0f);
+		gaussian.scale = glm::vec4(0.01f, 0.01f, 0.01f, 0.0f);
+		gaussian.color = glm::vec4(
+			(rand() % 10000) / 10000.0f,
+			(rand() % 10000) / 10000.0f,
+			(rand() % 10000) / 10000.0f,
+			1.0f
+		);
+
+		// Apply
+		outputGaussianData[i] = gaussian;
+
+		// Remove
+		gPositionsX.erase(gPositionsX.begin() + randomIndex);
+		gPositionsY.erase(gPositionsY.begin() + randomIndex);
+		gPositionsZ.erase(gPositionsZ.begin() + randomIndex);
+	}
+}
+
+void Renderer::loadTestGaussians(std::vector<GaussianData>& outputGaussianData)
+{
+	this->numGaussians = 16;
+
 	// Gaussians data
-	std::vector<GaussianData> gaussiansData;
-	for (int i = 0; i < 16; ++i) 
+	outputGaussianData.resize(this->numGaussians);
+	for (int i = 0; i < this->numGaussians; ++i)
 	{
 		GaussianData gaussian{};
-		gaussian.position = glm::vec4(-8.0f + (float) i, 0.0f, -1.0f, 0.0f);
+		gaussian.position = glm::vec4( -8.0f + (float) i, 0.0f, -1.0f, 0.0f);
 		gaussian.scale = glm::vec4(0.1f, 0.2f, 0.3f, 0.0f);
 		gaussian.color = glm::vec4(
 			(rand() % 10000) / 10000.0f,
@@ -699,8 +745,16 @@ void Renderer::initForScene(Scene& scene)
 			1.0f
 		);
 
-		gaussiansData.push_back(gaussian);
+		outputGaussianData[i] = gaussian;
 	}
+}
+
+void Renderer::initForScene(Scene& scene)
+{
+	std::vector<GaussianData> gaussiansData;
+
+	this->loadGaussiansFromFile(gaussiansData);
+	//this->loadTestGaussians(gaussiansData);
 
 	// Gaussians SBO
 	this->gaussiansSBO.createGpuBuffer(
@@ -708,7 +762,6 @@ void Renderer::initForScene(Scene& scene)
 		sizeof(gaussiansData[0]) * gaussiansData.size(),
 		gaussiansData.data()
 	);
-
 	this->numGaussians = (uint32_t) gaussiansData.size();
 
 	// Gaussians list SBO for sorting

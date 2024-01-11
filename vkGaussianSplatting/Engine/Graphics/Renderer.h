@@ -135,6 +135,9 @@ private:
 
 	inline const VkDevice& getVkDevice() const { return this->device.getVkDevice(); }
 
+	void loadGaussiansFromFile(std::vector<GaussianData>& outputGaussianData);
+	void loadTestGaussians(std::vector<GaussianData>& outputGaussianData);
+
 public:
 	bool framebufferResized = false;
 
