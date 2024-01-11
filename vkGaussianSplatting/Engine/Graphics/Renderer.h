@@ -24,7 +24,6 @@
 #include "Camera.h"
 #include "Mesh.h"
 #include "GfxAllocContext.h"
-#include "GfxResourceManager.h"
 #include "BRDFData.h"
 
 // For imgui
@@ -80,16 +79,11 @@ private:
 	float avgCpuFrameTimeMs;
 #endif
 
-	// Compute
-	PipelineLayout deferredLightPipelineLayout;
-	Pipeline deferredLightPipeline;
-
+	// Pipelines and layouts
 	PipelineLayout initSortListPipelineLayout;
 	Pipeline initSortListPipeline;
-
 	PipelineLayout sortGaussiansPipelineLayout;
 	Pipeline sortGaussiansPipeline;
-
 	PipelineLayout renderGaussiansPipelineLayout;
 	Pipeline renderGaussiansPipeline;
 
@@ -107,11 +101,6 @@ private:
 	SemaphoreArray renderGaussiansFinishedSemaphores;
 	FenceArray inFlightFences;
 
-
-	// TODO: remove once gaussan rendering pipeline is finished
-	UniformBuffer camUBO;
-
-
 	UniformBuffer gaussiansCamUBO;
 	StorageBuffer gaussiansSBO;
 	StorageBuffer gaussiansSortListSBO;
@@ -120,8 +109,6 @@ private:
 
 	Window* window;
 	ResourceManager* resourceManager;
-
-	GfxResourceManager gfxResManager;
 
 	void initVulkan();
 	void initVma();
@@ -139,13 +126,6 @@ private:
 	void resizeWindow();
 	void cleanupImgui();
 
-	void renderMeshWithBrdf(
-		CommandBuffer& commandBuffer, 
-		const Mesh& mesh, 
-		const Material& material,
-		PCD& pushConstantData);
-	void renderDeferredScene(CommandBuffer& commandBuffer, Scene& scene);
-	void computeDeferredLight(CommandBuffer& commandBuffer, const glm::vec3& camPos);
 	void renderImgui(CommandBuffer& commandBuffer, ImDrawData* imguiDrawData);
 	void computeInitSortList(CommandBuffer& commandBuffer, const Camera& camera);
 	void computeSortGaussians(CommandBuffer& commandBuffer);

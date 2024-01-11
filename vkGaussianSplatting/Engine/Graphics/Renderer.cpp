@@ -81,32 +81,6 @@ void Renderer::initVulkan()
 	this->queryPools.create(this->device, GfxSettings::FRAMES_IN_FLIGHT, 9);
 #endif
 
-	// Deferred light compute pipeline
-	this->deferredLightPipelineLayout.createPipelineLayout(
-		this->device,
-		{
-			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT },
-
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
-
-			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT }
-		},
-		VK_SHADER_STAGE_COMPUTE_BIT,
-		sizeof(DeferredLightPCD)
-	);
-	this->deferredLightPipeline.createComputePipeline(
-		this->device,
-		this->deferredLightPipelineLayout,
-		"Resources/Shaders/DeferredLight.comp.spv"
-	);
-
 	// Init sort list compute pipeline
 	this->initSortListPipelineLayout.createPipelineLayout(
 		this->device,
@@ -147,8 +121,7 @@ void Renderer::initVulkan()
 
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 
-			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT }
 		},
 		VK_SHADER_STAGE_COMPUTE_BIT,
 		sizeof(RenderGaussiansPCD)
@@ -161,8 +134,6 @@ void Renderer::initVulkan()
 
 	this->createSyncObjects();
 	this->createCamUbo();
-
-	this->gfxResManager.init(this->gfxAllocContext);
 }
 
 void Renderer::initVma()
@@ -253,14 +224,11 @@ void Renderer::cleanup()
 {
 	this->cleanupImgui();
 
-	this->gfxResManager.cleanup();
-
 	this->swapchain.cleanup();
 
 	this->gaussiansSortListSBO.cleanup();
 	this->gaussiansSBO.cleanup();
 	this->gaussiansCamUBO.cleanup();
-	this->camUBO.cleanup();
 
 	this->imageAvailableSemaphores.cleanup();
 	this->renderGaussiansFinishedSemaphores.cleanup();
@@ -278,8 +246,6 @@ void Renderer::cleanup()
 	this->sortGaussiansPipelineLayout.cleanup();
 	this->initSortListPipeline.cleanup();
 	this->initSortListPipelineLayout.cleanup();
-	this->deferredLightPipeline.cleanup();
-	this->deferredLightPipelineLayout.cleanup();
 	
 	vmaDestroyAllocator(this->vmaAllocator);
 	
@@ -293,10 +259,6 @@ void Renderer::cleanup()
 
 void Renderer::createCamUbo()
 {
-	this->camUBO.createCpuGpuBuffer(
-		this->gfxAllocContext,
-		sizeof(CamUBO)
-	);
 	this->gaussiansCamUBO.createCpuGpuBuffer(
 		this->gfxAllocContext,
 		sizeof(RenderGaussiansUBO)
@@ -480,7 +442,6 @@ void Renderer::draw(Scene& scene)
 #endif
 #endif 
 
-	// TODO: fix this by waiting at the start of a frame
 #ifdef RECORD_GPU_TIMES
 	this->device.waitIdle();
 	this->queryPools.getQueryPoolResults(GfxState::getFrameIndex());
@@ -553,16 +514,6 @@ void Renderer::generateMemoryDump()
 
 void Renderer::updateUniformBuffer(const Camera& camera)
 {
-	// Create ubo struct with matrix data
-	CamUBO camUbo{};
-	camUbo.vp = camera.getProjectionMatrix() * camera.getViewMatrix();
-	camUbo.pos = glm::vec4(camera.getPosition(), 1.0f);
-
-	// Update buffer contents
-	this->camUBO.updateBuffer(&camUbo);
-
-
-
 	RenderGaussiansUBO gaussiansCamUbo{};
 	gaussiansCamUbo.viewMat = camera.getViewMatrix();
 	gaussiansCamUbo.projMat = camera.getProjectionMatrix();
@@ -624,7 +575,7 @@ void Renderer::recordCommandBuffer(
 	);
 #endif
 
-	this->renderDeferredScene(commandBuffer, scene);
+	//this->renderDeferredScene(commandBuffer, scene);
 
 #ifdef RECORD_GPU_TIMES
 	commandBuffer.writeTimestamp(
@@ -639,7 +590,7 @@ void Renderer::recordCommandBuffer(
 	);
 #endif
 
-	this->computeDeferredLight(commandBuffer, scene.getCamera().getPosition());
+	//this->computeDeferredLight(commandBuffer, scene.getCamera().getPosition());
 
 #ifdef RECORD_GPU_TIMES
 	commandBuffer.writeTimestamp(
@@ -658,11 +609,12 @@ void Renderer::recordCommandBuffer(
 		commandBuffer
 	);
 
-	//this->renderImgui(commandBuffer, imguiDrawData);
 	this->computeRenderGaussians(
 		commandBuffer, 
 		imageIndex
 	);
+
+	//this->renderImgui(commandBuffer, imguiDrawData);
 
 #ifdef RECORD_GPU_TIMES
 	commandBuffer.writeTimestamp(
@@ -733,30 +685,12 @@ void Renderer::init(ResourceManager& resourceManager)
 
 void Renderer::initForScene(Scene& scene)
 {
-	// Materials
-	uint32_t whiteTextureId = this->resourceManager->addTexture("Resources/Textures/white.png");
-	auto tView = scene.getRegistry().view<Material>();
-	tView.each([&](Material& material)
-		{
-			// Pipelines for materials
-			material.deferredGeomPipelineIndex = this->gfxResManager.getMaterialPipelineIndex(material);
-		}
-	);
-
-	// Sort materials based on pipeline indices
-	scene.getRegistry().sort<Material>(
-		[](const auto& lhs, const auto& rhs)
-		{
-			return lhs.deferredGeomPipelineIndex < rhs.deferredGeomPipelineIndex;
-		}
-	);
-
 	// Gaussians data
 	std::vector<GaussianData> gaussiansData;
 	for (int i = 0; i < 16; ++i) 
 	{
 		GaussianData gaussian{};
-		gaussian.position = glm::vec4(0.0f + (float) i, 3.0f, 0.0f, 0.0f);
+		gaussian.position = glm::vec4(-8.0f + (float) i, 0.0f, -1.0f, 0.0f);
 		gaussian.scale = glm::vec4(0.1f, 0.2f, 0.3f, 0.0f);
 		gaussian.color = glm::vec4(
 			(rand() % 10000) / 10000.0f,

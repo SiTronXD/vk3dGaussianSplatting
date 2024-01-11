@@ -4,6 +4,8 @@
 
 #include "../Common/GaussiansStructs.glsl"
 
+#define FOV_Y (3.1415f * 0.5f)
+
 layout (local_size_x = 16, local_size_y = 16) in;
 
 // SBO
@@ -25,8 +27,7 @@ layout(binding = 2) uniform UniformBufferObject
 	mat4 projMat;
 } ubo;
 
-layout (binding = 3, rgba16f) uniform readonly image2D hdrImage;
-layout (binding = 4, rgba8) uniform image2D swapchainImage;
+layout (binding = 3, rgba8) uniform image2D swapchainImage;
 
 // Push constant
 layout(push_constant) uniform PushConstantData
@@ -52,12 +53,6 @@ void main()
 
 	vec3 color = vec3(0.0f);
 	float Ti = 1.0f;
-
-	// Overlay 3D scene, for temporary debugging
-	color = imageLoad(hdrImage, ivec2(index)).rgb;
-	color = clamp(color, vec3(0.0f), vec3(1.0f));
-	color = vec3(1.0f) - color;
-	color *= 0.3f;
 
 	const mat4 viewMat = ubo.viewMat;
 	const uint numGaussians = pc.resolution.z;
@@ -97,7 +92,7 @@ void main()
 								viewMat[1][0], viewMat[1][1], viewMat[1][2],
 								viewMat[2][0], viewMat[2][1], viewMat[2][2]);
 	
-			float tanFovY = tan(3.1415f * 0.5f * 0.5f);
+			float tanFovY = tan(FOV_Y * 0.5f);
 			float tanFovX = tanFovY * aspectRatio;
 			float focalX = width / (2.0f * tanFovX);
 			float focalY = height / (2.0f * tanFovY);

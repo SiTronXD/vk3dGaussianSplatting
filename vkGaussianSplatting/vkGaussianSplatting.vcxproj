@@ -130,7 +130,6 @@
     <ClCompile Include="Engine\Graphics\Buffer\UniformBuffer.cpp" />
     <ClCompile Include="Engine\Graphics\Buffer\VertexBuffer.cpp" />
     <ClCompile Include="Engine\Graphics\Camera.cpp" />
-    <ClCompile Include="Engine\Graphics\GfxResourceManager.cpp" />
     <ClCompile Include="Engine\Graphics\GfxSettings.cpp" />
     <ClCompile Include="Engine\Graphics\GfxState.cpp" />
     <ClCompile Include="Engine\Graphics\GpuProperties.cpp" />
@@ -221,7 +220,6 @@
     <ClInclude Include="Engine\Graphics\Buffer\VertexBuffer.h" />
     <ClInclude Include="Engine\Graphics\Camera.h" />
     <ClInclude Include="Engine\Graphics\GfxAllocContext.h" />
-    <ClInclude Include="Engine\Graphics\GfxResourceManager.h" />
     <ClInclude Include="Engine\Graphics\GfxSettings.h" />
     <ClInclude Include="Engine\Graphics\GfxState.h" />
     <ClInclude Include="Engine\Graphics\GpuProperties.h" />
