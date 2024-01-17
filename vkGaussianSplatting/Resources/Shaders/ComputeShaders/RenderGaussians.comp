@@ -20,14 +20,20 @@ layout(binding = 1) buffer GaussiansSortListBuffer
 	GaussianSortData sortData[];
 } listBuffer;
 
+// SBO
+layout(binding = 2) buffer GaussiansCullDataBuffer
+{
+	GaussianCullData data;
+} cullData;
+
 // UBO
-layout(binding = 2) uniform UniformBufferObject 
+layout(binding = 3) uniform UniformBufferObject 
 {
 	mat4 viewMat;
 	mat4 projMat;
 } ubo;
 
-layout (binding = 3, rgba8) uniform image2D swapchainImage;
+layout (binding = 4, rgba8) uniform image2D swapchainImage;
 
 // Push constant
 layout(push_constant) uniform PushConstantData
@@ -55,7 +61,7 @@ void main()
 	float Ti = 1.0f;
 
 	const mat4 viewMat = ubo.viewMat;
-	const uint numGaussians = pc.resolution.z;
+	const uint numGaussians = cullData.data.numGaussiansToRender.x;
 
 	// Loop through gaussians and render them
 	for(int i = 0; i < numGaussians; ++i)
@@ -70,7 +76,7 @@ void main()
 		vec4 gPosV = viewMat * vec4(gPosW, 1.0f);
 
 		// "Frustum culling"
-		if(gPosV.z < 0.0f)
+		//if(gPosV.z < 0.0f)
 		{
 			vec4 gaussianPosScreen = ubo.projMat * gPosV;
 			gaussianPosScreen.xyz /= gaussianPosScreen.w;

@@ -88,6 +88,7 @@ void Renderer::initVulkan()
 		this->device,
 		{
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
 		},
 		VK_SHADER_STAGE_COMPUTE_BIT,
@@ -118,6 +119,7 @@ void Renderer::initVulkan()
 	this->renderGaussiansPipelineLayout.createPipelineLayout(
 		this->device,
 		{
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 
@@ -228,6 +230,7 @@ void Renderer::cleanup()
 
 	this->swapchain.cleanup();
 
+	this->gaussiansCullDataSBO.cleanup();
 	this->gaussiansSortListSBO.cleanup();
 	this->gaussiansSBO.cleanup();
 	this->gaussiansCamUBO.cleanup();
@@ -733,7 +736,7 @@ void Renderer::loadTestGaussians(std::vector<GaussianData>& outputGaussianData)
 
 	// Gaussians data
 	outputGaussianData.resize(this->numGaussians);
-	for (int i = 0; i < this->numGaussians; ++i)
+	for (uint32_t i = 0; i < this->numGaussians; ++i)
 	{
 		GaussianData gaussian{};
 		gaussian.position = glm::vec4( -8.0f + (float) i, 0.0f, -1.0f, 0.0f);
@@ -770,6 +773,14 @@ void Renderer::initForScene(Scene& scene)
 		this->gfxAllocContext,
 		sizeof(sortData[0]) * sortData.size(),
 		sortData.data()
+	);
+
+	// Cull data
+	GaussianCullData dummyCullData{};
+	this->gaussiansCullDataSBO.createGpuBuffer(
+		this->gfxAllocContext,
+		sizeof(GaussianCullData),
+		&dummyCullData
 	);
 }
 

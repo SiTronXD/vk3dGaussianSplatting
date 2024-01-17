@@ -35,3 +35,8 @@ struct GaussianSortData
 {
 	glm::uvec4 data; // uvec4(sortKey, gaussianIndex, 0, 0)
 };
+
+struct GaussianCullData
+{
+	glm::uvec4 numGaussiansToRender; // uvec4(num, 0, 0, 0);
+};

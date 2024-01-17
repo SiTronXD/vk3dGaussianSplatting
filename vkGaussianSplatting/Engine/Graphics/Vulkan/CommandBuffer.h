@@ -5,6 +5,7 @@
 #include "CommandPool.h"
 #include "Pipeline.h"
 
+class Buffer;
 class Device;
 class VertexBuffer;
 class IndexBuffer;
@@ -44,6 +45,7 @@ public:
 	void pushConstant(
 		const PipelineLayout& pipelineLayout,
 		const void* data);
+	void fillBuffer(Buffer& buffer, VkDeviceSize size, uint32_t data);
 	void drawIndexed(uint32_t numIndices, uint32_t firstIndex);
 	void dispatch(uint32_t groupCountX, uint32_t groupCountY = 1, uint32_t groupCountZ = 1);
 	void blit(

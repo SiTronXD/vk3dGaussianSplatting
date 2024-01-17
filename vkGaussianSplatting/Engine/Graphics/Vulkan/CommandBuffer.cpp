@@ -141,6 +141,11 @@ void CommandBuffer::pushConstant(
 	);
 }
 
+void CommandBuffer::fillBuffer(Buffer& buffer, VkDeviceSize size, uint32_t data)
+{
+	vkCmdFillBuffer(this->commandBuffer, buffer.getVkBuffer(), 0, size, data);
+}
+
 void CommandBuffer::drawIndexed(uint32_t numIndices, uint32_t firstIndex)
 {
 	vkCmdDrawIndexed(this->commandBuffer, numIndices, 1, firstIndex, 0, 0);

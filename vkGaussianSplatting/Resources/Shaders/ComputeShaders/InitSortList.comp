@@ -23,6 +23,12 @@ layout(binding = 1) buffer GaussiansSortListBuffer
 	GaussianSortData sortData[];
 } listBuffer;
 
+// SBO
+layout(binding = 2) buffer GaussiansCullDataBuffer
+{
+	GaussianCullData data;
+} cullData;
+
 // Push constant
 layout(push_constant) uniform PushConstantData
 {
@@ -40,11 +46,20 @@ void main()
 		return;
 
 	vec4 viewSpacePos = pc.viewMat * vec4(gaussiansBuffer.gaussians[threadIndex].position.xyz, 1.0f);
+
+	// "Frustum culling"
+	if(viewSpacePos.z > 0.0f)
+		return;
+
+	// Normalized depth
 	float normalizedDepth = (-viewSpacePos.z - pc.clipPlanes.x) / (pc.clipPlanes.y - pc.clipPlanes.x);
 	normalizedDepth = clamp(normalizedDepth, 0.0f, 1.0f);
 
+	// Create key for sorting
 	uint key = uint(normalizedDepth * float(MAX_UINT32));
 
-	listBuffer.sortData[threadIndex].data.x = key;
-	listBuffer.sortData[threadIndex].data.y = threadIndex;
+	// Add gaussian to list
+	uint id = atomicAdd(cullData.data.numGaussiansToRender.x, 1u);
+	listBuffer.sortData[id].data.x = key;
+	listBuffer.sortData[id].data.y = threadIndex;
 }

@@ -11,3 +11,9 @@ struct GaussianSortData
 {
 	uvec4 data; // uvec4(sortKey, gaussianIndex, 0, 0)
 };
+
+// Data modified by culling algorithms
+struct GaussianCullData
+{
+	uvec4 numGaussiansToRender; // uvec4(num, 0, 0, 0)
+};

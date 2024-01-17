@@ -104,6 +104,7 @@ private:
 	UniformBuffer gaussiansCamUBO;
 	StorageBuffer gaussiansSBO;
 	StorageBuffer gaussiansSortListSBO;
+	StorageBuffer gaussiansCullDataSBO;
 
 	uint32_t numGaussians;
 

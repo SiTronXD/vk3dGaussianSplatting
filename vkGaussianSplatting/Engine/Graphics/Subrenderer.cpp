@@ -40,13 +40,43 @@ void Renderer::computeInitSortList(
 	CommandBuffer& commandBuffer, 
 	const Camera& camera)
 {
+	// Reset gaussian sort keys (make sure close sorted gaussians have lower valued keys)
+	commandBuffer.fillBuffer(
+		this->gaussiansSortListSBO,
+		sizeof(GaussianSortData) * this->numGaussians,
+		std::numeric_limits<uint32_t>::max()
+	);
+
+	// Reset gaussian count before culling
+	commandBuffer.fillBuffer(
+		this->gaussiansCullDataSBO,
+		sizeof(GaussianCullData),
+		0
+	);
+
+	std::array<VkBufferMemoryBarrier2, 2> initBufferBarriers =
+	{
+		// Gaussians sort list
+		PipelineBarrier::bufferMemoryBarrier2(
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			this->gaussiansSortListSBO.getVkBuffer(),
+			this->gaussiansSortListSBO.getBufferSize()),
+
+		// Gaussians cull data
+		PipelineBarrier::bufferMemoryBarrier2(
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			this->gaussiansCullDataSBO.getVkBuffer(),
+			this->gaussiansCullDataSBO.getBufferSize()),
+	};
 	commandBuffer.bufferMemoryBarrier(
-		VK_ACCESS_NONE,
-		VK_ACCESS_SHADER_WRITE_BIT,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-		this->gaussiansSortListSBO.getVkBuffer(),
-		this->gaussiansSortListSBO.getBufferSize()
+		initBufferBarriers.data(),
+		(uint32_t) initBufferBarriers.size()
 	);
 
 	// Compute pipeline
@@ -62,11 +92,17 @@ void Renderer::computeInitSortList(
 	outputGaussiansSortInfo.buffer = this->gaussiansSortListSBO.getVkBuffer();
 	outputGaussiansSortInfo.range = this->gaussiansSortListSBO.getBufferSize();
 
-	// Descriptor set
-	std::array<VkWriteDescriptorSet, 2> computeWriteDescriptorSets
+	// Binding 2
+	VkDescriptorBufferInfo outputGaussiansCullInfo{};
+	outputGaussiansCullInfo.buffer = this->gaussiansCullDataSBO.getVkBuffer();
+	outputGaussiansCullInfo.range = this->gaussiansCullDataSBO.getBufferSize();
+
+	// Descriptor sets
+	std::array<VkWriteDescriptorSet, 3> computeWriteDescriptorSets
 	{
 		DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansBufferInfo),
-		DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputGaussiansSortInfo)
+		DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputGaussiansSortInfo),
+		DescriptorSet::writeBuffer(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputGaussiansCullInfo)
 	};
 	commandBuffer.pushDescriptorSet(
 		this->initSortListPipelineLayout,
@@ -188,7 +224,17 @@ void Renderer::computeRenderGaussians(
 	};
 	commandBuffer.imageMemoryBarrier(
 		renderGaussiansMemoryBarriers.data(), 
-		renderGaussiansMemoryBarriers.size()
+		(uint32_t) renderGaussiansMemoryBarriers.size()
+	);
+
+	// Gaussians cull data
+	commandBuffer.bufferMemoryBarrier(
+		VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+		VK_ACCESS_SHADER_READ_BIT,
+		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+		this->gaussiansCullDataSBO.getVkBuffer(),
+		this->gaussiansCullDataSBO.getBufferSize()
 	);
 
 	// Compute pipeline
@@ -205,24 +251,30 @@ void Renderer::computeRenderGaussians(
 	inputGaussiansSortListInfo.range = this->gaussiansSortListSBO.getBufferSize();
 
 	// Binding 2
+	VkDescriptorBufferInfo inputGaussiansCullDataInfo{};
+	inputGaussiansCullDataInfo.buffer = this->gaussiansCullDataSBO.getVkBuffer();
+	inputGaussiansCullDataInfo.range = this->gaussiansCullDataSBO.getBufferSize();
+
+	// Binding 3
 	VkDescriptorBufferInfo inputCamUboInfo{};
 	inputCamUboInfo.buffer = this->gaussiansCamUBO.getVkBuffer();
 	inputCamUboInfo.range = this->gaussiansCamUBO.getBufferSize();
 
-	// Binding 3
+	// Binding 4
 	VkDescriptorImageInfo outputImageInfo{};
 	outputImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 	outputImageInfo.imageView = this->swapchain.getVkImageView(imageIndex);
 
 	// Descriptor set
-	std::array<VkWriteDescriptorSet, 4> computeWriteDescriptorSets
+	std::array<VkWriteDescriptorSet, 5> computeWriteDescriptorSets
 	{
 		DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansInfo),
 		DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansSortListInfo),
+		DescriptorSet::writeBuffer(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansCullDataInfo),
 
-		DescriptorSet::writeBuffer(2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &inputCamUboInfo),
+		DescriptorSet::writeBuffer(3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &inputCamUboInfo),
 
-		DescriptorSet::writeImage(3, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &outputImageInfo)
+		DescriptorSet::writeImage(4, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &outputImageInfo)
 	};
 	commandBuffer.pushDescriptorSet(
 		this->renderGaussiansPipelineLayout,
