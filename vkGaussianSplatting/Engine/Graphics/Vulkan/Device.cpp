@@ -45,7 +45,7 @@ void Device::createDevice(
 	VkPhysicalDeviceFeatures2 deviceFeatures{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
 	deviceFeatures.features.fillModeNonSolid = VK_TRUE;
 	deviceFeatures.features.samplerAnisotropy = VK_TRUE;
-	deviceFeatures.features.shaderFloat64 = VK_TRUE;
+	deviceFeatures.features.shaderInt64 = VK_TRUE;
 
 	// 1.3 device features
 	VkPhysicalDeviceVulkan13Features deviceFeatures13 { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES };

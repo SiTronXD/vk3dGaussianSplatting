@@ -4,8 +4,8 @@
 
 struct InitSortListPCD
 {
-	glm::mat4 viewMat;
 	glm::vec4 clipPlanes; // vec4(nearPlane, farPlane, numGaussians, 0)
+	glm::uvec4 resolution; // uvec4(width, height, 0, 0)
 };
 
 struct SortGaussiansPCD
@@ -18,7 +18,7 @@ struct RenderGaussiansPCD
 	glm::uvec4 resolution; // uvec4(width, height, numGaussians, 0)
 };
 
-struct RenderGaussiansUBO
+struct CamUBO
 {
 	glm::mat4 viewMat;
 	glm::mat4 projMat;
@@ -33,7 +33,7 @@ struct GaussianData
 
 struct GaussianSortData
 {
-	glm::uvec4 data; // uvec4(sortKey, gaussianIndex, 0, 0)
+	glm::uvec4 data; // uvec4(sortKey0, sortKey1, gaussianIndex, 0)
 };
 
 struct GaussianCullData

@@ -83,26 +83,33 @@ void Renderer::computeInitSortList(
 	commandBuffer.bindPipeline(this->initSortListPipeline);
 
 	// Binding 0
+	VkDescriptorBufferInfo inputCamUboInfo{};
+	inputCamUboInfo.buffer = this->camUBO.getVkBuffer();
+	inputCamUboInfo.range = this->camUBO.getBufferSize();
+
+	// Binding 1
 	VkDescriptorBufferInfo inputGaussiansBufferInfo{};
 	inputGaussiansBufferInfo.buffer = this->gaussiansSBO.getVkBuffer();
 	inputGaussiansBufferInfo.range = this->gaussiansSBO.getBufferSize();
 
-	// Binding 1
+	// Binding 2
 	VkDescriptorBufferInfo outputGaussiansSortInfo{};
 	outputGaussiansSortInfo.buffer = this->gaussiansSortListSBO.getVkBuffer();
 	outputGaussiansSortInfo.range = this->gaussiansSortListSBO.getBufferSize();
 
-	// Binding 2
+	// Binding 3
 	VkDescriptorBufferInfo outputGaussiansCullInfo{};
 	outputGaussiansCullInfo.buffer = this->gaussiansCullDataSBO.getVkBuffer();
 	outputGaussiansCullInfo.range = this->gaussiansCullDataSBO.getBufferSize();
 
 	// Descriptor sets
-	std::array<VkWriteDescriptorSet, 3> computeWriteDescriptorSets
+	std::array<VkWriteDescriptorSet, 4> computeWriteDescriptorSets
 	{
-		DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansBufferInfo),
-		DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputGaussiansSortInfo),
-		DescriptorSet::writeBuffer(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputGaussiansCullInfo)
+		DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &inputCamUboInfo),
+
+		DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansBufferInfo),
+		DescriptorSet::writeBuffer(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputGaussiansSortInfo),
+		DescriptorSet::writeBuffer(3, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputGaussiansCullInfo)
 	};
 	commandBuffer.pushDescriptorSet(
 		this->initSortListPipelineLayout,
@@ -113,8 +120,13 @@ void Renderer::computeInitSortList(
 
 	// Push constant
 	InitSortListPCD initSortListPcData{};
-	initSortListPcData.viewMat = camera.getViewMatrix();
 	initSortListPcData.clipPlanes = glm::vec4(camera.NEAR_PLANE, camera.FAR_PLANE, (float) this->numGaussians, 0.0f);
+	initSortListPcData.resolution = glm::uvec4(
+		this->swapchain.getVkExtent().width,
+		this->swapchain.getVkExtent().height, 
+		0, 
+		0
+	);
 	commandBuffer.pushConstant(
 		this->initSortListPipelineLayout,
 		(void*)&initSortListPcData
@@ -257,8 +269,8 @@ void Renderer::computeRenderGaussians(
 
 	// Binding 3
 	VkDescriptorBufferInfo inputCamUboInfo{};
-	inputCamUboInfo.buffer = this->gaussiansCamUBO.getVkBuffer();
-	inputCamUboInfo.range = this->gaussiansCamUBO.getBufferSize();
+	inputCamUboInfo.buffer = this->camUBO.getVkBuffer();
+	inputCamUboInfo.range = this->camUBO.getBufferSize();
 
 	// Binding 4
 	VkDescriptorImageInfo outputImageInfo{};

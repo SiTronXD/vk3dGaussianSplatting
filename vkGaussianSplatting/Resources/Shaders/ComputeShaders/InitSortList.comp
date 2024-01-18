@@ -2,6 +2,7 @@
 
 #extension GL_GOOGLE_include_directive: require
 
+#include "../Common/Common.glsl"
 #include "../Common/GaussiansStructs.glsl"
 
 #define LOCAL_SIZE 32
@@ -11,20 +12,27 @@
 
 layout (local_size_x = LOCAL_SIZE, local_size_y = 1) in;
 
+// UBO
+layout(binding = 0) uniform CamUBO 
+{
+	mat4 viewMat;
+	mat4 projMat;
+} ubo;
+
 // SBO
-layout(binding = 0) readonly buffer GaussiansBuffer
+layout(binding = 1) readonly buffer GaussiansBuffer
 {
 	GaussianData gaussians[];
 } gaussiansBuffer;
 
 // SBO
-layout(binding = 1) buffer GaussiansSortListBuffer
+layout(binding = 2) buffer GaussiansSortListBuffer
 {
 	GaussianSortData sortData[];
 } listBuffer;
 
 // SBO
-layout(binding = 2) buffer GaussiansCullDataBuffer
+layout(binding = 3) buffer GaussiansCullDataBuffer
 {
 	GaussianCullData data;
 } cullData;
@@ -32,9 +40,54 @@ layout(binding = 2) buffer GaussiansCullDataBuffer
 // Push constant
 layout(push_constant) uniform PushConstantData
 {
-	mat4 viewMat;
 	vec4 clipPlanes; // vec4(nearPlane, farPlane, numGaussians, 0)
+	uvec4 resolution; // uvec4(width, height, 0, 0)
 } pc;
+
+uint getTileKey(uint threadIndex, vec4 gPosV)
+{
+	const float width = float(pc.resolution.x);
+	const float height = float(pc.resolution.y);
+	const ivec2 gridSize = ivec2(
+		(int(pc.resolution.x) + TILE_SIZE - 1) / TILE_SIZE,
+		(int(pc.resolution.y) + TILE_SIZE - 1) / TILE_SIZE
+	);
+	vec3 cov = getCovarianceMatrix(
+		width, 
+		height, 
+		gaussiansBuffer.gaussians[threadIndex].scale.xyz, 
+		gPosV, 
+		ubo.viewMat
+	);
+	float det = (cov.x * cov.z - cov.y * cov.y);
+
+	// Eigenvalues of covariance matrix corresponds to the gaussian's extents.
+	// lambda = m +- sqrt(m^2 - det)
+	float m = (cov.x + cov.z) * 0.5f;
+	float lambda0 = m + sqrt(max(m * m - det, 0.0f));
+	float lambda1 = m - sqrt(max(m * m - det, 0.0f));
+	float radius = ceil(3.0f * sqrt(max(lambda0, lambda1)));
+
+	// Screen space position
+	vec4 screenSpacePos = getScreenSpacePosition(width, height, gPosV, ubo.projMat);
+	uvec4 gExtents = uvec4(
+		clamp(int((screenSpacePos.x - radius) / TILE_SIZE), 0, gridSize.x), 
+		clamp(int((screenSpacePos.y - radius) / TILE_SIZE), 0, gridSize.y),
+		clamp(int((screenSpacePos.x + radius) / TILE_SIZE), 0, gridSize.x), 
+		clamp(int((screenSpacePos.y + radius) / TILE_SIZE), 0, gridSize.y)
+	);
+
+	return 0;
+}
+
+uint getDepthKey(float viewSpacePosZ)
+{
+	// Normalized depth
+	float normalizedDepth = (-viewSpacePosZ - pc.clipPlanes.x) / (pc.clipPlanes.y - pc.clipPlanes.x);
+	normalizedDepth = clamp(normalizedDepth, 0.0f, 1.0f);
+
+	return uint(normalizedDepth * float(MAX_UINT32));
+}
 
 void main()
 {
@@ -45,21 +98,19 @@ void main()
 	if(threadIndex >= numGaussians) 
 		return;
 
-	vec4 viewSpacePos = pc.viewMat * vec4(gaussiansBuffer.gaussians[threadIndex].position.xyz, 1.0f);
+	vec4 viewSpacePos = ubo.viewMat * vec4(gaussiansBuffer.gaussians[threadIndex].position.xyz, 1.0f);
 
 	// "Frustum culling"
 	if(viewSpacePos.z > 0.0f)
 		return;
 
-	// Normalized depth
-	float normalizedDepth = (-viewSpacePos.z - pc.clipPlanes.x) / (pc.clipPlanes.y - pc.clipPlanes.x);
-	normalizedDepth = clamp(normalizedDepth, 0.0f, 1.0f);
-
-	// Create key for sorting
-	uint key = uint(normalizedDepth * float(MAX_UINT32));
+	// Create keys for sorting
+	uint tileKey = getTileKey(threadIndex, viewSpacePos);
+	uint depthKey = getDepthKey(viewSpacePos.z);
 
 	// Add gaussian to list
 	uint id = atomicAdd(cullData.data.numGaussiansToRender.x, 1u);
-	listBuffer.sortData[id].data.x = key;
-	listBuffer.sortData[id].data.y = threadIndex;
+	listBuffer.sortData[id].data.x = tileKey;
+	listBuffer.sortData[id].data.y = depthKey;
+	listBuffer.sortData[id].data.z = threadIndex;
 }

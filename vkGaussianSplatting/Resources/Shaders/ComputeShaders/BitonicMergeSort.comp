@@ -1,6 +1,7 @@
 #version 450
 
 #extension GL_GOOGLE_include_directive: require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64: require
 
 #include "../Common/GaussiansStructs.glsl"
 
@@ -27,14 +28,17 @@ layout(push_constant) uniform PushConstantData
 } pc;
 
 // 1024 * 16 = 16384 bytes are guaranteed to be available in Vulkan
-// vec2(value to sort, id)
-shared uvec2 localValues[WORK_GROUP_SIZE * 2];
+// vec4(sortKey0, sortKey1, id, 0)
+shared uvec4 localValues[WORK_GROUP_SIZE * 2];
 
 void localCompareAndSwap(uvec2 id)
 {
-	if(localValues[id.x].x > localValues[id.y].x)
+	uint64_t keyX = (uint64_t(localValues[id.x].x) << 32u) | uint64_t(localValues[id.x].y);
+	uint64_t keyY = (uint64_t(localValues[id.y].x) << 32u) | uint64_t(localValues[id.y].y);
+
+	if(keyX > keyY)
 	{
-		uvec2 temp = localValues[id.x];
+		uvec4 temp = localValues[id.x];
 		localValues[id.x] = localValues[id.y];
 		localValues[id.y] = temp;
 	}
@@ -42,11 +46,14 @@ void localCompareAndSwap(uvec2 id)
 
 void globalCompareAndSwap(uvec2 id)
 {
-	if(listBuffer.sortData[id.x].data.x > listBuffer.sortData[id.y].data.x)
+	uint64_t keyX = (uint64_t(listBuffer.sortData[id.x].data.x) << 32u) | uint64_t(listBuffer.sortData[id.x].data.y);
+	uint64_t keyY = (uint64_t(listBuffer.sortData[id.y].data.x) << 32u) | uint64_t(listBuffer.sortData[id.y].data.y);
+
+	if(keyX > keyY)
 	{
-		uvec2 temp = listBuffer.sortData[id.x].data.xy;
-		listBuffer.sortData[id.x].data.xy = listBuffer.sortData[id.y].data.xy;
-		listBuffer.sortData[id.y].data.xy = temp;
+		uvec4 temp = listBuffer.sortData[id.x].data;
+		listBuffer.sortData[id.x].data = listBuffer.sortData[id.y].data;
+		listBuffer.sortData[id.y].data = temp;
 	}
 }
 
@@ -144,8 +151,8 @@ void main()
 	// (otherwise work directly in buffer memory)
 	if(algType <= ALG_LOCAL_DISPERSE)
 	{
-		localValues[t * 2]		= listBuffer.sortData[(offset + t) * 2].data.xy;
-		localValues[t * 2 + 1]	= listBuffer.sortData[(offset + t) * 2 + 1].data.xy;
+		localValues[t * 2]		= listBuffer.sortData[(offset + t) * 2].data;
+		localValues[t * 2 + 1]	= listBuffer.sortData[(offset + t) * 2 + 1].data;
 	}
 
 	switch(algType) 
@@ -172,7 +179,7 @@ void main()
 	{
 		barrier();
 
-		listBuffer.sortData[(offset + t) * 2].data.xy		= localValues[t * 2];
-		listBuffer.sortData[(offset + t) * 2 + 1].data.xy	= localValues[t * 2 + 1];
+		listBuffer.sortData[(offset + t) * 2].data		= localValues[t * 2];
+		listBuffer.sortData[(offset + t) * 2 + 1].data	= localValues[t * 2 + 1];
 	}
 }

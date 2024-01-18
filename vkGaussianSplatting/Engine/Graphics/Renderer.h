@@ -101,7 +101,7 @@ private:
 	SemaphoreArray renderGaussiansFinishedSemaphores;
 	FenceArray inFlightFences;
 
-	UniformBuffer gaussiansCamUBO;
+	UniformBuffer camUBO;
 	StorageBuffer gaussiansSBO;
 	StorageBuffer gaussiansSortListSBO;
 	StorageBuffer gaussiansCullDataSBO;

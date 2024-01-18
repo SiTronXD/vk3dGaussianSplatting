@@ -275,16 +275,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </None>
-    <CustomBuild Include="Resources\Shaders\ComputeShaders\DeferredLight.comp">
-      <FileType>Document</FileType>
-    </CustomBuild>
     <CustomBuild Include="Resources\Shaders\ComputeShaders\RenderGaussians.comp">
-      <FileType>Document</FileType>
-    </CustomBuild>
-    <CustomBuild Include="Resources\Shaders\FragmentShaders\DeferredGeom.frag">
-      <FileType>Document</FileType>
-    </CustomBuild>
-    <CustomBuild Include="Resources\Shaders\VertexShaders\DeferredGeom.vert">
       <FileType>Document</FileType>
     </CustomBuild>
     <CustomBuild Include="Resources\Shaders\ComputeShaders\BitonicMergeSort.comp">
@@ -293,6 +284,10 @@
     <CustomBuild Include="Resources\Shaders\ComputeShaders\InitSortList.comp">
       <FileType>Document</FileType>
     </CustomBuild>
+    <None Include="Resources\Shaders\Common\Common.glsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </None>
     <None Include="Resources\Shaders\Common\GaussiansStructs.glsl">
       <FileType>Document</FileType>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>

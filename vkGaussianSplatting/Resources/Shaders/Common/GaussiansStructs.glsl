@@ -9,7 +9,7 @@ struct GaussianData
 // Data for sorting per gaussian
 struct GaussianSortData
 {
-	uvec4 data; // uvec4(sortKey, gaussianIndex, 0, 0)
+	uvec4 data; // uvec4(sortKey0, sortKey1, gaussianIndex, 0)
 };
 
 // Data modified by culling algorithms
