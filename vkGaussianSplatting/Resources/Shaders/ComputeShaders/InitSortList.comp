@@ -44,7 +44,7 @@ layout(push_constant) uniform PushConstantData
 	uvec4 resolution; // uvec4(width, height, 0, 0)
 } pc;
 
-uint getTileKey(uint threadIndex, vec4 gPosV)
+uvec4 getGaussianTileExtents(uint threadIndex, vec4 gPosV)
 {
 	const float width = float(pc.resolution.x);
 	const float height = float(pc.resolution.y);
@@ -77,7 +77,7 @@ uint getTileKey(uint threadIndex, vec4 gPosV)
 		clamp(int((screenSpacePos.y + radius) / TILE_SIZE), 0, gridSize.y)
 	);
 
-	return 0;
+	return gExtents;
 }
 
 uint getDepthKey(float viewSpacePosZ)
@@ -104,8 +104,10 @@ void main()
 	if(viewSpacePos.z > 0.0f)
 		return;
 
+	uvec4 gExtents = getGaussianTileExtents(threadIndex, viewSpacePos);
+
 	// Create keys for sorting
-	uint tileKey = getTileKey(threadIndex, viewSpacePos);
+	uint tileKey = 0u;
 	uint depthKey = getDepthKey(viewSpacePos.z);
 
 	// Add gaussian to list

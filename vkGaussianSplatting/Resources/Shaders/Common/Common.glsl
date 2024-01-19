@@ -13,9 +13,9 @@ vec3 getCovarianceMatrix(
 	mat3x3 rotMat = mat3x3(	1.0f, 0.0f, 0.0f,
 							0.0f, 1.0f, 0.0f,
 							0.0f, 0.0f, 1.0f);
-	mat3x3 scaleMat = mat3x3(gScale.x,		0.0f,		0.0f,
-								0.0f,		gScale.y,	0.0f,
-								0.0f,		0.0f,		gScale.z);
+	mat3x3 scaleMat = mat3x3(gScale.x,	0.0f,		0.0f,
+							 0.0f,		gScale.y,	0.0f,
+							 0.0f,		0.0f,		gScale.z);
 	mat3x3 sigma = rotMat * scaleMat * transpose(scaleMat) * transpose(rotMat);
 
 	// SigmaPrime = J * W * Sigma * W^T * J^T
