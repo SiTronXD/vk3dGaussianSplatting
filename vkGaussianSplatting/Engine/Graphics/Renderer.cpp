@@ -117,6 +117,22 @@ void Renderer::initVulkan()
 		"Resources/Shaders/BitonicMergeSort.comp.spv"
 	);
 
+	// Find ranges compute pipeline
+	this->findRangesPipelineLayout.createPipelineLayout(
+		this->device,
+		{
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
+		},
+		VK_SHADER_STAGE_COMPUTE_BIT,
+		sizeof(FindRangesPCD)
+	);
+	this->findRangesPipeline.createComputePipeline(
+		this->device,
+		this->findRangesPipelineLayout,
+		"Resources/Shaders/FindRanges.comp.spv"
+	);
+
 	// Render gaussians compute pipeline
 	this->renderGaussiansPipelineLayout.createPipelineLayout(
 		this->device,
@@ -250,6 +266,8 @@ void Renderer::cleanup()
 	this->commandPool.cleanup();
 	this->renderGaussiansPipeline.cleanup();
 	this->renderGaussiansPipelineLayout.cleanup();
+	this->findRangesPipeline.cleanup();
+	this->findRangesPipelineLayout.cleanup();
 	this->sortGaussiansPipeline.cleanup();
 	this->sortGaussiansPipelineLayout.cleanup();
 	this->initSortListPipeline.cleanup();
@@ -617,6 +635,10 @@ void Renderer::recordCommandBuffer(
 		commandBuffer
 	);
 
+	this->computeRanges(
+		commandBuffer
+	);
+
 	this->computeRenderGaussians(
 		commandBuffer, 
 		imageIndex
@@ -758,12 +780,19 @@ void Renderer::loadTestGaussians(std::vector<GaussianData>& outputGaussianData)
 	}
 }
 
+uint32_t Renderer::getNumTiles() const
+{
+	return 
+		((this->swapchain.getVkExtent().width + TILE_SIZE - 1) / TILE_SIZE) *
+		((this->swapchain.getVkExtent().height + TILE_SIZE - 1) / TILE_SIZE);
+}
+
 void Renderer::initForScene(Scene& scene)
 {
 	std::vector<GaussianData> gaussiansData;
 
-	this->loadGaussiansFromFile(gaussiansData);
-	//this->loadTestGaussians(gaussiansData);
+	//this->loadGaussiansFromFile(gaussiansData);
+	this->loadTestGaussians(gaussiansData);
 
 	// Gaussians SBO
 	this->gaussiansSBO.createGpuBuffer(
@@ -772,9 +801,10 @@ void Renderer::initForScene(Scene& scene)
 		gaussiansData.data()
 	);
 	this->numGaussians = (uint32_t) gaussiansData.size();
+	this->numSortElements = this->numGaussians * 10;
 
 	// Gaussians list SBO for sorting
-	std::vector<GaussianSortData> sortData(this->numGaussians); // Dummy data
+	std::vector<GaussianSortData> sortData(this->numSortElements); // Dummy data
 	this->gaussiansSortListSBO.createGpuBuffer(
 		this->gfxAllocContext,
 		sizeof(sortData[0]) * sortData.size(),
@@ -790,9 +820,7 @@ void Renderer::initForScene(Scene& scene)
 	);
 
 	// Range data
-	uint32_t numTiles = 
-		((this->swapchain.getVkExtent().width + TILE_SIZE - 1) / TILE_SIZE) * 
-		((this->swapchain.getVkExtent().height + TILE_SIZE - 1) / TILE_SIZE);
+	uint32_t numTiles = this->getNumTiles();
 	std::vector<GaussianTileRangeData> dummyRangeData(numTiles);
 	this->gaussiansTileRangesSBO.createGpuBuffer(
 		this->gfxAllocContext,

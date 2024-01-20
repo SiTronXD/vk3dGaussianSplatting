@@ -4,6 +4,9 @@
 // Has to match TILE_SIZE in Renderer.h
 #define TILE_SIZE 16 
 
+// 2^32 - 1
+#define MAX_UINT32 4294967295u
+
 vec3 getCovarianceMatrix(
 	float width, 
 	float height, 

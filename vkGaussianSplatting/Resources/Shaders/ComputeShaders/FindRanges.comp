@@ -2,24 +2,74 @@
 
 #extension GL_GOOGLE_include_directive: require
 
+#include "../Common/Common.glsl"
 #include "../Common/GaussiansStructs.glsl"
 
 #define LOCAL_SIZE 16
 
 layout (local_size_x = LOCAL_SIZE, local_size_y = 1) in;
 
+// SBO
+layout(binding = 0) buffer GaussiansSortListBuffer
+{
+	GaussianSortData sortData[];
+} listBuffer;
+
+// SBO
+struct GaussianTileRangeData
+{
+	uvec4 range;
+};
+layout(binding = 1) buffer GaussiansRangesBuffer
+{
+	GaussianTileRangeData rangeData[];
+} rangesBuffer;
+
 // Push constant
 layout(push_constant) uniform PushConstantData
 {
-	uvec4 data; // uvec4(numTiles, 0, 0, 0)
+	uvec4 data; // uvec4(numSortElements, 0, 0, 0)
 } pc;
+
+void tryToWriteStart(uint tileIndex, uint threadIndex)
+{
+	if(tileIndex != MAX_UINT32)
+		rangesBuffer.rangeData[tileIndex].range.x = threadIndex;
+}
+
+void tryToWriteEnd(uint tileIndex, uint threadIndex)
+{
+	if(tileIndex != MAX_UINT32)
+		rangesBuffer.rangeData[tileIndex].range.y = threadIndex;
+}
 
 void main()
 {
 	uint threadIndex = gl_GlobalInvocationID.x;
-	uint numTiles = pc.data.x;
+	uint numSortElements = pc.data.x;
 
-	// Make sure compute work is within bounds
-	if(threadIndex >= numTiles) 
-		return;
+	// i = (0, n)
+	if(threadIndex > 0 && threadIndex < numSortElements - 1)
+	{
+		uint tile0 = listBuffer.sortData[threadIndex - 1].data.x;
+		uint tile1 = listBuffer.sortData[threadIndex].data.x;
+
+		if(tile0 != tile1)
+		{
+			tryToWriteEnd(tile0, threadIndex);
+			tryToWriteStart(tile1, threadIndex);
+		}
+	}
+	else if(threadIndex == 0) // i = 0
+	{
+		uint tile0 = listBuffer.sortData[threadIndex].data.x;
+		
+		tryToWriteStart(tile0, threadIndex);
+	}
+	else if(threadIndex == numSortElements - 1) // i = n
+	{
+		uint tile0 = listBuffer.sortData[threadIndex].data.x;
+		
+		tryToWriteEnd(tile0, threadIndex);
+	}
 }

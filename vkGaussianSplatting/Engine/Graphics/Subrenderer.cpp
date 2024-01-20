@@ -43,7 +43,7 @@ void Renderer::computeInitSortList(
 	// Reset gaussian sort keys (make sure close sorted gaussians have lower valued keys)
 	commandBuffer.fillBuffer(
 		this->gaussiansSortListSBO,
-		sizeof(GaussianSortData) * this->numGaussians,
+		sizeof(GaussianSortData) * this->numSortElements,
 		std::numeric_limits<uint32_t>::max()
 	);
 
@@ -54,7 +54,14 @@ void Renderer::computeInitSortList(
 		0
 	);
 
-	std::array<VkBufferMemoryBarrier2, 2> initBufferBarriers =
+	// Reset ranges
+	commandBuffer.fillBuffer(
+		this->gaussiansTileRangesSBO,
+		sizeof(GaussianTileRangeData) * this->getNumTiles(),
+		0
+	);
+
+	std::array<VkBufferMemoryBarrier2, 3> initBufferBarriers =
 	{
 		// Gaussians sort list
 		PipelineBarrier::bufferMemoryBarrier2(
@@ -63,7 +70,8 @@ void Renderer::computeInitSortList(
 			VK_PIPELINE_STAGE_TRANSFER_BIT,
 			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 			this->gaussiansSortListSBO.getVkBuffer(),
-			this->gaussiansSortListSBO.getBufferSize()),
+			this->gaussiansSortListSBO.getBufferSize()
+		),
 
 		// Gaussians cull data
 		PipelineBarrier::bufferMemoryBarrier2(
@@ -72,7 +80,18 @@ void Renderer::computeInitSortList(
 			VK_PIPELINE_STAGE_TRANSFER_BIT,
 			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 			this->gaussiansCullDataSBO.getVkBuffer(),
-			this->gaussiansCullDataSBO.getBufferSize()),
+			this->gaussiansCullDataSBO.getBufferSize()
+		),
+
+		// Gaussians tile range data
+		PipelineBarrier::bufferMemoryBarrier2(
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			this->gaussiansTileRangesSBO.getVkBuffer(),
+			this->gaussiansTileRangesSBO.getBufferSize()
+		),
 	};
 	commandBuffer.bufferMemoryBarrier(
 		initBufferBarriers.data(),
@@ -214,6 +233,59 @@ void Renderer::computeSortGaussians(CommandBuffer& commandBuffer)
 			}
 		}
 	}
+}
+
+void Renderer::computeRanges(CommandBuffer& commandBuffer)
+{
+	// Gaussians cull data
+	commandBuffer.bufferMemoryBarrier(
+		VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+		VK_ACCESS_SHADER_READ_BIT,
+		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+		this->gaussiansCullDataSBO.getVkBuffer(),
+		this->gaussiansCullDataSBO.getBufferSize()
+	);
+
+	// Compute pipeline
+	commandBuffer.bindPipeline(this->findRangesPipeline);
+
+	// Binding 0
+	VkDescriptorBufferInfo inputGaussiansSortInfo{};
+	inputGaussiansSortInfo.buffer = this->gaussiansSortListSBO.getVkBuffer();
+	inputGaussiansSortInfo.range = this->gaussiansSortListSBO.getBufferSize();
+
+	// Binding 1
+	VkDescriptorBufferInfo outputGaussiansRangeInfo{};
+	outputGaussiansRangeInfo.buffer = this->gaussiansTileRangesSBO.getVkBuffer();
+	outputGaussiansRangeInfo.range = this->gaussiansTileRangesSBO.getBufferSize();
+
+	// Descriptor sets
+	std::array<VkWriteDescriptorSet, 2> computeWriteDescriptorSets
+	{
+		DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansSortInfo),
+
+		DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputGaussiansRangeInfo),
+	};
+	commandBuffer.pushDescriptorSet(
+		this->findRangesPipelineLayout,
+		0,
+		uint32_t(computeWriteDescriptorSets.size()),
+		computeWriteDescriptorSets.data()
+	);
+
+	// Push constant
+	FindRangesPCD findRangesPcData{};
+	findRangesPcData.data.x = this->numSortElements;
+	commandBuffer.pushConstant(
+		this->findRangesPipelineLayout,
+		(void*)&findRangesPcData
+	);
+
+	// Run compute shader
+	commandBuffer.dispatch(
+		(this->numSortElements + FIND_RANGES_GROUP_SIZE - 1) / FIND_RANGES_GROUP_SIZE
+	);
 }
 
 void Renderer::computeRenderGaussians(

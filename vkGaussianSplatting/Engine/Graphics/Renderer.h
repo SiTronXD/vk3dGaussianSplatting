@@ -49,6 +49,7 @@ private:
 	const uint32_t INIT_LIST_WORK_GROUP_SIZE = 32;
 	const uint32_t BMS_WORK_GROUP_SIZE = 8;
 	const uint32_t TILE_SIZE = 16;
+	const uint32_t FIND_RANGES_GROUP_SIZE = 16;
 
 	VulkanInstance instance;
 	DebugMessenger debugMessenger;
@@ -85,6 +86,8 @@ private:
 	Pipeline initSortListPipeline;
 	PipelineLayout sortGaussiansPipelineLayout;
 	Pipeline sortGaussiansPipeline;
+	PipelineLayout findRangesPipelineLayout;
+	Pipeline findRangesPipeline;
 	PipelineLayout renderGaussiansPipelineLayout;
 	Pipeline renderGaussiansPipeline;
 
@@ -109,6 +112,7 @@ private:
 	StorageBuffer gaussiansTileRangesSBO;
 
 	uint32_t numGaussians;
+	uint32_t numSortElements;
 
 	Window* window;
 	ResourceManager* resourceManager;
@@ -132,9 +136,12 @@ private:
 	void renderImgui(CommandBuffer& commandBuffer, ImDrawData* imguiDrawData, uint32_t imageIndex);
 	void computeInitSortList(CommandBuffer& commandBuffer, const Camera& camera);
 	void computeSortGaussians(CommandBuffer& commandBuffer);
+	void computeRanges(CommandBuffer& commandBuffer);
 	void computeRenderGaussians(CommandBuffer& commandBuffer, uint32_t imageIndex);
 
 	void dispatchBms(CommandBuffer& commandBuffer, BmsSubAlgorithm subAlgorithm, uint32_t h);
+
+	uint32_t getNumTiles() const;
 
 	inline const VkDevice& getVkDevice() const { return this->device.getVkDevice(); }
 

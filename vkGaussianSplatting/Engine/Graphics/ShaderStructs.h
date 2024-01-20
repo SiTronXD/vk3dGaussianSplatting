@@ -17,7 +17,7 @@ struct SortGaussiansPCD
 
 struct FindRangesPCD
 {
-	glm::uvec4 data; // uvec4(numTiles, 0, 0, 0)
+	glm::uvec4 data; // uvec4(numSortElements, 0, 0, 0)
 };
 
 struct RenderGaussiansPCD

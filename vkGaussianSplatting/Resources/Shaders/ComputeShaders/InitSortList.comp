@@ -7,9 +7,6 @@
 
 #define LOCAL_SIZE 32
 
-// 2^32 - 1
-#define MAX_UINT32 4294967295u
-
 layout (local_size_x = LOCAL_SIZE, local_size_y = 1) in;
 
 // UBO
