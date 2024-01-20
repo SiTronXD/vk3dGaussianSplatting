@@ -1,0 +1,25 @@
+#version 450
+
+#extension GL_GOOGLE_include_directive: require
+
+#include "../Common/GaussiansStructs.glsl"
+
+#define LOCAL_SIZE 16
+
+layout (local_size_x = LOCAL_SIZE, local_size_y = 1) in;
+
+// Push constant
+layout(push_constant) uniform PushConstantData
+{
+	uvec4 data; // uvec4(numTiles, 0, 0, 0)
+} pc;
+
+void main()
+{
+	uint threadIndex = gl_GlobalInvocationID.x;
+	uint numTiles = pc.data.x;
+
+	// Make sure compute work is within bounds
+	if(threadIndex >= numTiles) 
+		return;
+}

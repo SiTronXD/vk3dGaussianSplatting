@@ -232,6 +232,7 @@ void Renderer::cleanup()
 
 	this->swapchain.cleanup();
 
+	this->gaussiansTileRangesSBO.cleanup();
 	this->gaussiansCullDataSBO.cleanup();
 	this->gaussiansSortListSBO.cleanup();
 	this->gaussiansSBO.cleanup();
@@ -637,6 +638,9 @@ void Renderer::recordCommandBuffer(
 
 void Renderer::resizeWindow()
 {
+	assert(false);
+	Log::warning("Gaussian tile range buffer needs to be recreated...");
+
 	this->swapchain.recreate();
 }
 
@@ -783,6 +787,17 @@ void Renderer::initForScene(Scene& scene)
 		this->gfxAllocContext,
 		sizeof(GaussianCullData),
 		&dummyCullData
+	);
+
+	// Range data
+	uint32_t numTiles = 
+		((this->swapchain.getVkExtent().width + TILE_SIZE - 1) / TILE_SIZE) * 
+		((this->swapchain.getVkExtent().height + TILE_SIZE - 1) / TILE_SIZE);
+	std::vector<GaussianTileRangeData> dummyRangeData(numTiles);
+	this->gaussiansTileRangesSBO.createGpuBuffer(
+		this->gfxAllocContext,
+		sizeof(dummyRangeData[0]) * dummyRangeData.size(),
+		dummyRangeData.data()
 	);
 }
 

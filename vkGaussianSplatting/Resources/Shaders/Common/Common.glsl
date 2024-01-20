@@ -1,6 +1,8 @@
 
 #define FOV_Y (3.1415f * 0.5f)
-#define TILE_SIZE 16
+
+// Has to match TILE_SIZE in Renderer.h
+#define TILE_SIZE 16 
 
 vec3 getCovarianceMatrix(
 	float width, 

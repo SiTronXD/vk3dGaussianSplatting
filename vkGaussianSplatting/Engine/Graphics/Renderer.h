@@ -48,6 +48,7 @@ private:
 
 	const uint32_t INIT_LIST_WORK_GROUP_SIZE = 32;
 	const uint32_t BMS_WORK_GROUP_SIZE = 8;
+	const uint32_t TILE_SIZE = 16;
 
 	VulkanInstance instance;
 	DebugMessenger debugMessenger;
@@ -105,6 +106,7 @@ private:
 	StorageBuffer gaussiansSBO;
 	StorageBuffer gaussiansSortListSBO;
 	StorageBuffer gaussiansCullDataSBO;
+	StorageBuffer gaussiansTileRangesSBO;
 
 	uint32_t numGaussians;
 

@@ -411,5 +411,6 @@
     <CustomBuild Include="Resources\Shaders\ComputeShaders\RenderGaussians.comp" />
     <CustomBuild Include="Resources\Shaders\ComputeShaders\BitonicMergeSort.comp" />
     <CustomBuild Include="Resources\Shaders\ComputeShaders\InitSortList.comp" />
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\FindRanges.comp" />
   </ItemGroup>
 </Project>
