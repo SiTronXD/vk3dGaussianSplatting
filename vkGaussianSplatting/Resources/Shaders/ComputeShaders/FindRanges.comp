@@ -16,10 +16,6 @@ layout(binding = 0) buffer GaussiansSortListBuffer
 } listBuffer;
 
 // SBO
-struct GaussianTileRangeData
-{
-	uvec4 range;
-};
 layout(binding = 1) buffer GaussiansRangesBuffer
 {
 	GaussianTileRangeData rangeData[];

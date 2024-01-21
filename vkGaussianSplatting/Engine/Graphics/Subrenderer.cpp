@@ -160,10 +160,10 @@ void Renderer::computeInitSortList(
 void Renderer::computeSortGaussians(CommandBuffer& commandBuffer)
 {
 	// Make sure number of elements is power of two
-	assert((uint32_t)(this->numGaussians & (this->numGaussians - 1)) == 0u);
+	assert((uint32_t)(this->numSortElements & (this->numSortElements - 1)) == 0u);
 
 	// Make sure number of elements is large enough
-	assert(this->numGaussians >= BMS_WORK_GROUP_SIZE * 2);
+	assert(this->numSortElements >= BMS_WORK_GROUP_SIZE * 2);
 
 	commandBuffer.bufferMemoryBarrier(
 		VK_ACCESS_SHADER_WRITE_BIT,
@@ -204,7 +204,7 @@ void Renderer::computeSortGaussians(CommandBuffer& commandBuffer)
 
 	h *= 2;
 
-	for ( ; h <= this->numGaussians; h *= 2)
+	for ( ; h <= this->numSortElements; h *= 2)
 	{
 		this->dispatchBms(
 			commandBuffer,
@@ -311,14 +311,33 @@ void Renderer::computeRenderGaussians(
 		(uint32_t) renderGaussiansMemoryBarriers.size()
 	);
 
+	std::array<VkBufferMemoryBarrier2, 2> renderGaussiansBufferBarriers =
+	{
+		// Cull data
+		PipelineBarrier::bufferMemoryBarrier2(
+			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+			VK_ACCESS_SHADER_READ_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			this->gaussiansCullDataSBO.getVkBuffer(),
+			this->gaussiansCullDataSBO.getBufferSize()
+		),
+
+		// Range data
+		PipelineBarrier::bufferMemoryBarrier2(
+			VK_ACCESS_SHADER_WRITE_BIT,
+			VK_ACCESS_SHADER_READ_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			this->gaussiansTileRangesSBO.getVkBuffer(),
+			this->gaussiansTileRangesSBO.getBufferSize()
+		)
+	};
+
 	// Gaussians cull data
 	commandBuffer.bufferMemoryBarrier(
-		VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
-		VK_ACCESS_SHADER_READ_BIT,
-		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-		this->gaussiansCullDataSBO.getVkBuffer(),
-		this->gaussiansCullDataSBO.getBufferSize()
+		renderGaussiansBufferBarriers.data(),
+		(uint32_t) renderGaussiansBufferBarriers.size()
 	);
 
 	// Compute pipeline
@@ -340,25 +359,31 @@ void Renderer::computeRenderGaussians(
 	inputGaussiansCullDataInfo.range = this->gaussiansCullDataSBO.getBufferSize();
 
 	// Binding 3
+	VkDescriptorBufferInfo inputGaussiansRangeInfo{};
+	inputGaussiansRangeInfo.buffer = this->gaussiansTileRangesSBO.getVkBuffer();
+	inputGaussiansRangeInfo.range = this->gaussiansTileRangesSBO.getBufferSize();
+
+	// Binding 4
 	VkDescriptorBufferInfo inputCamUboInfo{};
 	inputCamUboInfo.buffer = this->camUBO.getVkBuffer();
 	inputCamUboInfo.range = this->camUBO.getBufferSize();
 
-	// Binding 4
+	// Binding 5
 	VkDescriptorImageInfo outputImageInfo{};
 	outputImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 	outputImageInfo.imageView = this->swapchain.getVkImageView(imageIndex);
 
 	// Descriptor set
-	std::array<VkWriteDescriptorSet, 5> computeWriteDescriptorSets
+	std::array<VkWriteDescriptorSet, 6> computeWriteDescriptorSets
 	{
 		DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansInfo),
 		DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansSortListInfo),
 		DescriptorSet::writeBuffer(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansCullDataInfo),
+		DescriptorSet::writeBuffer(3, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansRangeInfo),
 
-		DescriptorSet::writeBuffer(3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &inputCamUboInfo),
+		DescriptorSet::writeBuffer(4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &inputCamUboInfo),
 
-		DescriptorSet::writeImage(4, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &outputImageInfo)
+		DescriptorSet::writeImage(5, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &outputImageInfo)
 	};
 	commandBuffer.pushDescriptorSet(
 		this->renderGaussiansPipelineLayout,
@@ -414,7 +439,7 @@ void Renderer::dispatchBms(CommandBuffer& commandBuffer, BmsSubAlgorithm subAlgo
 	// Run compute shader
 	// Divide workload by 2, since 1 thread works on pairs of elements
 	commandBuffer.dispatch(
-		this->numGaussians / BMS_WORK_GROUP_SIZE / 2
+		this->numSortElements / BMS_WORK_GROUP_SIZE / 2
 	);
 
 	commandBuffer.bufferMemoryBarrier(

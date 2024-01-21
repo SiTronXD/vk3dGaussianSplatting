@@ -19,8 +19,8 @@ void TestScene::init()
 	this->camera.setRotation(SMath::PI * 1.0f, -SMath::PI * 0.1f);
 
 	// Used for benchmarks
-	/*this->camera.setPosition(glm::vec3(-0.910660, -0.016507, 0.872644));
-	this->camera.setRotation(1.731593, -0.404159);*/
+	this->camera.setPosition(glm::vec3(-0.910660, -0.016507, 0.872644));
+	this->camera.setRotation(1.731593, -0.404159);
 }
 
 void TestScene::update()

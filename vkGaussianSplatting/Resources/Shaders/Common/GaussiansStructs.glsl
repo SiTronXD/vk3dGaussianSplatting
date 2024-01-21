@@ -15,5 +15,11 @@ struct GaussianSortData
 // Data modified by culling algorithms
 struct GaussianCullData
 {
-	uvec4 numGaussiansToRender; // uvec4(num, 0, 0, 0)
+	uvec4 numGaussiansToRender; // uvec4(num, maxNumSortElements, 0, 0)
+};
+
+// Tile ranges
+struct GaussianTileRangeData
+{
+	uvec4 range; // uvec4(startIndex, endIndex, 0, 0);
 };

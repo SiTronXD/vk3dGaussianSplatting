@@ -25,14 +25,20 @@ layout(binding = 2) buffer GaussiansCullDataBuffer
 	GaussianCullData data;
 } cullData;
 
+// SBO
+layout(binding = 3) buffer GaussiansRangesBuffer
+{
+	GaussianTileRangeData rangeData[];
+} rangesBuffer;
+
 // UBO
-layout(binding = 3) uniform CamUBO 
+layout(binding = 4) uniform CamUBO 
 {
 	mat4 viewMat;
 	mat4 projMat;
 } ubo;
 
-layout (binding = 4, rgba8) uniform image2D swapchainImage;
+layout (binding = 5, rgba8) uniform image2D swapchainImage;
 
 // Push constant
 layout(push_constant) uniform PushConstantData
@@ -60,10 +66,15 @@ void main()
 	float Ti = 1.0f;
 
 	const mat4 viewMat = ubo.viewMat;
-	const uint numGaussians = cullData.data.numGaussiansToRender.x;
+	//const uint numGaussians = cullData.data.numGaussiansToRender.x;
+	
+	int gridWidth = (int(res.x) + TILE_SIZE - 1) / TILE_SIZE;
+	uvec2 tilePos = threadIndex / uvec2(TILE_SIZE);
+	uint tileIndex = tilePos.y * uint(gridWidth) + tilePos.x;
+	uvec2 tileRange = rangesBuffer.rangeData[tileIndex].range.xy;
 
 	// Loop through gaussians and render them
-	for(int i = 0; i < numGaussians; ++i)
+	for(uint i = tileRange.x; i < tileRange.y; ++i)
 	{
 		uint gaussianIndex = listBuffer.sortData[i].data.z;
 

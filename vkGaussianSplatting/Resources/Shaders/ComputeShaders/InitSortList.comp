@@ -41,14 +41,10 @@ layout(push_constant) uniform PushConstantData
 	uvec4 resolution; // uvec4(width, height, 0, 0)
 } pc;
 
-uvec4 getGaussianTileExtents(uint threadIndex, vec4 gPosV)
+uvec4 getGaussianTileExtents(uint threadIndex, vec4 gPosV, ivec2 gridSize)
 {
 	const float width = float(pc.resolution.x);
 	const float height = float(pc.resolution.y);
-	const ivec2 gridSize = ivec2(
-		(int(pc.resolution.x) + TILE_SIZE - 1) / TILE_SIZE,
-		(int(pc.resolution.y) + TILE_SIZE - 1) / TILE_SIZE
-	);
 	vec3 cov = getCovarianceMatrix(
 		width, 
 		height, 
@@ -96,23 +92,36 @@ void main()
 		return;
 
 	vec4 viewSpacePos = ubo.viewMat * vec4(gaussiansBuffer.gaussians[threadIndex].position.xyz, 1.0f);
+	vec4 ndcPos = ubo.projMat * viewSpacePos;
+	ndcPos.xyz /= ndcPos.w;
 
 	// "Frustum culling"
-	if(viewSpacePos.z > 0.0f)
+	if(viewSpacePos.z > 0.0f || abs(ndcPos.x) > 1.3f || abs(ndcPos.y) > 1.3f)
 		return;
 
-	uvec4 gExtents = getGaussianTileExtents(threadIndex, viewSpacePos);
+	const ivec2 gridSize = ivec2(
+		(int(pc.resolution.x) + TILE_SIZE - 1) / TILE_SIZE,
+		(int(pc.resolution.y) + TILE_SIZE - 1) / TILE_SIZE
+	);
+	uvec4 gExtents = getGaussianTileExtents(threadIndex, viewSpacePos, gridSize);
 
-	// Create keys for sorting
-	uint tileKey = 0u;
-	uint depthKey = getDepthKey(viewSpacePos.z);
 
-	// Add gaussian to list
-	uint id = atomicAdd(cullData.data.numGaussiansToRender.x, 1u);
-	if(id < cullData.data.numGaussiansToRender.y) // Temporary solution to avoid overflow
+	for(uint y = gExtents.y; y <= gExtents.w; ++y)
 	{
-		listBuffer.sortData[id].data.x = tileKey;
-		listBuffer.sortData[id].data.y = depthKey;
-		listBuffer.sortData[id].data.z = threadIndex;
+		for(uint x = gExtents.x; x <= gExtents.z; ++x)
+		{
+			// Create keys for sorting
+			uint tileKey = y * gridSize.x + x;
+			uint depthKey = getDepthKey(viewSpacePos.z);
+
+			// Add gaussian to list
+			uint id = atomicAdd(cullData.data.numGaussiansToRender.x, 1u);
+			if(id < cullData.data.numGaussiansToRender.y) // Temporary solution to avoid overflow
+			{
+				listBuffer.sortData[id].data.x = tileKey;
+				listBuffer.sortData[id].data.y = depthKey;
+				listBuffer.sortData[id].data.z = threadIndex;
+			}
+		}
 	}
 }

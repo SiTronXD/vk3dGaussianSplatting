@@ -140,6 +140,7 @@ void Renderer::initVulkan()
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 
@@ -791,8 +792,8 @@ void Renderer::initForScene(Scene& scene)
 {
 	std::vector<GaussianData> gaussiansData;
 
-	//this->loadGaussiansFromFile(gaussiansData);
-	this->loadTestGaussians(gaussiansData);
+	this->loadGaussiansFromFile(gaussiansData);
+	//this->loadTestGaussians(gaussiansData);
 
 	// Gaussians SBO
 	this->gaussiansSBO.createGpuBuffer(
@@ -801,7 +802,7 @@ void Renderer::initForScene(Scene& scene)
 		gaussiansData.data()
 	);
 	this->numGaussians = (uint32_t) gaussiansData.size();
-	this->numSortElements = this->numGaussians * 10;
+	this->numSortElements = this->numGaussians * 4096;
 
 	// Gaussians list SBO for sorting
 	std::vector<GaussianSortData> sortData(this->numSortElements); // Dummy data
