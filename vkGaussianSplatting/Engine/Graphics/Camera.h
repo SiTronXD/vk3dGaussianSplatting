@@ -40,6 +40,9 @@ public:
 	void setPosition(const glm::vec3& newPos);
 	void setRotation(float yaw, float pitch);
 
+	inline float getYaw() const { return this->yaw; }
+	inline float getPitch() const { return this->pitch; }
+
 	inline const glm::mat4& getViewMatrix() const { return this->viewMatrix; }
 	inline const glm::mat4& getProjectionMatrix() const { return this->projectionMatrix; }
 

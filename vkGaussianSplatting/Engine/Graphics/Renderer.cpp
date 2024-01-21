@@ -812,11 +812,12 @@ void Renderer::initForScene(Scene& scene)
 	);
 
 	// Cull data
-	GaussianCullData dummyCullData{};
+	GaussianCullData cullData{};
+	cullData.numGaussiansToRender.y = this->numSortElements;
 	this->gaussiansCullDataSBO.createGpuBuffer(
 		this->gfxAllocContext,
 		sizeof(GaussianCullData),
-		&dummyCullData
+		&cullData
 	);
 
 	// Range data

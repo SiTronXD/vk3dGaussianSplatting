@@ -109,7 +109,10 @@ void main()
 
 	// Add gaussian to list
 	uint id = atomicAdd(cullData.data.numGaussiansToRender.x, 1u);
-	listBuffer.sortData[id].data.x = tileKey;
-	listBuffer.sortData[id].data.y = depthKey;
-	listBuffer.sortData[id].data.z = threadIndex;
+	if(id < cullData.data.numGaussiansToRender.y) // Temporary solution to avoid overflow
+	{
+		listBuffer.sortData[id].data.x = tileKey;
+		listBuffer.sortData[id].data.y = depthKey;
+		listBuffer.sortData[id].data.z = threadIndex;
+	}
 }

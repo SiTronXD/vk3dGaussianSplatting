@@ -50,7 +50,7 @@ void Renderer::computeInitSortList(
 	// Reset gaussian count before culling
 	commandBuffer.fillBuffer(
 		this->gaussiansCullDataSBO,
-		sizeof(GaussianCullData),
+		sizeof(uint32_t),
 		0
 	);
 

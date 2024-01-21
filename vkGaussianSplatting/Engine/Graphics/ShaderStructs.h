@@ -50,7 +50,7 @@ struct GaussianSortData
 
 struct GaussianCullData
 {
-	glm::uvec4 numGaussiansToRender; // uvec4(num, 0, 0, 0);
+	glm::uvec4 numGaussiansToRender; // uvec4(num, maxNumSortElements, 0, 0);
 };
 
 struct GaussianTileRangeData
