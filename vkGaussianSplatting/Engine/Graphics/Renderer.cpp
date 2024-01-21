@@ -801,8 +801,8 @@ void Renderer::initForScene(Scene& scene)
 {
 	std::vector<GaussianData> gaussiansData;
 
-	//this->loadGaussiansFromFile(gaussiansData);
-	this->loadTestGaussians(gaussiansData);
+	this->loadGaussiansFromFile(gaussiansData);
+	//this->loadTestGaussians(gaussiansData);
 
 	// Gaussians SBO
 	this->gaussiansSBO.createGpuBuffer(

@@ -41,6 +41,8 @@ layout(push_constant) uniform PushConstantData
 	uvec4 resolution; // uvec4(width, height, 0, 0)
 } pc;
 
+// Get extents uvec4(minX, minY, maxX, maxY), including min, excluding max
+// (to avoid adding gaussians beyond screen edges)
 uvec4 getGaussianTileExtents(uint threadIndex, vec4 gPosV, ivec2 gridSize)
 {
 	const float width = float(pc.resolution.x);
@@ -64,10 +66,10 @@ uvec4 getGaussianTileExtents(uint threadIndex, vec4 gPosV, ivec2 gridSize)
 	// Screen space position
 	vec4 screenSpacePos = getScreenSpacePosition(width, height, gPosV, ubo.projMat);
 	uvec4 gExtents = uvec4(
-		clamp(int((screenSpacePos.x - radius) / TILE_SIZE), 0, gridSize.x - 1), 
-		clamp(int((screenSpacePos.y - radius) / TILE_SIZE), 0, gridSize.y - 1),
-		clamp(int((screenSpacePos.x + radius) / TILE_SIZE), 0, gridSize.x - 1), 
-		clamp(int((screenSpacePos.y + radius) / TILE_SIZE), 0, gridSize.y - 1)
+		clamp(int((screenSpacePos.x - radius) / TILE_SIZE), 0, gridSize.x), 
+		clamp(int((screenSpacePos.y - radius) / TILE_SIZE), 0, gridSize.y),
+		clamp(int((screenSpacePos.x + radius) / TILE_SIZE) + 1, 0, gridSize.x), 
+		clamp(int((screenSpacePos.y + radius) / TILE_SIZE) + 1, 0, gridSize.y)
 	);
 
 	return gExtents;
@@ -113,9 +115,9 @@ void main()
 	uvec4 gExtents = getGaussianTileExtents(threadIndex, viewSpacePos, gridSize);
 	
 	// Add sort element per gaussian per overlapped tile
-	for(uint y = gExtents.y; y <= gExtents.w; ++y)
+	for(uint y = gExtents.y; y < gExtents.w; ++y)
 	{
-		for(uint x = gExtents.x; x <= gExtents.z; ++x)
+		for(uint x = gExtents.x; x < gExtents.z; ++x)
 		{
 			// Tile key
 			uint tileKey = y * gridSize.x + x;
