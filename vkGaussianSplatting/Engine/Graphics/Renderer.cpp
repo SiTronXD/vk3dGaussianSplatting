@@ -788,12 +788,21 @@ uint32_t Renderer::getNumTiles() const
 		((this->swapchain.getVkExtent().height + TILE_SIZE - 1) / TILE_SIZE);
 }
 
+uint32_t Renderer::getCeilPowTwo(uint32_t x) const
+{
+	uint32_t num = 1;
+	while (num < x)
+		num *= 2u;
+
+	return num;
+}
+
 void Renderer::initForScene(Scene& scene)
 {
 	std::vector<GaussianData> gaussiansData;
 
-	this->loadGaussiansFromFile(gaussiansData);
-	//this->loadTestGaussians(gaussiansData);
+	//this->loadGaussiansFromFile(gaussiansData);
+	this->loadTestGaussians(gaussiansData);
 
 	// Gaussians SBO
 	this->gaussiansSBO.createGpuBuffer(
@@ -802,7 +811,7 @@ void Renderer::initForScene(Scene& scene)
 		gaussiansData.data()
 	);
 	this->numGaussians = (uint32_t) gaussiansData.size();
-	this->numSortElements = this->numGaussians * 4096;
+	this->numSortElements = this->getCeilPowTwo(this->numGaussians + 16 * this->getNumTiles());
 
 	// Gaussians list SBO for sorting
 	std::vector<GaussianSortData> sortData(this->numSortElements); // Dummy data

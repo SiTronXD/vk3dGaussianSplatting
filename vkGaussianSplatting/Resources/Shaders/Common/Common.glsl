@@ -2,7 +2,7 @@
 #define FOV_Y (3.1415f * 0.5f)
 
 // Has to match TILE_SIZE in Renderer.h
-#define TILE_SIZE 16 
+#define TILE_SIZE 64 
 
 // 2^32 - 1
 #define MAX_UINT32 4294967295u

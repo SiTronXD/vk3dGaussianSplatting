@@ -48,7 +48,7 @@ private:
 
 	const uint32_t INIT_LIST_WORK_GROUP_SIZE = 32;
 	const uint32_t BMS_WORK_GROUP_SIZE = 8;
-	const uint32_t TILE_SIZE = 16;
+	const uint32_t TILE_SIZE = 64;
 	const uint32_t FIND_RANGES_GROUP_SIZE = 16;
 
 	VulkanInstance instance;
@@ -142,6 +142,7 @@ private:
 	void dispatchBms(CommandBuffer& commandBuffer, BmsSubAlgorithm subAlgorithm, uint32_t h);
 
 	uint32_t getNumTiles() const;
+	uint32_t getCeilPowTwo(uint32_t x) const;
 
 	inline const VkDevice& getVkDevice() const { return this->device.getVkDevice(); }
 

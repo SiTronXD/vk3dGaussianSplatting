@@ -75,8 +75,11 @@ uvec4 getGaussianTileExtents(uint threadIndex, vec4 gPosV, ivec2 gridSize)
 
 uint getDepthKey(float viewSpacePosZ)
 {
+	const float nearPlane = pc.clipPlanes.x;
+	const float farPlane = pc.clipPlanes.y;
+
 	// Normalized depth
-	float normalizedDepth = (-viewSpacePosZ - pc.clipPlanes.x) / (pc.clipPlanes.y - pc.clipPlanes.x);
+	float normalizedDepth = (-viewSpacePosZ - nearPlane) / (farPlane - nearPlane);
 	normalizedDepth = clamp(normalizedDepth, 0.0f, 1.0f);
 
 	return uint(normalizedDepth * float(MAX_UINT32));
@@ -92,27 +95,30 @@ void main()
 		return;
 
 	vec4 viewSpacePos = ubo.viewMat * vec4(gaussiansBuffer.gaussians[threadIndex].position.xyz, 1.0f);
-	vec4 ndcPos = ubo.projMat * viewSpacePos;
-	ndcPos.xyz /= ndcPos.w;
+	/*vec4 ndcPos = ubo.projMat * viewSpacePos;
+	ndcPos.xyz /= ndcPos.w;*/
 
 	// "Frustum culling"
-	if(viewSpacePos.z > 0.0f || abs(ndcPos.x) > 1.3f || abs(ndcPos.y) > 1.3f)
+	if(-viewSpacePos.z <= pc.clipPlanes.x /*|| abs(ndcPos.x) > 1.3f || abs(ndcPos.y) > 1.3f*/)
 		return;
 
+	// Depth key
+	uint depthKey = getDepthKey(viewSpacePos.z);
+
+	// Extents
 	const ivec2 gridSize = ivec2(
 		(int(pc.resolution.x) + TILE_SIZE - 1) / TILE_SIZE,
 		(int(pc.resolution.y) + TILE_SIZE - 1) / TILE_SIZE
 	);
 	uvec4 gExtents = getGaussianTileExtents(threadIndex, viewSpacePos, gridSize);
-
-
+	
+	// Add sort element per gaussian per overlapped tile
 	for(uint y = gExtents.y; y <= gExtents.w; ++y)
 	{
 		for(uint x = gExtents.x; x <= gExtents.z; ++x)
 		{
-			// Create keys for sorting
+			// Tile key
 			uint tileKey = y * gridSize.x + x;
-			uint depthKey = getDepthKey(viewSpacePos.z);
 
 			// Add gaussian to list
 			uint id = atomicAdd(cullData.data.numGaussiansToRender.x, 1u);
