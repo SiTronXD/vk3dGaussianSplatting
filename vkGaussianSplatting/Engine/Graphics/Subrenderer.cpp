@@ -157,13 +157,13 @@ void Renderer::computeInitSortList(
 	);
 }
 
-void Renderer::computeSortGaussians(CommandBuffer& commandBuffer)
+void Renderer::computeSortGaussians(CommandBuffer& commandBuffer, uint32_t numElemToSort)
 {
 	// Make sure number of elements is power of two
-	assert((uint32_t)(this->numSortElements & (this->numSortElements - 1)) == 0u);
+	assert((uint32_t)(numElemToSort & (numElemToSort - 1)) == 0u);
 
 	// Make sure number of elements is large enough
-	assert(this->numSortElements >= BMS_WORK_GROUP_SIZE * 2);
+	assert(numElemToSort >= BMS_WORK_GROUP_SIZE * 2);
 
 	commandBuffer.bufferMemoryBarrier(
 		VK_ACCESS_SHADER_WRITE_BIT,
@@ -199,17 +199,19 @@ void Renderer::computeSortGaussians(CommandBuffer& commandBuffer)
 	this->dispatchBms(
 		commandBuffer, 
 		BmsSubAlgorithm::LOCAL_BMS, 
-		h
+		h,
+		numElemToSort
 	);
 
 	h *= 2;
 
-	for ( ; h <= this->numSortElements; h *= 2)
+	for ( ; h <= numElemToSort; h *= 2)
 	{
 		this->dispatchBms(
 			commandBuffer,
 			BmsSubAlgorithm::BIG_FLIP,
-			h
+			h,
+			numElemToSort
 		);
 
 		for (uint32_t hh = h / 2; hh > 1; hh /= 2)
@@ -219,7 +221,8 @@ void Renderer::computeSortGaussians(CommandBuffer& commandBuffer)
 				this->dispatchBms(
 					commandBuffer,
 					BmsSubAlgorithm::LOCAL_DISPERSE,
-					hh
+					hh,
+					numElemToSort
 				);
 				break;
 			}
@@ -228,7 +231,8 @@ void Renderer::computeSortGaussians(CommandBuffer& commandBuffer)
 				this->dispatchBms(
 					commandBuffer,
 					BmsSubAlgorithm::BIG_DISPERSE,
-					hh
+					hh,
+					numElemToSort
 				);
 			}
 		}
@@ -425,7 +429,11 @@ void Renderer::computeRenderGaussians(
 	);
 }
 
-void Renderer::dispatchBms(CommandBuffer& commandBuffer, BmsSubAlgorithm subAlgorithm, uint32_t h)
+void Renderer::dispatchBms(
+	CommandBuffer& commandBuffer, 
+	BmsSubAlgorithm subAlgorithm, 
+	uint32_t h,
+	uint32_t numElemToSort)
 {
 	// Push constant
 	SortGaussiansPCD sortGaussiansPcData{};
@@ -439,7 +447,7 @@ void Renderer::dispatchBms(CommandBuffer& commandBuffer, BmsSubAlgorithm subAlgo
 	// Run compute shader
 	// Divide workload by 2, since 1 thread works on pairs of elements
 	commandBuffer.dispatch(
-		this->numSortElements / BMS_WORK_GROUP_SIZE / 2
+		numElemToSort / BMS_WORK_GROUP_SIZE / 2
 	);
 
 	commandBuffer.bufferMemoryBarrier(

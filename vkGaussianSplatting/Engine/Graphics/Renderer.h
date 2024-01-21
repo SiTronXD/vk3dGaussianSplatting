@@ -135,11 +135,11 @@ private:
 
 	void renderImgui(CommandBuffer& commandBuffer, ImDrawData* imguiDrawData, uint32_t imageIndex);
 	void computeInitSortList(CommandBuffer& commandBuffer, const Camera& camera);
-	void computeSortGaussians(CommandBuffer& commandBuffer);
+	void computeSortGaussians(CommandBuffer& commandBuffer, uint32_t numElemToSort);
 	void computeRanges(CommandBuffer& commandBuffer);
 	void computeRenderGaussians(CommandBuffer& commandBuffer, uint32_t imageIndex);
 
-	void dispatchBms(CommandBuffer& commandBuffer, BmsSubAlgorithm subAlgorithm, uint32_t h);
+	void dispatchBms(CommandBuffer& commandBuffer, BmsSubAlgorithm subAlgorithm, uint32_t h, uint32_t numElemToSort);
 
 	uint32_t getNumTiles() const;
 	uint32_t getCeilPowTwo(uint32_t x) const;

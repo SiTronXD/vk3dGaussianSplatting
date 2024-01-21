@@ -633,7 +633,8 @@ void Renderer::recordCommandBuffer(
 	);
 
 	this->computeSortGaussians(
-		commandBuffer
+		commandBuffer,
+		this->numSortElements
 	);
 
 	this->computeRanges(
