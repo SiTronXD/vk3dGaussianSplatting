@@ -729,10 +729,11 @@ void Renderer::loadGaussiansFromFile(std::vector<GaussianData>& outputGaussianDa
 	std::vector<float> gPositionsZ = plyData.getElement(names[0]).getProperty<float>("z");
 
 	uint32_t realNumGaussians = (uint32_t)gPositionsX.size();
+	this->numGaussians = realNumGaussians;
+	//this->numGaussians = 1024 * 4;
 
-	this->numGaussians = 1024 * 4;
 	outputGaussianData.resize(this->numGaussians);
-	for (uint32_t i = 0; i < this->numGaussians; ++i)
+	/*for (uint32_t i = 0; i < this->numGaussians; ++i)
 	{
 		uint32_t randomIndex = rand() % gPositionsX.size();
 
@@ -757,6 +758,21 @@ void Renderer::loadGaussiansFromFile(std::vector<GaussianData>& outputGaussianDa
 		gPositionsX.erase(gPositionsX.begin() + randomIndex);
 		gPositionsY.erase(gPositionsY.begin() + randomIndex);
 		gPositionsZ.erase(gPositionsZ.begin() + randomIndex);
+	}*/
+	for (uint32_t i = 0; i < this->numGaussians; ++i)
+	{
+		outputGaussianData[i].position = glm::vec4(
+			gPositionsX[i],
+			gPositionsY[i] * -1.0f,
+			gPositionsZ[i],
+			0.0f);
+		outputGaussianData[i].scale = glm::vec4(0.01f, 0.01f, 0.01f, 0.0f);
+		outputGaussianData[i].color = glm::vec4(
+			(rand() % 10000) / 10000.0f,
+			(rand() % 10000) / 10000.0f,
+			(rand() % 10000) / 10000.0f,
+			1.0f
+		);
 	}
 }
 
@@ -802,8 +818,8 @@ void Renderer::initForScene(Scene& scene)
 {
 	std::vector<GaussianData> gaussiansData;
 
-	this->loadGaussiansFromFile(gaussiansData);
-	//this->loadTestGaussians(gaussiansData);
+	//this->loadGaussiansFromFile(gaussiansData);
+	this->loadTestGaussians(gaussiansData);
 
 	// Gaussians SBO
 	this->gaussiansSBO.createGpuBuffer(

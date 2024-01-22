@@ -42,21 +42,21 @@ void Renderer::computeInitSortList(
 {
 	// Reset gaussian sort keys (make sure close sorted gaussians have lower valued keys)
 	commandBuffer.fillBuffer(
-		this->gaussiansSortListSBO,
+		this->gaussiansSortListSBO.getVkBuffer(),
 		sizeof(GaussianSortData) * this->numSortElements,
 		std::numeric_limits<uint32_t>::max()
 	);
 
 	// Reset gaussian count before culling
 	commandBuffer.fillBuffer(
-		this->gaussiansCullDataSBO,
+		this->gaussiansCullDataSBO.getVkBuffer(),
 		sizeof(uint32_t),
 		0
 	);
 
 	// Reset ranges
 	commandBuffer.fillBuffer(
-		this->gaussiansTileRangesSBO,
+		this->gaussiansTileRangesSBO.getVkBuffer(),
 		sizeof(GaussianTileRangeData) * this->getNumTiles(),
 		0
 	);
@@ -103,7 +103,7 @@ void Renderer::computeInitSortList(
 
 	// Binding 0
 	VkDescriptorBufferInfo inputCamUboInfo{};
-	inputCamUboInfo.buffer = this->camUBO.getVkBuffer();
+	inputCamUboInfo.buffer = this->camUBO.getVkBuffer(GfxState::currentFrameIndex);
 	inputCamUboInfo.range = this->camUBO.getBufferSize();
 
 	// Binding 1
@@ -369,7 +369,7 @@ void Renderer::computeRenderGaussians(
 
 	// Binding 4
 	VkDescriptorBufferInfo inputCamUboInfo{};
-	inputCamUboInfo.buffer = this->camUBO.getVkBuffer();
+	inputCamUboInfo.buffer = this->camUBO.getVkBuffer(GfxState::currentFrameIndex);
 	inputCamUboInfo.range = this->camUBO.getBufferSize();
 
 	// Binding 5

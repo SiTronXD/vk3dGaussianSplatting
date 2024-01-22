@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Buffer.h"
+#include "StagingBuffer.h"
 #include "../GpuProperties.h"
 
 void Buffer::createBuffer(
@@ -68,20 +69,6 @@ void Buffer::createBuffer(
 	}
 }
 
-void Buffer::createStagingBuffer(
-	const GfxAllocContext& gfxAllocContext, 
-	const VkDeviceSize& size)
-{
-	this->createBuffer(
-		gfxAllocContext,
-		size,
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT |
-			VMA_ALLOCATION_CREATE_MAPPED_BIT |
-			VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT // Dedicated memory can be completely freed, and therefore saves cpu RAM after deallocation.
-	);
-}
-
 void Buffer::createGpuBuffer(
 	const GfxAllocContext& gfxAllocContext, 
 	const VkBufferUsageFlags& usageFlags,
@@ -89,7 +76,7 @@ void Buffer::createGpuBuffer(
 	const void* cpuData)
 {
 	// Create staging buffer
-	Buffer stagingBuffer;
+	StagingBuffer stagingBuffer;
 	stagingBuffer.createStagingBuffer(
 		gfxAllocContext,
 		bufferSize
@@ -110,7 +97,7 @@ void Buffer::createGpuBuffer(
 	Buffer::copyBuffer(
 		gfxAllocContext,
 		stagingBuffer.getVkBuffer(),
-		this->getVkBuffer(),
+		this->getVkBuffer(0),
 		bufferSize
 	);
 

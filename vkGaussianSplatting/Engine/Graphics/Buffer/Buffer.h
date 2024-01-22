@@ -31,6 +31,9 @@ protected:
 		const VkDeviceSize& bufferSize,
 		const void* cpuData);
 
+	inline const VkBuffer& getVkBuffer(const uint32_t& index) const { return this->buffers[index]; }
+	inline const VmaAllocation& getVmaAllocation(const uint32_t& index) const { return this->bufferMemories[index]; }
+
 public:
 	Buffer();
 	virtual ~Buffer();
@@ -41,9 +44,6 @@ public:
 		const VkBufferUsageFlags& usage,
 		const VkMemoryPropertyFlags& properties,
 		const uint32_t& numBuffers = 1);
-	void createStagingBuffer(
-		const GfxAllocContext& gfxAllocContext,
-		const VkDeviceSize& size);
 	void updateBuffer(const void* cpuData);
 
 	static void copyBuffer(
@@ -54,7 +54,5 @@ public:
 
 	void cleanup();
 
-	inline const VkBuffer& getVkBuffer(const uint32_t& index = 0) const { return this->buffers[index]; }
-	inline const VmaAllocation& getVmaAllocation(const uint32_t& index = 0) const { return this->bufferMemories[index]; }
 	inline VkDeviceSize getBufferSize() const { return this->bufferSize; }
 };

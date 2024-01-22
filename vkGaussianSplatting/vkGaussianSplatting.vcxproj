@@ -201,6 +201,7 @@
     </ClCompile>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Scenes\TestScene.cpp" />
+    <ClCompile Include="Engine\Graphics\Buffer\StagingBuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Application\Input.h" />
@@ -269,6 +270,7 @@
     <ClInclude Include="Linking\Include\imgui\imstb_textedit.h" />
     <ClInclude Include="Linking\Include\imgui\imstb_truetype.h" />
     <ClInclude Include="Scenes\TestScene.h" />
+    <ClInclude Include="Engine\Graphics\Buffer\StagingBuffer.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\Shaders\Common\ColorTransformations.glsl">

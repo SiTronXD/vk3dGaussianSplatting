@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "TextureCube.h"
+#include "../Buffer/StagingBuffer.h"
 
 void TextureCube::copyBufferToCubeMap(
 	VkBuffer buffer,
@@ -49,7 +50,7 @@ bool TextureCube::createTextureCubeMapImage(
 	VkDeviceSize cubeMapSize = imageByteSize * 6;
 
 	// Staging buffer
-	Buffer stagingBuffer;
+	StagingBuffer stagingBuffer;
 	stagingBuffer.createStagingBuffer(
 		*this->gfxAllocContext,
 		cubeMapSize

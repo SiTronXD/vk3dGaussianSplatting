@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Texture2D.h"
+#include "../Buffer/StagingBuffer.h"
 
 void Texture2D::copyBufferToImage(
 	VkBuffer buffer, 
@@ -49,7 +50,7 @@ bool Texture2D::createTextureImage(const std::string& filePath)
 	VkDeviceSize imageSize = textureData.getImageByteSize();
 
 	// Staging buffer
-	Buffer stagingBuffer;
+	StagingBuffer stagingBuffer;
 	stagingBuffer.createStagingBuffer(
 		*this->gfxAllocContext,
 		imageSize
