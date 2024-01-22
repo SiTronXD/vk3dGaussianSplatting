@@ -723,10 +723,42 @@ void Renderer::loadGaussiansFromFile(std::vector<GaussianData>& outputGaussianDa
 	// Load ply file
 	happly::PLYData plyData("D:/DownloadedAssets/GaussianFiles/bicycle/point_cloud/iteration_7000/point_cloud.ply");
 
-	std::vector<std::string> names = plyData.getElementNames();
-	std::vector<float> gPositionsX = plyData.getElement(names[0]).getProperty<float>("x");
-	std::vector<float> gPositionsY = plyData.getElement(names[0]).getProperty<float>("y");
-	std::vector<float> gPositionsZ = plyData.getElement(names[0]).getProperty<float>("z");
+	const std::vector<std::string> names = plyData.getElementNames();
+	happly::Element& element = plyData.getElement(names[0]);
+	const std::vector<float> gPositionsX = element.getProperty<float>("x");
+	const std::vector<float> gPositionsY = element.getProperty<float>("y");
+	const std::vector<float> gPositionsZ = element.getProperty<float>("z");
+
+	const std::vector<float> gScalesX = element.getProperty<float>("scale_0");
+	const std::vector<float> gScalesY = element.getProperty<float>("scale_1");
+	const std::vector<float> gScalesZ = element.getProperty<float>("scale_2");
+
+	const std::vector<float> gRot0 = element.getProperty<float>("rot_0");
+	const std::vector<float> gRot1 = element.getProperty<float>("rot_1");
+	const std::vector<float> gRot2 = element.getProperty<float>("rot_2");
+	const std::vector<float> gRot3 = element.getProperty<float>("rot_3");
+
+	const std::vector<float> gOpacities = element.getProperty<float>("opacity");
+
+	// For inspecting while debugging
+	// TODO: remove once loading is implemented
+	std::vector<std::string> propertyNames = element.getPropertyNames();
+
+	assert(	
+		gPositionsX.size() == gPositionsY.size() && 
+		gPositionsX.size() == gPositionsZ.size() &&
+
+		gPositionsX.size() == gScalesX.size() &&
+		gPositionsX.size() == gScalesY.size() &&
+		gPositionsX.size() == gScalesZ.size() &&
+
+		gPositionsX.size() == gRot0.size() &&
+		gPositionsX.size() == gRot1.size() &&
+		gPositionsX.size() == gRot2.size() &&
+		gPositionsX.size() == gRot3.size() &&
+
+		gPositionsX.size() == gOpacities.size()
+	);
 
 	uint32_t realNumGaussians = (uint32_t)gPositionsX.size();
 	this->numGaussians = realNumGaussians;
