@@ -6,7 +6,7 @@
 #include "../Common/GaussiansStructs.glsl"
 
 // This has to match the BMS_WORK_GROUP_SIZE in Renderer.h
-#define WORK_GROUP_SIZE 8
+#define WORK_GROUP_SIZE 512
 
 #define ALG_LOCAL_BMS 0
 #define ALG_LOCAL_DISPERSE 1

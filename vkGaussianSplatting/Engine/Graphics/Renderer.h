@@ -4,6 +4,7 @@
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_vulkan.h>
 #include <vk_mem_alloc.h>
+#include <happly.h>
 
 #include "../Application/Window.h"
 #include "../Application/Scene.h"
@@ -47,7 +48,7 @@ private:
 	const float WAIT_ELAPSED_FRAMES_FOR_AVG = 500.0f;
 
 	const uint32_t INIT_LIST_WORK_GROUP_SIZE = 32;
-	const uint32_t BMS_WORK_GROUP_SIZE = 8;
+	const uint32_t BMS_WORK_GROUP_SIZE = 512;
 	const uint32_t TILE_SIZE = 16;
 	const uint32_t FIND_RANGES_GROUP_SIZE = 16;
 
@@ -146,6 +147,9 @@ private:
 
 	inline const VkDevice& getVkDevice() const { return this->device.getVkDevice(); }
 
+	template <typename T>
+	void loadProperty(happly::Element& element, const std::string& propertyStr, std::vector<T>& output);
+
 	void loadGaussiansFromFile(std::vector<GaussianData>& outputGaussianData);
 	void loadTestGaussians(std::vector<GaussianData>& outputGaussianData);
 
@@ -170,3 +174,17 @@ public:
 		{ return (float) this->swapchain.getWidth() / this->swapchain.getHeight(); }
 	inline const GfxAllocContext& getGfxAllocContext() const { return this->gfxAllocContext; }
 };
+
+template<typename T>
+inline void Renderer::loadProperty(
+	happly::Element& element, 
+	const std::string& propertyStr,
+	std::vector<T>& output)
+{
+	assert(output.size() == 0);
+
+	bool hasProperty = element.hasPropertyType<T>(propertyStr);
+	assert(hasProperty);
+
+	output = element.getProperty<T>(propertyStr);
+}

@@ -9,8 +9,6 @@
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
 
-#include <happly.h>
-
 const std::vector<const char*> validationLayers =
 {
 	"VK_LAYER_KHRONOS_validation"
@@ -721,24 +719,55 @@ void Renderer::init(ResourceManager& resourceManager)
 void Renderer::loadGaussiansFromFile(std::vector<GaussianData>& outputGaussianData)
 {
 	// Load ply file
-	happly::PLYData plyData("D:/DownloadedAssets/GaussianFiles/bicycle/point_cloud/iteration_7000/point_cloud.ply");
+	happly::PLYData plyData("D:/DownloadedAssets/GaussianFiles/train/point_cloud/iteration_7000/point_cloud.ply");
 
 	const std::vector<std::string> names = plyData.getElementNames();
 	happly::Element& element = plyData.getElement(names[0]);
-	const std::vector<float> gPositionsX = element.getProperty<float>("x");
-	const std::vector<float> gPositionsY = element.getProperty<float>("y");
-	const std::vector<float> gPositionsZ = element.getProperty<float>("z");
+	std::vector<float> gPositionsX;
+	std::vector<float> gPositionsY;
+	std::vector<float> gPositionsZ;
 
-	const std::vector<float> gScalesX = element.getProperty<float>("scale_0");
-	const std::vector<float> gScalesY = element.getProperty<float>("scale_1");
-	const std::vector<float> gScalesZ = element.getProperty<float>("scale_2");
+	this->loadProperty<float>(element, "x", gPositionsX);
+	this->loadProperty<float>(element, "y", gPositionsY);
+	this->loadProperty<float>(element, "z", gPositionsZ);
 
-	const std::vector<float> gRot0 = element.getProperty<float>("rot_0");
-	const std::vector<float> gRot1 = element.getProperty<float>("rot_1");
-	const std::vector<float> gRot2 = element.getProperty<float>("rot_2");
-	const std::vector<float> gRot3 = element.getProperty<float>("rot_3");
+	std::vector<float> gScalesX;
+	std::vector<float> gScalesY;
+	std::vector<float> gScalesZ;
 
-	const std::vector<float> gOpacities = element.getProperty<float>("opacity");
+	this->loadProperty<float>(element, "scale_0", gScalesX);
+	this->loadProperty<float>(element, "scale_1", gScalesY);
+	this->loadProperty<float>(element, "scale_2", gScalesZ);
+
+	std::vector<float> gRot0;
+	std::vector<float> gRot1;
+	std::vector<float> gRot2;
+	std::vector<float> gRot3;
+
+	this->loadProperty<float>(element, "rot_0", gRot0);
+	this->loadProperty<float>(element, "rot_1", gRot1);
+	this->loadProperty<float>(element, "rot_2", gRot2);
+	this->loadProperty<float>(element, "rot_3", gRot3);
+
+	std::vector<float> gOpacities;
+
+	this->loadProperty<float>(element, "opacity", gOpacities);
+
+	std::vector<float> gFeature0;
+	std::vector<float> gFeature1;
+	std::vector<float> gFeature2;
+
+	this->loadProperty<float>(element, "f_dc_0", gFeature0);
+	this->loadProperty<float>(element, "f_dc_1", gFeature1);
+	this->loadProperty<float>(element, "f_dc_2", gFeature2);
+
+	std::vector<float> gFeatureRest0;
+	std::vector<float> gFeatureRest1;
+	std::vector<float> gFeatureRest2;
+
+	this->loadProperty<float>(element, "f_rest_0", gFeatureRest0);
+	this->loadProperty<float>(element, "f_rest_1", gFeatureRest1);
+	this->loadProperty<float>(element, "f_rest_2", gFeatureRest2);
 
 	// For inspecting while debugging
 	// TODO: remove once loading is implemented
@@ -774,13 +803,19 @@ void Renderer::loadGaussiansFromFile(std::vector<GaussianData>& outputGaussianDa
 			gPositionsX[randomIndex],
 			gPositionsY[randomIndex] * -1.0f,
 			gPositionsZ[randomIndex],
-			0.0f);
-		gaussian.scale = glm::vec4(0.01f, 0.01f, 0.01f, 0.0f);
+			0.0f
+		);
+		gaussian.scale = glm::vec4(
+			gScalesX[randomIndex] * 0.01f, 
+			gScalesY[randomIndex] * 0.01f, 
+			gScalesZ[randomIndex] * 0.01f, 
+			0.0f
+		);
 		gaussian.color = glm::vec4(
-			(rand() % 10000) / 10000.0f,
-			(rand() % 10000) / 10000.0f,
-			(rand() % 10000) / 10000.0f,
-			1.0f
+			std::abs(gFeature0[randomIndex]) * 0.28209479177387814f,
+			std::abs(gFeature1[randomIndex]) * 0.28209479177387814f,
+			std::abs(gFeature2[randomIndex]) * 0.28209479177387814f,
+			gOpacities[randomIndex]
 		);
 
 		// Apply
@@ -790,20 +825,43 @@ void Renderer::loadGaussiansFromFile(std::vector<GaussianData>& outputGaussianDa
 		gPositionsX.erase(gPositionsX.begin() + randomIndex);
 		gPositionsY.erase(gPositionsY.begin() + randomIndex);
 		gPositionsZ.erase(gPositionsZ.begin() + randomIndex);
+
+		gScalesX.erase(gScalesX.begin() + randomIndex);
+		gScalesY.erase(gScalesY.begin() + randomIndex);
+		gScalesZ.erase(gScalesZ.begin() + randomIndex);
+
+		gFeature0.erase(gFeature0.begin() + randomIndex);
+		gFeature1.erase(gFeature1.begin() + randomIndex);
+		gFeature2.erase(gFeature2.begin() + randomIndex);
+
+		gOpacities.erase(gOpacities.begin() + randomIndex);
 	}*/
 	for (uint32_t i = 0; i < this->numGaussians; ++i)
 	{
 		outputGaussianData[i].position = glm::vec4(
-			gPositionsX[i],
+			gPositionsX[i] * -1.0f,
 			gPositionsY[i] * -1.0f,
 			gPositionsZ[i],
-			0.0f);
-		outputGaussianData[i].scale = glm::vec4(0.01f, 0.01f, 0.01f, 0.0f);
+			0.0f
+		);
+		outputGaussianData[i].scale = glm::vec4(
+			std::exp(gScalesX[i]),
+			std::exp(gScalesY[i]),
+			std::exp(gScalesZ[i]),
+			0.0f
+		);
+		outputGaussianData[i].rot = glm::vec4(
+			gRot0[i],
+			gRot1[i],
+			gRot2[i],
+			gRot3[i]
+		);
+		//outputGaussianData[i].rot /= outputGaussianData[i].rot.length();
 		outputGaussianData[i].color = glm::vec4(
-			(rand() % 10000) / 10000.0f,
-			(rand() % 10000) / 10000.0f,
-			(rand() % 10000) / 10000.0f,
-			1.0f
+			0.5f + gFeature0[i] * 0.28209479177387814f,
+			0.5f + gFeature1[i] * 0.28209479177387814f,
+			0.5f + gFeature2[i] * 0.28209479177387814f, // TODO: evaluate SH in shader
+			(1.0f / (1.0f + std::exp(-gOpacities[i])))
 		);
 	}
 }
@@ -818,7 +876,7 @@ void Renderer::loadTestGaussians(std::vector<GaussianData>& outputGaussianData)
 	{
 		GaussianData gaussian{};
 		gaussian.position = glm::vec4( -8.0f + (float) i, 0.0f, -1.0f, 0.0f);
-		gaussian.scale = glm::vec4(0.1f, 0.2f, 0.3f, 0.0f);
+		gaussian.scale = glm::vec4(0.1f, 0.2f, 0.5f, 0.0f);
 		gaussian.color = glm::vec4(
 			(rand() % 10000) / 10000.0f,
 			(rand() % 10000) / 10000.0f,
@@ -850,8 +908,8 @@ void Renderer::initForScene(Scene& scene)
 {
 	std::vector<GaussianData> gaussiansData;
 
-	//this->loadGaussiansFromFile(gaussiansData);
-	this->loadTestGaussians(gaussiansData);
+	this->loadGaussiansFromFile(gaussiansData);
+	//this->loadTestGaussians(gaussiansData);
 
 	// Gaussians SBO
 	this->gaussiansSBO.createGpuBuffer(
@@ -860,7 +918,7 @@ void Renderer::initForScene(Scene& scene)
 		gaussiansData.data()
 	);
 	this->numGaussians = (uint32_t) gaussiansData.size();
-	this->numSortElements = this->getCeilPowTwo(this->numGaussians + 16 * this->getNumTiles());
+	this->numSortElements = this->getCeilPowTwo(this->numGaussians + 48 * 16 * this->getNumTiles());
 
 	// Gaussians list SBO for sorting
 	std::vector<GaussianSortData> sortData(this->numSortElements); // Dummy data

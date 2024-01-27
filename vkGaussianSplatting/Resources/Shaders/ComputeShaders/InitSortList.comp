@@ -51,6 +51,7 @@ uvec4 getGaussianTileExtents(uint threadIndex, vec4 gPosV, ivec2 gridSize)
 		width, 
 		height, 
 		gaussiansBuffer.gaussians[threadIndex].scale.xyz, 
+		gaussiansBuffer.gaussians[threadIndex].rot.xyzw,
 		gPosV, 
 		ubo.viewMat
 	);

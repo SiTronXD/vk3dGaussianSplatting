@@ -7,17 +7,31 @@
 // 2^32 - 1
 #define MAX_UINT32 4294967295u
 
+mat3x3 getRotMat(vec4 rot)
+{
+	const float r = rot.x;
+	const float x = rot.y;
+	const float y = rot.z;
+	const float z = rot.w;
+
+	// Explanation and reference: https://www.songho.ca/opengl/gl_quaternion.html
+	return mat3x3(
+		1.0f - 2.0f * y * y - 2.0f * z * z,			2.0f * x * y - 2.0f * r * z,			2.0f * x * z + 2.0f * r * y,
+		2.0f * x * y + 2.0f * r * z,				1.0f - 2.0f * x * x - 2.0f * z * z,		2.0f * y * z - 2.0f * r * x,
+		2.0f * x * z - 2.0f * r * y,				2.0f * y * z + 2.0f * r * x,			1.0f - 2.0f * x * x - 2.0f * y * y
+	);
+}
+
 vec3 getCovarianceMatrix(
 	float width, 
 	float height, 
-	vec3 gScale, 
+	vec3 gScale,
+	vec4 gRot,
 	vec4 gPosV, 
 	mat4 viewMat)
 {
 	// Sigma = R * S * S^T * R^T
-	mat3x3 rotMat = mat3x3(	1.0f, 0.0f, 0.0f,
-							0.0f, 1.0f, 0.0f,
-							0.0f, 0.0f, 1.0f);
+	mat3x3 rotMat = getRotMat(gRot);
 	mat3x3 scaleMat = mat3x3(gScale.x,	0.0f,		0.0f,
 							 0.0f,		gScale.y,	0.0f,
 							 0.0f,		0.0f,		gScale.z);
@@ -35,7 +49,7 @@ vec3 getCovarianceMatrix(
 	mat3x3 J = mat3x3(	focalX / gPosV.z, 0.0f, -(focalX * gPosV.x) / (gPosV.z * gPosV.z),
 						0.0f, focalY / gPosV.z, -(focalY * gPosV.y) / (gPosV.z * gPosV.z),
 						0.0f, 0.0f, 0.0f);
-	mat3x3 sigmaPrime = (J) * (W) * (sigma) * transpose(W) * transpose(J);
+	mat3x3 sigmaPrime = J * W * sigma * transpose(W) * transpose(J);
 
 	vec3 cov = vec3(sigmaPrime[0][0], sigmaPrime[0][1], sigmaPrime[1][1]);
 

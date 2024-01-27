@@ -3,6 +3,7 @@ struct GaussianData
 {
 	vec4 position;
 	vec4 scale;
+	vec4 rot;
 	vec4 color;
 };
 

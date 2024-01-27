@@ -79,16 +79,18 @@ void main()
 		uint gaussianIndex = listBuffer.sortData[i].data.z;
 
 		// Gaussian	data
-		float gAlpha = 1.0f; // TODO: should be a property part of the gaussian buffer
-		vec3 gColor = gaussiansBuffer.gaussians[gaussianIndex].color.xyz; // TODO: should eventually use SH
+		vec4 gColorAlpha = gaussiansBuffer.gaussians[gaussianIndex].color.xyzw;
+		float gAlpha = gColorAlpha.w;
+		vec3 gColor = gColorAlpha.xyz; // TODO: should eventually use SH
 		vec3 gScale = gaussiansBuffer.gaussians[gaussianIndex].scale.xyz;
+		vec4 gRot = gaussiansBuffer.gaussians[gaussianIndex].rot.xyzw;
 		vec3 gPosW = gaussiansBuffer.gaussians[gaussianIndex].position.xyz;
 		vec4 gPosV = viewMat * vec4(gPosW, 1.0f);
 
 		// "Frustum culling"
 		//if(gPosV.z < 0.0f)
 		{
-			vec3 cov = getCovarianceMatrix(width, height, gScale, gPosV, viewMat);
+			vec3 cov = getCovarianceMatrix(width, height, gScale, gRot, gPosV, viewMat);
 			float det = (cov.x * cov.z - cov.y * cov.y);
 
 			if(det != 0.0f)
@@ -106,10 +108,20 @@ void main()
 				// exp(-0.5f * x^T * Sigma^(-1) * x)
 				float f = -0.5f * (covInv.x * evalX.x * evalX.x + covInv.z * evalX.y * evalX.y) - covInv.y * evalX.x * evalX.y;
 				float alpha = gAlpha * exp(f);
-				float nextT = Ti * (1.0f - alpha);
-			
+
+				// Important for precision
+				if(f > 0.0f || alpha < 1.0f / 255.0f)
+					continue;
+				
 				// Apply gaussian
 				color += Ti * alpha * gColor;
+
+				float nextT = Ti * (1.0f - alpha);
+
+				// Important for precision
+				if(nextT < 0.0001f) 
+					break;
+			
 				Ti = nextT;
 			}
 		}

@@ -40,6 +40,7 @@ struct GaussianData
 {
 	glm::vec4 position; // vec4(x, y, z, 0.0f)
 	glm::vec4 scale; // vec4(x, y, z, 0.0f)
+	glm::vec4 rot = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 	glm::vec4 color; // TODO: remove once SH are implemented
 };
 
