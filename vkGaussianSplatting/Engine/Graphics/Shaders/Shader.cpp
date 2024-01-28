@@ -24,6 +24,31 @@ void Shader::readFile(const std::string& filePath, std::vector<char>& output)
 	file.close();
 }
 
+void Shader::createSpecializationInfo(const std::vector<SpecializationConstant>& specializationConstants)
+{
+	// Specialization constants
+	if (specializationConstants.size() > 0)
+	{
+		// Entries
+		this->specMapEntries.resize(specializationConstants.size());
+		for (size_t i = 0; i < this->specMapEntries.size(); ++i)
+		{
+			this->specMapEntries[i].constantID = i;
+			this->specMapEntries[i].offset = 0;
+			this->specMapEntries[i].size = specializationConstants[i].size;
+		}
+
+		// Info
+		this->specializationInfo =
+		{
+			(uint32_t)specializationConstants.size(),
+			this->specMapEntries.data(),
+			specializationConstants[0].size * specializationConstants.size(),
+			specializationConstants.data()
+		};
+	}
+}
+
 VkShaderModule Shader::createShaderModule(const std::vector<char>& code)
 {
 	VkShaderModuleCreateInfo createInfo{};
@@ -47,7 +72,8 @@ VkShaderModule Shader::createShaderModule(const std::vector<char>& code)
 Shader::Shader()
 	: shaderModule(VK_NULL_HANDLE),
 	device(nullptr),
-	shaderStage{}
+	shaderStage{},
+	specializationInfo{}
 {}
 
 Shader::~Shader() {}
@@ -57,7 +83,10 @@ void Shader::setShaderStage(const VkPipelineShaderStageCreateInfo& shaderStage)
 	this->shaderStage = shaderStage;
 }
 
-void Shader::loadAndCreateShaderModule(const Device& device, const std::string& filePath)
+void Shader::loadAndCreateShaderModule(
+	const Device& device, 
+	const std::string& filePath,
+	const std::vector<SpecializationConstant>& specializationConstants)
 {
 	this->device = &device;
 
@@ -67,6 +96,9 @@ void Shader::loadAndCreateShaderModule(const Device& device, const std::string& 
 
 	// Create shader module
 	this->shaderModule = this->createShaderModule(shaderCode);
+
+	// Create specialization info
+	this->createSpecializationInfo(specializationConstants);
 }
 
 void Shader::cleanup()

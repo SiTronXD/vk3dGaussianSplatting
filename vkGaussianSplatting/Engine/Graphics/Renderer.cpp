@@ -112,7 +112,10 @@ void Renderer::initVulkan()
 	this->sortGaussiansPipeline.createComputePipeline(
 		this->device,
 		this->sortGaussiansPipelineLayout,
-		"Resources/Shaders/BitonicMergeSort.comp.spv"
+		"Resources/Shaders/BitonicMergeSort.comp.spv",
+		{
+			SpecializationConstant{ (void*) Renderer::BMS_WORK_GROUP_SIZE, sizeof(uint32_t)}
+		}
 	);
 
 	// Find ranges compute pipeline

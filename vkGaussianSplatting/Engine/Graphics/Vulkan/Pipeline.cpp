@@ -44,7 +44,7 @@ void Pipeline::createGraphicsPipeline(
 	this->bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	this->device = &device;
 
-	VertexShader vertShader(device, vertexShader);
+	VertexShader vertShader(device, vertexShader, {});
 	FragmentShader fragShader;
 
 	std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
@@ -53,7 +53,7 @@ void Pipeline::createGraphicsPipeline(
 	// Fragment shader is optional
 	if (fragmentShader != "")
 	{
-		fragShader.createFromFile(device, fragmentShader);
+		fragShader.createFromFile(device, fragmentShader, {});
 		shaderStages.push_back(fragShader.getShaderStage());
 	}
 
@@ -206,12 +206,13 @@ void Pipeline::createGraphicsPipeline(
 void Pipeline::createComputePipeline(
 	const Device& device, 
 	PipelineLayout& pipelineLayout, 
-	const std::string& computeShader)
+	const std::string& computeShader,
+	const std::vector<SpecializationConstant>& specializationConstants)
 {
 	this->bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
 	this->device = &device;
 
-	ComputeShader compShader(device, computeShader);
+	ComputeShader compShader(device, computeShader, specializationConstants);
 
 	// Create compute pipeline
 	VkComputePipelineCreateInfo computePipelineInfo{ VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO };

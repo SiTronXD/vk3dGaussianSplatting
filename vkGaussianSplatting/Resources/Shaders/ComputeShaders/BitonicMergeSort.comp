@@ -5,15 +5,15 @@
 
 #include "../Common/GaussiansStructs.glsl"
 
-// This has to match the BMS_WORK_GROUP_SIZE in Renderer.h
-#define WORK_GROUP_SIZE 512
+// Receive work group size as a specialization constant
+layout(constant_id = 0) const uint WORK_GROUP_SIZE = 512u;
 
 #define ALG_LOCAL_BMS 0
 #define ALG_LOCAL_DISPERSE 1
 #define ALG_BIG_FLIP 2
 #define ALG_BIG_DISPERSE 3
 
-layout (local_size_x = WORK_GROUP_SIZE, local_size_y = 1) in;
+layout (local_size_x_id = 0, local_size_y = 1, local_size_z = 1) in;
 
 // SBO
 layout(binding = 0) buffer GaussiansSortListBuffer

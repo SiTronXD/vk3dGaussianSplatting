@@ -7,8 +7,8 @@ class FragmentShader : public Shader
 private:
 public:
 	FragmentShader();
-	FragmentShader(const Device& device, const std::string& filePath);
+	FragmentShader(const Device& device, const std::string& filePath, const std::vector<SpecializationConstant>& specializationConstants);
 	~FragmentShader();
 
-	void createFromFile(const Device& device, const std::string& filePath);
+	void createFromFile(const Device& device, const std::string& filePath, const std::vector<SpecializationConstant>& specializationConstants);
 };

@@ -2,6 +2,7 @@
 
 #include "PipelineLayout.h"
 
+struct SpecializationConstant;
 class Device;
 
 class Pipeline
@@ -28,7 +29,8 @@ public:
 	void createComputePipeline(
 		const Device& device,
 		PipelineLayout& pipelineLayout,
-		const std::string& computeShader);
+		const std::string& computeShader,
+		const std::vector<SpecializationConstant>& specializationConstants = {});
 	void createImguiPipeline(
 		const Device& device,
 		PipelineLayout& imguiPipelineLayout,
