@@ -42,6 +42,9 @@ enum class BmsSubAlgorithm
 	BIG_DISPERSE = 3
 };
 
+//#define RECORD_GPU_TIMES
+//#define RECORD_CPU_TIMES
+
 class Renderer
 {
 private:
@@ -65,13 +68,14 @@ private:
 
 	// Timestamp queries
 #ifdef RECORD_GPU_TIMES
+	const uint32_t MAX_QUERY_COUNT = 9;
 	QueryPoolArray queryPools;
 	float elapsedFrames;
-	float avgRsmMs;
-	float avgSmMs;
-	float avgDeferredGeomMs;
-	float avgDeferredLightMs;
-	float avgGpuFrameTimeMs;
+	float avgInitSortListMs;
+	float avgSortMs;
+	float avgFindRangesMs;
+	float avgRenderGaussiansMs;
+	float avgTotalGpuTimeMs;
 #endif
 
 #ifdef RECORD_CPU_TIMES
@@ -80,6 +84,10 @@ private:
 	float avgRecordCommandBufferMs;
 	float avgPresentMs;
 	float avgCpuFrameTimeMs;
+#endif
+
+#if defined(RECORD_GPU_TIMES) && defined(RECORD_CPU_TIMES)
+	THIS_IS_NOT_ALLOWED___MAKE_A_COMPILE_ERROR
 #endif
 
 	// Pipelines and layouts
@@ -141,6 +149,8 @@ private:
 	void computeRenderGaussians(CommandBuffer& commandBuffer, uint32_t imageIndex);
 
 	void dispatchBms(CommandBuffer& commandBuffer, BmsSubAlgorithm subAlgorithm, uint32_t h, uint32_t numElemToSort);
+
+	inline float getNewAvgTime(float avgValue, float newValue, float t) const { return (1.0f - t)* avgValue + t * newValue; }
 
 	uint32_t getNumTiles() const;
 	uint32_t getCeilPowTwo(uint32_t x) const;

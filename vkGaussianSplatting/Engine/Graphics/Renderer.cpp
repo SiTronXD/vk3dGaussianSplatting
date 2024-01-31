@@ -78,7 +78,7 @@ void Renderer::initVulkan()
 	this->swapchain.createFramebuffers();
 
 #ifdef RECORD_GPU_TIMES
-	this->queryPools.create(this->device, GfxSettings::FRAMES_IN_FLIGHT, 9);
+	this->queryPools.create(this->device, GfxSettings::FRAMES_IN_FLIGHT, MAX_QUERY_COUNT);
 #endif
 
 	// Init sort list compute pipeline
@@ -443,10 +443,10 @@ void Renderer::draw(Scene& scene)
 
 	// Average
 	float t = 1.0f / (this->elapsedFrames + 1.0f);
-	this->avgWaitForFenceMs = (1.0f - t) * this->avgWaitForFenceMs + t * waitForFencesMs;
-	this->avgRecordCommandBufferMs = (1.0f - t) * this->avgRecordCommandBufferMs + t * recordCommandBufferMs;
-	this->avgPresentMs = (1.0f - t) * this->avgPresentMs + t * presentMs;
-	this->avgCpuFrameTimeMs = (1.0f - t) * this->avgCpuFrameTimeMs + t * cpuFrameTimeMs;
+	this->avgWaitForFenceMs = this->getNewAvgTime(this->avgWaitForFenceMs, waitForFencesMs, t);
+	this->avgRecordCommandBufferMs = this->getNewAvgTime(this->avgRecordCommandBufferMs, recordCommandBufferMs, t);
+	this->avgPresentMs = this->getNewAvgTime(this->avgPresentMs, presentMs, t);
+	this->avgCpuFrameTimeMs = this->getNewAvgTime(this->avgCpuFrameTimeMs, cpuFrameTimeMs, t);
 	this->elapsedFrames++;
 
 	// Print
@@ -457,10 +457,11 @@ void Renderer::draw(Scene& scene)
 		"   present ms: " + std::to_string(presentMs) + 
 		"   CPU frame time ms: " + std::to_string(cpuFrameTimeMs));
 
-	// Print average times after 500 frames
+	// Print average times after a number of frames
 #ifdef ALERT_FINAL_AVERAGE
 	if (this->elapsedFrames >= this->WAIT_ELAPSED_FRAMES_FOR_AVG - 0.5f)
 	{
+		Log::writeAlert("Not properly implemented yet...");
 		Log::writeAlert(
 			"waitForFence ms: " + StrHelper::toTimingStr(this->avgWaitForFenceMs) + "\n" +
 			"recordCommandBuffer ms: " + StrHelper::toTimingStr(this->avgRecordCommandBufferMs) + "\n" +
@@ -475,43 +476,42 @@ void Renderer::draw(Scene& scene)
 	this->queryPools.getQueryPoolResults(GfxState::getFrameIndex());
 
 	// Gather this frame's data
-	float rsmMs = 
-		float(this->queryPools.getQueryResult(GfxState::getFrameIndex(), 1) - 
-			this->queryPools.getQueryResult(GfxState::getFrameIndex(), 0)) *
-		GpuProperties::getTimestampPeriod() * 1e-6;
-	float smMs =
-		float(this->queryPools.getQueryResult(GfxState::getFrameIndex(), 3) -
-			this->queryPools.getQueryResult(GfxState::getFrameIndex(), 2)) *
-		GpuProperties::getTimestampPeriod() * 1e-6;
-	float deferredGeomMs =
-		float(this->queryPools.getQueryResult(GfxState::getFrameIndex(), 5) -
-			this->queryPools.getQueryResult(GfxState::getFrameIndex(), 4)) *
-		GpuProperties::getTimestampPeriod() * 1e-6;
-	float deferredLightMs =
-		float(this->queryPools.getQueryResult(GfxState::getFrameIndex(), 7) -
-			this->queryPools.getQueryResult(GfxState::getFrameIndex(), 6)) *
-		GpuProperties::getTimestampPeriod() * 1e-6;
-	float entireGpuFrameTimeMs = 
-		float(this->queryPools.getQueryResult(GfxState::getFrameIndex(), 8) -
-		this->queryPools.getQueryResult(GfxState::getFrameIndex(), 0)) *
-		GpuProperties::getTimestampPeriod() * 1e-6;
+	auto computeDiffs = [&](uint32_t startQueryIndex, uint32_t endQueryIndex)
+	{
+		return float(this->queryPools.getQueryResult(GfxState::getFrameIndex(), endQueryIndex) -
+			this->queryPools.getQueryResult(GfxState::getFrameIndex(), startQueryIndex)) *
+			GpuProperties::getTimestampPeriod() * 1e-6;
+	};
+	float initSortListMs = computeDiffs(1, 2);
+	float sortMs = computeDiffs(2, 3);
+	float findRangesMs = computeDiffs(3, 4);
+	float renderGaussiansMs = computeDiffs(4, 5);
+	float totalGpuTimeMs = computeDiffs(0, 6);
 
-	// Average
+	// Average timings
 	float t = 1.0f / (this->elapsedFrames + 1.0f);
-	this->avgRsmMs = (1.0f - t) * this->avgRsmMs + t * rsmMs;
-	this->avgSmMs = (1.0f - t) * this->avgSmMs + t * smMs;
-	this->avgDeferredGeomMs = (1.0f - t) * this->avgDeferredGeomMs + t * deferredGeomMs;
-	this->avgDeferredLightMs = (1.0f - t) * this->avgDeferredLightMs + t * deferredLightMs;
-	this->avgGpuFrameTimeMs = (1.0f - t) * this->avgGpuFrameTimeMs + t * entireGpuFrameTimeMs;
+	this->avgInitSortListMs = this->getNewAvgTime(this->avgInitSortListMs, initSortListMs, t);
+	this->avgSortMs = this->getNewAvgTime(this->avgSortMs, sortMs, t);
+	this->avgFindRangesMs = this->getNewAvgTime(this->avgFindRangesMs, findRangesMs, t);
+	this->avgRenderGaussiansMs = this->getNewAvgTime(this->avgRenderGaussiansMs, renderGaussiansMs, t);
+	this->avgTotalGpuTimeMs = this->getNewAvgTime(this->avgTotalGpuTimeMs, totalGpuTimeMs, t);
 	this->elapsedFrames++;
 
 	// Print
-	Log::write("elapsedFrames: " + std::to_string(this->elapsedFrames) + "   rsm ms: " + std::to_string(rsmMs) + "   sm ms: " + std::to_string(smMs) + "   deferred geom ms: " + std::to_string(deferredGeomMs) + "   deferred light ms: " + std::to_string(deferredLightMs));
+	Log::write(
+		"elapsedFrames: " + std::to_string(this->elapsedFrames) + 
+		"   init sort list ms: " + std::to_string(initSortListMs) + 
+		"   sort ms: " + std::to_string(sortMs) +
+		"   find ranges ms: " + std::to_string(findRangesMs) +
+		"   render gaussians ms: " + std::to_string(renderGaussiansMs) + 
+		"   total gpu time ms: " + std::to_string(totalGpuTimeMs)
+	);
 	
-	// Print average times after 500 frames
+	// Print average times after a number of frames
 #ifdef ALERT_FINAL_AVERAGE
 	if (this->elapsedFrames >= this->WAIT_ELAPSED_FRAMES_FOR_AVG - 0.5f)
 	{
+		Log::writeAlert("Not properly implemented yet...");
 		Log::writeAlert(
 			"rsm ms: " + StrHelper::toTimingStr(this->avgRsmMs) + "\n" +
 			"sm ms: " + StrHelper::toTimingStr(this->avgSmMs) + "\n" +
@@ -571,60 +571,10 @@ void Renderer::recordCommandBuffer(
 		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 		0
 	);
-#endif
-
-	//this->renderRSM(commandBuffer, scene);
-
-#ifdef RECORD_GPU_TIMES
 	commandBuffer.writeTimestamp(
 		this->queryPools[GfxState::getFrameIndex()],
-		VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 		1
-	);
-	commandBuffer.writeTimestamp(
-		this->queryPools[GfxState::getFrameIndex()],
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		2
-	);
-#endif
-
-	//this->renderShadowMap(commandBuffer, scene);
-
-#ifdef RECORD_GPU_TIMES
-	commandBuffer.writeTimestamp(
-		this->queryPools[GfxState::getFrameIndex()],
-		VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-		3
-	);
-	commandBuffer.writeTimestamp(
-		this->queryPools[GfxState::getFrameIndex()],
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		4
-	);
-#endif
-
-	//this->renderDeferredScene(commandBuffer, scene);
-
-#ifdef RECORD_GPU_TIMES
-	commandBuffer.writeTimestamp(
-		this->queryPools[GfxState::getFrameIndex()],
-		VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-		5
-	);
-	commandBuffer.writeTimestamp(
-		this->queryPools[GfxState::getFrameIndex()],
-		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-		6
-	);
-#endif
-
-	//this->computeDeferredLight(commandBuffer, scene.getCamera().getPosition());
-
-#ifdef RECORD_GPU_TIMES
-	commandBuffer.writeTimestamp(
-		this->queryPools[GfxState::getFrameIndex()],
-		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-		7
 	);
 #endif
 
@@ -633,29 +583,58 @@ void Renderer::recordCommandBuffer(
 		scene.getCamera()
 	);
 
+#ifdef RECORD_GPU_TIMES
+	commandBuffer.writeTimestamp(
+		this->queryPools[GfxState::getFrameIndex()],
+		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+		2
+	);
+#endif
+
 	this->computeSortGaussians(
 		commandBuffer,
 		this->numSortElements
 	);
 
+#ifdef RECORD_GPU_TIMES
+	commandBuffer.writeTimestamp(
+		this->queryPools[GfxState::getFrameIndex()],
+		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+		3
+	);
+#endif
+
 	this->computeRanges(
 		commandBuffer
 	);
-
-	this->computeRenderGaussians(
-		commandBuffer, 
-		imageIndex
-	);
-
-	//this->renderImgui(commandBuffer, imguiDrawData);
 
 #ifdef RECORD_GPU_TIMES
 	commandBuffer.writeTimestamp(
 		this->queryPools[GfxState::getFrameIndex()],
 		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-		8
+		4
 	);
 #endif
+
+	this->computeRenderGaussians(
+		commandBuffer,
+		imageIndex
+	);
+
+#ifdef RECORD_GPU_TIMES
+	commandBuffer.writeTimestamp(
+		this->queryPools[GfxState::getFrameIndex()],
+		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+		5
+	);
+	commandBuffer.writeTimestamp(
+		this->queryPools[GfxState::getFrameIndex()],
+		VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+		6
+	);
+#endif
+
+	//this->renderImgui(commandBuffer, imguiDrawData);
 
 	// Stop recording
 	commandBuffer.end();
@@ -687,11 +666,11 @@ Renderer::Renderer()
 
 #ifdef RECORD_GPU_TIMES
 	elapsedFrames(0.0f),
-	avgRsmMs(0.0f),
-	avgSmMs(0.0f),
-	avgDeferredGeomMs(0.0f),
-	avgDeferredLightMs(0.0f),
-	avgGpuFrameTimeMs(0.0f),
+	avgInitSortListMs(0.0f),
+	avgSortMs(0.0f),
+	avgFindRangesMs(0.0f),
+	avgRenderGaussiansMs(0.0f),
+	avgTotalGpuTimeMs(0.0f),
 #endif
 
 #ifdef RECORD_CPU_TIMES
@@ -703,7 +682,8 @@ Renderer::Renderer()
 #endif
 
 	vmaAllocator(nullptr),
-	numGaussians(0)
+	numGaussians(0),
+	numSortElements(0)
 {
 }
 
