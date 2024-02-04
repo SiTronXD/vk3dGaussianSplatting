@@ -430,5 +430,6 @@
     <CustomBuild Include="Resources\Shaders\ComputeShaders\BitonicMergeSort.comp" />
     <CustomBuild Include="Resources\Shaders\ComputeShaders\InitSortList.comp" />
     <CustomBuild Include="Resources\Shaders\ComputeShaders\FindRanges.comp" />
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortCount.comp" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,55 @@
+#version 450
+
+#extension GL_GOOGLE_include_directive: require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64: require
+
+#include "../Common/GaussiansStructs.glsl"
+
+// Has to reflect RS_BITS_PER_PASS in Renderer.h
+#define BITS_PER_PASS_SIZE 4u
+
+// Receive work group size as a specialization constant
+layout(constant_id = 0) const uint WORK_GROUP_SIZE = 512u;
+
+layout (local_size_x_id = 0, local_size_y = 1, local_size_z = 1) in;
+
+// SBO
+layout(binding = 0) buffer GaussiansSortListBuffer
+{
+	GaussianSortData sortData[];
+} listBuffer;
+
+// SBO
+layout(binding = 1) buffer SumTableBuffer
+{
+	uvec4 buckets[];
+} sumTable;
+
+// Push constant
+layout(push_constant) uniform PushConstantData
+{
+	uvec4 data; // uvec4(numSortElements, shiftBits, 0, 0)
+} pc;
+
+void main()
+{
+	uint threadIndex = gl_GlobalInvocationID.x;
+	uint numSortElements = pc.data.x;
+
+	// Make sure compute work is within bounds
+	if(threadIndex >= numSortElements)
+		return;
+		
+	// Initial clear
+	sumTable.buckets[threadIndex].x = 0;
+	barrier();
+
+	// Retrieve masked value to sort
+	uint threadGroupId = gl_WorkGroupID.x;
+	uint shiftBits = pc.data.y;
+	uint64_t sortValue = (uint64_t(listBuffer.sortData[threadIndex].data.x) << 32u) | uint64_t(listBuffer.sortData[threadIndex].data.y);
+	sortValue = (sortValue >> shiftBits) & ((1u << BITS_PER_PASS_SIZE) - 1u);
+
+	// Add value to specific bucket for that value and this thread group
+	atomicAdd(sumTable.buckets[threadGroupId * WORK_GROUP_SIZE + uint(sortValue)].x, 1u);
+}

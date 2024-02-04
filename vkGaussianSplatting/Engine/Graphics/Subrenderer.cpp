@@ -157,7 +157,7 @@ void Renderer::computeInitSortList(
 	);
 }
 
-void Renderer::computeSortGaussians(CommandBuffer& commandBuffer, uint32_t numElemToSort)
+void Renderer::computeSortGaussiansBMS(CommandBuffer& commandBuffer, uint32_t numElemToSort)
 {
 	// Make sure number of elements is power of two
 	assert((uint32_t)(numElemToSort & (numElemToSort - 1)) == 0u);
@@ -175,7 +175,7 @@ void Renderer::computeSortGaussians(CommandBuffer& commandBuffer, uint32_t numEl
 	);
 
 	// Compute pipeline
-	commandBuffer.bindPipeline(this->sortGaussiansPipeline);
+	commandBuffer.bindPipeline(this->sortGaussiansBmsPipeline);
 
 	// Binding 0
 	VkDescriptorBufferInfo inputOutputGaussiansSortInfo{};
@@ -188,7 +188,7 @@ void Renderer::computeSortGaussians(CommandBuffer& commandBuffer, uint32_t numEl
 		DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputOutputGaussiansSortInfo)
 	};
 	commandBuffer.pushDescriptorSet(
-		this->sortGaussiansPipelineLayout,
+		this->sortGaussiansBmsPipelineLayout,
 		0,
 		uint32_t(computeWriteDescriptorSets.size()),
 		computeWriteDescriptorSets.data()
@@ -197,15 +197,15 @@ void Renderer::computeSortGaussians(CommandBuffer& commandBuffer, uint32_t numEl
 	uint32_t h = BMS_WORK_GROUP_SIZE * 2;
 
 	this->dispatchBms(
-		commandBuffer, 
-		BmsSubAlgorithm::LOCAL_BMS, 
+		commandBuffer,
+		BmsSubAlgorithm::LOCAL_BMS,
 		h,
 		numElemToSort
 	);
 
 	h *= 2;
 
-	for ( ; h <= numElemToSort; h *= 2)
+	for (; h <= numElemToSort; h *= 2)
 	{
 		this->dispatchBms(
 			commandBuffer,
@@ -237,6 +237,64 @@ void Renderer::computeSortGaussians(CommandBuffer& commandBuffer, uint32_t numEl
 			}
 		}
 	}
+}
+
+void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t numElemToSort)
+{
+	commandBuffer.bufferMemoryBarrier(
+		VK_ACCESS_SHADER_WRITE_BIT,
+		VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+		this->gaussiansSortListSBO.getVkBuffer(),
+		this->gaussiansSortListSBO.getBufferSize()
+	);
+
+	// Compute pipeline
+	commandBuffer.bindPipeline(this->radixSortCountPipeline);
+
+	// Binding 0
+	VkDescriptorBufferInfo inputGaussiansSortInfo{};
+	inputGaussiansSortInfo.buffer = this->gaussiansSortListSBO.getVkBuffer();
+	inputGaussiansSortInfo.range = this->gaussiansSortListSBO.getBufferSize();
+
+	// Binding 1
+	VkDescriptorBufferInfo outputSumTableInfo{};
+	outputSumTableInfo.buffer = this->radixSortSumTableBuffer.getVkBuffer();
+	outputSumTableInfo.range = this->radixSortSumTableBuffer.getBufferSize();
+
+	// Descriptor sets
+	std::array<VkWriteDescriptorSet, 2> computeWriteDescriptorSets
+	{
+		DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansSortInfo),
+		DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputSumTableInfo),
+	};
+	commandBuffer.pushDescriptorSet(
+		this->radixSortCountPipelineLayout,
+		0,
+		uint32_t(computeWriteDescriptorSets.size()),
+		computeWriteDescriptorSets.data()
+	);
+
+	// Push constant
+	SortGaussiansRsPCD sortGaussiansPcData{};
+	sortGaussiansPcData.data.x = numElemToSort;
+	sortGaussiansPcData.data.y = 0u;
+	commandBuffer.pushConstant(
+		this->radixSortCountPipelineLayout,
+		(void*)&sortGaussiansPcData
+	);
+
+	// Dispatch
+	commandBuffer.dispatch(
+		(numElemToSort + RS_WORK_GROUP_SIZE - 1) / RS_WORK_GROUP_SIZE
+	);
+}
+
+void Renderer::computeSortGaussians(CommandBuffer& commandBuffer, uint32_t numElemToSort)
+{
+	//this->computeSortGaussiansBMS(commandBuffer, numElemToSort);
+	this->computeSortGaussiansRS(commandBuffer, numElemToSort);
 }
 
 void Renderer::computeRanges(CommandBuffer& commandBuffer)
@@ -436,11 +494,11 @@ void Renderer::dispatchBms(
 	uint32_t numElemToSort)
 {
 	// Push constant
-	SortGaussiansPCD sortGaussiansPcData{};
+	SortGaussiansBmsPCD sortGaussiansPcData{};
 	sortGaussiansPcData.data.x = static_cast<uint32_t>(subAlgorithm);
 	sortGaussiansPcData.data.y = h;
 	commandBuffer.pushConstant(
-		this->sortGaussiansPipelineLayout,
+		this->sortGaussiansBmsPipelineLayout,
 		(void*)&sortGaussiansPcData
 	);
 

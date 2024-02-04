@@ -100,21 +100,40 @@ void Renderer::initVulkan()
 		"Resources/Shaders/InitSortList.comp.spv"
 	);
 
-	// Sort gaussians compute pipeline
-	this->sortGaussiansPipelineLayout.createPipelineLayout(
+	// Sort gaussians bitonic merge sort compute pipeline
+	this->sortGaussiansBmsPipelineLayout.createPipelineLayout(
 		this->device,
 		{
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
 		},
 		VK_SHADER_STAGE_COMPUTE_BIT,
-		sizeof(SortGaussiansPCD)
+		sizeof(SortGaussiansBmsPCD)
 	);
-	this->sortGaussiansPipeline.createComputePipeline(
+	this->sortGaussiansBmsPipeline.createComputePipeline(
 		this->device,
-		this->sortGaussiansPipelineLayout,
+		this->sortGaussiansBmsPipelineLayout,
 		"Resources/Shaders/BitonicMergeSort.comp.spv",
 		{
 			SpecializationConstant{ (void*) Renderer::BMS_WORK_GROUP_SIZE, sizeof(uint32_t)}
+		}
+	);
+
+	// Radix sort compute pipeline (count)
+	this->radixSortCountPipelineLayout.createPipelineLayout(
+		this->device,
+		{
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
+		},
+		VK_SHADER_STAGE_COMPUTE_BIT,
+		sizeof(SortGaussiansRsPCD)
+	);
+	this->radixSortCountPipeline.createComputePipeline(
+		this->device,
+		this->radixSortCountPipelineLayout,
+		"Resources/Shaders/RadixSortCount.comp.spv",
+		{
+			SpecializationConstant{ (void*)Renderer::RS_WORK_GROUP_SIZE, sizeof(uint32_t)}
 		}
 	);
 
@@ -250,6 +269,8 @@ void Renderer::cleanup()
 
 	this->swapchain.cleanup();
 
+	this->radixSortSumTableBuffer.cleanup();
+
 	this->gaussiansTileRangesSBO.cleanup();
 	this->gaussiansCullDataSBO.cleanup();
 	this->gaussiansSortListSBO.cleanup();
@@ -270,8 +291,13 @@ void Renderer::cleanup()
 	this->renderGaussiansPipelineLayout.cleanup();
 	this->findRangesPipeline.cleanup();
 	this->findRangesPipelineLayout.cleanup();
-	this->sortGaussiansPipeline.cleanup();
-	this->sortGaussiansPipelineLayout.cleanup();
+
+	this->radixSortCountPipelineLayout.cleanup();
+	this->radixSortCountPipeline.cleanup();
+
+	this->sortGaussiansBmsPipeline.cleanup();
+	this->sortGaussiansBmsPipelineLayout.cleanup();
+
 	this->initSortListPipeline.cleanup();
 	this->initSortListPipelineLayout.cleanup();
 	
@@ -749,11 +775,23 @@ void Renderer::initForScene(Scene& scene)
 
 	// Range data
 	uint32_t numTiles = this->getNumTiles();
-	std::vector<GaussianTileRangeData> dummyRangeData(numTiles);
+	const std::vector<GaussianTileRangeData> dummyRangeData(numTiles);
 	this->gaussiansTileRangesSBO.createGpuBuffer(
 		this->gfxAllocContext,
 		sizeof(dummyRangeData[0]) * dummyRangeData.size(),
 		dummyRangeData.data()
+	);
+
+
+
+	// Buffers for radix sort
+	uint32_t numCountThreadGroups = (this->numSortElements + RS_WORK_GROUP_SIZE - 1) / RS_WORK_GROUP_SIZE;
+	uint32_t numSumElements = numCountThreadGroups * (1u << RS_BITS_PER_PASS);
+	const std::vector<glm::uvec4> dummySumTableData(numSumElements);
+	this->radixSortSumTableBuffer.createGpuBuffer(
+		this->gfxAllocContext,
+		sizeof(dummySumTableData[0]) * dummySumTableData.size(),
+		dummySumTableData.data()
 	);
 }
 

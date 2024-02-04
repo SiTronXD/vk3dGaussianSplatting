@@ -10,9 +10,14 @@ struct InitSortListPCD
 	glm::uvec4 resolution; // uvec4(width, height, 0, 0)
 };
 
-struct SortGaussiansPCD
+struct SortGaussiansBmsPCD // Bitonic merge sort
 {
 	glm::uvec4 data; // uvec4(algorithm type, h, 0, 0)
+};
+
+struct SortGaussiansRsPCD // Radix sort
+{
+	glm::uvec4 data; // uvec4(numSortElements, shiftBits, 0, 0)
 };
 
 struct FindRangesPCD

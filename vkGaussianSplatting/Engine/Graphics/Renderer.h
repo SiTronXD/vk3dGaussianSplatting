@@ -49,7 +49,12 @@ private:
 	const float WAIT_ELAPSED_FRAMES_FOR_AVG = 500.0f;
 
 	const uint32_t INIT_LIST_WORK_GROUP_SIZE = 32;
+
 	const uint32_t BMS_WORK_GROUP_SIZE = 512;
+
+	const uint32_t RS_BITS_PER_PASS = 4;
+	const uint32_t RS_WORK_GROUP_SIZE = 16;
+
 	const uint32_t TILE_SIZE = 16;
 	const uint32_t FIND_RANGES_GROUP_SIZE = 16;
 
@@ -88,15 +93,21 @@ private:
 	THIS_IS_NOT_ALLOWED___MAKE_A_COMPILE_ERROR
 #endif
 
-	// Pipelines and layouts
+	// Pipelines/layouts
 	PipelineLayout initSortListPipelineLayout;
 	Pipeline initSortListPipeline;
-	PipelineLayout sortGaussiansPipelineLayout;
-	Pipeline sortGaussiansPipeline;
 	PipelineLayout findRangesPipelineLayout;
 	Pipeline findRangesPipeline;
 	PipelineLayout renderGaussiansPipelineLayout;
 	Pipeline renderGaussiansPipeline;
+
+	// Pipeline/layouts for bitonic merge sort
+	PipelineLayout sortGaussiansBmsPipelineLayout;
+	Pipeline sortGaussiansBmsPipeline;
+
+	// Pipeline/layouts for radix sort
+	PipelineLayout radixSortCountPipelineLayout;
+	Pipeline radixSortCountPipeline;
 
 	CommandPool commandPool;
 	CommandPool singleTimeCommandPool;
@@ -117,6 +128,9 @@ private:
 	StorageBuffer gaussiansSortListSBO;
 	StorageBuffer gaussiansCullDataSBO;
 	StorageBuffer gaussiansTileRangesSBO;
+
+	// Buffers for radix sort
+	StorageBuffer radixSortSumTableBuffer;
 
 	uint32_t numGaussians;
 	uint32_t numSortElements;
@@ -139,6 +153,9 @@ private:
 
 	void resizeWindow();
 	void cleanupImgui();
+
+	void computeSortGaussiansBMS(CommandBuffer& commandBuffer, uint32_t numElemToSort);
+	void computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t numElemToSort);
 
 	void renderImgui(CommandBuffer& commandBuffer, ImDrawData* imguiDrawData, uint32_t imageIndex);
 	void computeInitSortList(CommandBuffer& commandBuffer, const Camera& camera);
