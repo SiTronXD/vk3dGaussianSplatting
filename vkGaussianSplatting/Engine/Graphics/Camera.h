@@ -28,8 +28,8 @@ private:
 	void recalculate();
 
 public:
-	const float NEAR_PLANE = 0.1f;
-	const float FAR_PLANE = 100.0f;
+	const static float NEAR_PLANE;
+	const static float FAR_PLANE;
 
 	Camera();
 	~Camera();

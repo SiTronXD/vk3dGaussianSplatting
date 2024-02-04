@@ -2,7 +2,10 @@
 #include <stdexcept>
 #include "Engine/Engine.h"
 
-#include "Scenes/TestScene.h"
+#include "Scenes/BicycleScene.h"
+#include "Scenes/SimpleTestGaussiansScene.h"
+#include "Scenes/TestSortScene.h"
+#include "Scenes/TrainScene.h"
 
 int main()
 {
@@ -14,7 +17,7 @@ int main()
 	// Create engine within it's own scope
 	{
 		Engine engine;
-		engine.init(new TestScene());
+		engine.init(new BicycleScene());
 	}
 
 	// Display validation errors right after exit

@@ -115,6 +115,7 @@
     </CustomBuild>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Scenes\BicycleScene.cpp" />
     <ClCompile Include="Engine\Application\Input.cpp" />
     <ClCompile Include="Engine\Application\Scene.cpp" />
     <ClCompile Include="Engine\Application\SceneManager.cpp" />
@@ -123,7 +124,6 @@
     <ClCompile Include="Engine\Dev\Log.cpp" />
     <ClCompile Include="Engine\Dev\StrHelper.cpp" />
     <ClCompile Include="Engine\Engine.cpp" />
-    <ClCompile Include="Engine\Graphics\BRDFData.cpp" />
     <ClCompile Include="Engine\Graphics\Buffer\Buffer.cpp" />
     <ClCompile Include="Engine\Graphics\Buffer\IndexBuffer.cpp" />
     <ClCompile Include="Engine\Graphics\Buffer\StorageBuffer.cpp" />
@@ -200,10 +200,13 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="Scenes\TestScene.cpp" />
     <ClCompile Include="Engine\Graphics\Buffer\StagingBuffer.cpp" />
+    <ClCompile Include="Scenes\SimpleTestGaussiansScene.cpp" />
+    <ClCompile Include="Scenes\TrainScene.cpp" />
+    <ClCompile Include="Scenes\TestSortScene.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Scenes\BicycleScene.h" />
     <ClInclude Include="Engine\Application\Input.h" />
     <ClInclude Include="Engine\Application\Scene.h" />
     <ClInclude Include="Engine\Application\SceneManager.h" />
@@ -213,7 +216,6 @@
     <ClInclude Include="Engine\Dev\Log.h" />
     <ClInclude Include="Engine\Dev\StrHelper.h" />
     <ClInclude Include="Engine\Engine.h" />
-    <ClInclude Include="Engine\Graphics\BRDFData.h" />
     <ClInclude Include="Engine\Graphics\Buffer\Buffer.h" />
     <ClInclude Include="Engine\Graphics\Buffer\IndexBuffer.h" />
     <ClInclude Include="Engine\Graphics\Buffer\StorageBuffer.h" />
@@ -269,8 +271,10 @@
     <ClInclude Include="Linking\Include\imgui\imstb_rectpack.h" />
     <ClInclude Include="Linking\Include\imgui\imstb_textedit.h" />
     <ClInclude Include="Linking\Include\imgui\imstb_truetype.h" />
-    <ClInclude Include="Scenes\TestScene.h" />
     <ClInclude Include="Engine\Graphics\Buffer\StagingBuffer.h" />
+    <ClInclude Include="Scenes\SimpleTestGaussiansScene.h" />
+    <ClInclude Include="Scenes\TrainScene.h" />
+    <ClInclude Include="Scenes\TestSortScene.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\Shaders\Common\ColorTransformations.glsl">

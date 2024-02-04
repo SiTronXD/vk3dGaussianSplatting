@@ -4,7 +4,7 @@
 void StorageBuffer::createGpuBuffer(
 	const GfxAllocContext& gfxAllocContext, 
 	VkDeviceSize bufferSize, 
-	void* data)
+	const void* data)
 {
 	Buffer::createGpuBuffer(
 		gfxAllocContext,

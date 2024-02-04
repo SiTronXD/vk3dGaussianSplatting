@@ -1,6 +1,9 @@
 #include "pch.h"
 #include "Camera.h"
 
+const float Camera::NEAR_PLANE = 0.1f;
+const float Camera::FAR_PLANE = 100.0f;
+
 void Camera::updateDirVectors()
 {
 	// Forward direction

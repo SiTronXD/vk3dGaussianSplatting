@@ -4,7 +4,6 @@
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_vulkan.h>
 #include <vk_mem_alloc.h>
-#include <happly.h>
 
 #include "../Application/Window.h"
 #include "../Application/Scene.h"
@@ -25,7 +24,6 @@
 #include "Camera.h"
 #include "Mesh.h"
 #include "GfxAllocContext.h"
-#include "BRDFData.h"
 
 // For imgui
 #include "Vulkan/Legacy/DescriptorPool.h"
@@ -157,12 +155,6 @@ private:
 
 	inline const VkDevice& getVkDevice() const { return this->device.getVkDevice(); }
 
-	template <typename T>
-	void loadProperty(happly::Element& element, const std::string& propertyStr, std::vector<T>& output);
-
-	void loadGaussiansFromFile(std::vector<GaussianData>& outputGaussianData);
-	void loadTestGaussians(std::vector<GaussianData>& outputGaussianData);
-
 public:
 	bool framebufferResized = false;
 
@@ -184,17 +176,3 @@ public:
 		{ return (float) this->swapchain.getWidth() / this->swapchain.getHeight(); }
 	inline const GfxAllocContext& getGfxAllocContext() const { return this->gfxAllocContext; }
 };
-
-template<typename T>
-inline void Renderer::loadProperty(
-	happly::Element& element, 
-	const std::string& propertyStr,
-	std::vector<T>& output)
-{
-	assert(output.size() == 0);
-
-	bool hasProperty = element.hasPropertyType<T>(propertyStr);
-	assert(hasProperty);
-
-	output = element.getProperty<T>(propertyStr);
-}

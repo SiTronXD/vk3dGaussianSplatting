@@ -39,6 +39,12 @@ void ResourceManager::cleanup()
 	this->textures.shrink_to_fit();
 }
 
+void ResourceManager::clearAllGaussians()
+{
+	this->gaussians.clear();
+	this->gaussians.shrink_to_fit();
+}
+
 uint32_t ResourceManager::addMesh(
 	const std::string& filePath, 
 	Material& outputMeshMaterial,
@@ -150,61 +156,159 @@ uint32_t ResourceManager::addCubeMap(const std::vector<std::string>& filePaths)
 	return createdTextureIndex;
 }
 
-uint32_t ResourceManager::addBRDF(const std::string& filePath)
+uint32_t ResourceManager::addGaussian(const GaussianData& gaussianData)
 {
-	// Check if material has already been added
-	if (this->nameToBrdf.count(filePath) != 0)
+	uint32_t gaussianId = (uint32_t) this->gaussians.size();
+
+	this->gaussians.push_back(gaussianData);
+
+	return gaussianId;
+}
+
+void ResourceManager::loadGaussians(const std::string& filePath)
+{
+	// Load ply file
+	happly::PLYData plyData(filePath);
+
+	const std::vector<std::string> names = plyData.getElementNames();
+	happly::Element& element = plyData.getElement(names[0]);
+	std::vector<float> gPositionsX;
+	std::vector<float> gPositionsY;
+	std::vector<float> gPositionsZ;
+
+	this->loadPlyProperty<float>(element, "x", gPositionsX);
+	this->loadPlyProperty<float>(element, "y", gPositionsY);
+	this->loadPlyProperty<float>(element, "z", gPositionsZ);
+
+	std::vector<float> gScalesX;
+	std::vector<float> gScalesY;
+	std::vector<float> gScalesZ;
+
+	this->loadPlyProperty<float>(element, "scale_0", gScalesX);
+	this->loadPlyProperty<float>(element, "scale_1", gScalesY);
+	this->loadPlyProperty<float>(element, "scale_2", gScalesZ);
+
+	std::vector<float> gRot0;
+	std::vector<float> gRot1;
+	std::vector<float> gRot2;
+	std::vector<float> gRot3;
+
+	this->loadPlyProperty<float>(element, "rot_0", gRot0);
+	this->loadPlyProperty<float>(element, "rot_1", gRot1);
+	this->loadPlyProperty<float>(element, "rot_2", gRot2);
+	this->loadPlyProperty<float>(element, "rot_3", gRot3);
+
+	std::vector<float> gOpacities;
+
+	this->loadPlyProperty<float>(element, "opacity", gOpacities);
+
+	std::vector<float> gFeature0;
+	std::vector<float> gFeature1;
+	std::vector<float> gFeature2;
+
+	this->loadPlyProperty<float>(element, "f_dc_0", gFeature0);
+	this->loadPlyProperty<float>(element, "f_dc_1", gFeature1);
+	this->loadPlyProperty<float>(element, "f_dc_2", gFeature2);
+
+	std::vector<float> gFeatureRest0;
+	std::vector<float> gFeatureRest1;
+	std::vector<float> gFeatureRest2;
+
+	this->loadPlyProperty<float>(element, "f_rest_0", gFeatureRest0);
+	this->loadPlyProperty<float>(element, "f_rest_1", gFeatureRest1);
+	this->loadPlyProperty<float>(element, "f_rest_2", gFeatureRest2);
+
+	// For inspecting while debugging
+	// TODO: remove once loading is implemented
+	//std::vector<std::string> propertyNames = element.getPropertyNames();
+
+	uint32_t numGaussians = (uint32_t)gPositionsX.size();
+
+	assert(
+		numGaussians == gPositionsY.size() &&
+		numGaussians == gPositionsZ.size() &&
+
+		numGaussians == gScalesX.size() &&
+		numGaussians == gScalesY.size() &&
+		numGaussians == gScalesZ.size() &&
+
+		numGaussians == gRot0.size() &&
+		numGaussians == gRot1.size() &&
+		numGaussians == gRot2.size() &&
+		numGaussians == gRot3.size() &&
+
+		numGaussians == gOpacities.size()
+	);
+
+	this->gaussians.resize(numGaussians);
+	/*for (uint32_t i = 0; i < this->numGaussians; ++i)
 	{
-		return this->nameToBrdf[filePath];
-	}
+		uint32_t randomIndex = rand() % gPositionsX.size();
 
-	// Add BRDF name
-	uint32_t createdBrdfIndex = uint32_t(this->brdfs.size());
-	this->nameToBrdf.insert({ filePath, createdBrdfIndex });
+		GaussianData gaussian{};
+		gaussian.position = glm::vec4(
+			gPositionsX[randomIndex],
+			gPositionsY[randomIndex] * -1.0f,
+			gPositionsZ[randomIndex],
+			0.0f
+		);
+		gaussian.scale = glm::vec4(
+			gScalesX[randomIndex] * 0.01f,
+			gScalesY[randomIndex] * 0.01f,
+			gScalesZ[randomIndex] * 0.01f,
+			0.0f
+		);
+		gaussian.color = glm::vec4(
+			std::abs(gFeature0[randomIndex]) * 0.28209479177387814f,
+			std::abs(gFeature1[randomIndex]) * 0.28209479177387814f,
+			std::abs(gFeature2[randomIndex]) * 0.28209479177387814f,
+			gOpacities[randomIndex]
+		);
 
-	// Create BRDF resource
-	this->brdfs.push_back(BRDFData());
-	BRDFData& createdBrdf = this->brdfs[createdBrdfIndex];
+		// Apply
+		outputGaussianData[i] = gaussian;
 
-	// Load BRDF
-	createdBrdf.createFromFile(filePath);
+		// Remove
+		gPositionsX.erase(gPositionsX.begin() + randomIndex);
+		gPositionsY.erase(gPositionsY.begin() + randomIndex);
+		gPositionsZ.erase(gPositionsZ.begin() + randomIndex);
 
-	// Create references for validation
-	if (createdBrdfIndex == 0)
+		gScalesX.erase(gScalesX.begin() + randomIndex);
+		gScalesY.erase(gScalesY.begin() + randomIndex);
+		gScalesZ.erase(gScalesZ.begin() + randomIndex);
+
+		gFeature0.erase(gFeature0.begin() + randomIndex);
+		gFeature1.erase(gFeature1.begin() + randomIndex);
+		gFeature2.erase(gFeature2.begin() + randomIndex);
+
+		gOpacities.erase(gOpacities.begin() + randomIndex);
+	}*/
+	for (uint32_t i = 0; i < numGaussians; ++i)
 	{
-		this->numCoefficientsPerAngle = uint32_t(createdBrdf.getShCoefficientSets()[0].size());
-		this->numCoefficientsCosTermPerAngle = uint32_t(createdBrdf.getShCoefficientCosSets()[0].size());
+		this->gaussians[i].position = glm::vec4(
+			gPositionsX[i] * -1.0f,
+			gPositionsY[i] * -1.0f,
+			gPositionsZ[i],
+			0.0f
+		);
+		this->gaussians[i].scale = glm::vec4(
+			std::exp(gScalesX[i]),
+			std::exp(gScalesY[i]),
+			std::exp(gScalesZ[i]),
+			0.0f
+		);
+		this->gaussians[i].rot = glm::vec4(
+			gRot0[i],
+			gRot1[i],
+			gRot2[i],
+			gRot3[i]
+		);
+		//this->gaussians[i].rot /= this->gaussians[i].rot.length();
+		this->gaussians[i].color = glm::vec4(
+			0.5f + gFeature0[i] * 0.28209479177387814f,
+			0.5f + gFeature1[i] * 0.28209479177387814f,
+			0.5f + gFeature2[i] * 0.28209479177387814f, // TODO: evaluate SH in shader
+			(1.0f / (1.0f + std::exp(-gOpacities[i])))
+		);
 	}
-
-	// Validate number of angles
-	if (ResourceManager::NUM_ANGLES != uint32_t(createdBrdf.getShCoefficientSets().size()))
-	{
-		Log::error("The number of angles (" + std::to_string(ResourceManager::NUM_ANGLES) + ") does not match between all BRDF files.");
-		return 0;
-	}
-	if (ResourceManager::NUM_ANGLES != uint32_t(createdBrdf.getShCoefficientCosSets().size()))
-	{
-		Log::error("The number of angles (" + std::to_string(ResourceManager::NUM_ANGLES) + ") does not match between all BRDF files.");
-		return 0;
-	}
-
-	// Validate number of coefficients within each SH set per angle
-	for (uint32_t i = 0; i < ResourceManager::NUM_ANGLES; ++i)
-	{
-		// No cos term
-		if (this->numCoefficientsPerAngle != uint32_t(createdBrdf.getShCoefficientSets()[i].size()))
-		{
-			Log::error("The number of SH coefficients per set (" + std::to_string(this->numCoefficientsPerAngle) + ") does not match between all SH sets.");
-			return 0;
-		}
-
-		// Cos term
-		if (this->numCoefficientsCosTermPerAngle != uint32_t(createdBrdf.getShCoefficientCosSets()[i].size()))
-		{
-			Log::error("The number of SH coefficients with cos term per set (" + std::to_string(this->numCoefficientsCosTermPerAngle) + ") does not match between all SH sets.");
-			return 0;
-		}
-	}
-
-	return createdBrdfIndex;
 }
