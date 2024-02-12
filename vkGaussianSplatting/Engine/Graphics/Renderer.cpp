@@ -137,6 +137,24 @@ void Renderer::initVulkan()
 		}
 	);
 
+	// Radix sort compute pipeline (reduce)
+	this->radixSortReducePipelineLayout.createPipelineLayout(
+		this->device,
+		{
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
+		},
+		VK_SHADER_STAGE_COMPUTE_BIT
+	);
+	this->radixSortReducePipeline.createComputePipeline(
+		this->device,
+		this->radixSortReducePipelineLayout,
+		"Resources/Shaders/RadixSortReduce.comp.spv",
+		{
+			SpecializationConstant{ (void*)Renderer::RS_WORK_GROUP_SIZE, sizeof(uint32_t)}
+		}
+	);
+
 	// Find ranges compute pipeline
 	this->findRangesPipelineLayout.createPipelineLayout(
 		this->device,
@@ -269,6 +287,7 @@ void Renderer::cleanup()
 
 	this->swapchain.cleanup();
 
+	this->radixSortReduceBuffer.cleanup();
 	this->radixSortSumTableBuffer.cleanup();
 
 	this->gaussiansTileRangesSBO.cleanup();
@@ -292,6 +311,8 @@ void Renderer::cleanup()
 	this->findRangesPipeline.cleanup();
 	this->findRangesPipelineLayout.cleanup();
 
+	this->radixSortReducePipelineLayout.cleanup();
+	this->radixSortReducePipeline.cleanup();
 	this->radixSortCountPipelineLayout.cleanup();
 	this->radixSortCountPipeline.cleanup();
 
@@ -792,6 +813,13 @@ void Renderer::initForScene(Scene& scene)
 		this->gfxAllocContext,
 		sizeof(dummySumTableData[0]) * dummySumTableData.size(),
 		dummySumTableData.data()
+	);
+
+	const std::vector<glm::uvec4> dummyReduceData(numCountThreadGroups);
+	this->radixSortReduceBuffer.createGpuBuffer(
+		this->gfxAllocContext,
+		sizeof(dummyReduceData[0]) * dummyReduceData.size(),
+		dummyReduceData.data()
 	);
 }
 

@@ -1,0 +1,38 @@
+#version 450
+
+#extension GL_GOOGLE_include_directive: require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64: require
+
+// Receive work group size as a specialization constant
+layout(constant_id = 0) const uint WORK_GROUP_SIZE = 512u;
+
+layout (local_size_x_id = 0, local_size_y = 1, local_size_z = 1) in;
+
+// SBO
+layout(binding = 0) buffer SumTableBuffer
+{
+	uvec4 buckets[];
+} sumTable;
+
+// SBO
+layout(binding = 1) buffer ReduceBuffer
+{
+	uvec4 data[];
+} reduce;
+
+void main()
+{
+	uint localThreadIndex = gl_LocalInvocationID.x;
+	uint threadGroupId = gl_WorkGroupID.x;
+
+	uint sum = 0;
+	for(int i = 0; i < WORK_GROUP_SIZE; ++i)
+	{
+		sum += sumTable.buckets[i].x;
+	}
+
+	if(localThreadIndex == 0)
+	{
+		reduce.data[threadGroupId].x = sum;
+	}
+}
