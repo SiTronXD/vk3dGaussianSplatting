@@ -424,6 +424,7 @@
     <None Include="Resources\Shaders\Common\ColorTransformations.glsl" />
     <None Include="Resources\Shaders\Common\GaussiansStructs.glsl" />
     <None Include="Resources\Shaders\Common\Common.glsl" />
+    <None Include="Resources\Shaders\Common\CommonRadix.glsl" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="Resources\Shaders\ComputeShaders\RenderGaussians.comp" />

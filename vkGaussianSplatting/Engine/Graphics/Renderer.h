@@ -53,7 +53,8 @@ private:
 	const uint32_t BMS_WORK_GROUP_SIZE = 512;
 
 	const uint32_t RS_BITS_PER_PASS = 4;
-	const uint32_t RS_WORK_GROUP_SIZE = 16;
+	const uint32_t RS_BIN_COUNT = 1u << RS_BITS_PER_PASS;
+	const uint32_t RS_WORK_GROUP_SIZE = 64;
 
 	const uint32_t TILE_SIZE = 16;
 	const uint32_t FIND_RANGES_GROUP_SIZE = 16;

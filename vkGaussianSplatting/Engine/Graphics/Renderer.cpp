@@ -807,7 +807,7 @@ void Renderer::initForScene(Scene& scene)
 
 	// Buffers for radix sort
 	uint32_t numCountThreadGroups = (this->numSortElements + RS_WORK_GROUP_SIZE - 1) / RS_WORK_GROUP_SIZE;
-	uint32_t numSumElements = numCountThreadGroups * (1u << RS_BITS_PER_PASS);
+	uint32_t numSumElements = numCountThreadGroups * RS_BIN_COUNT;
 	const std::vector<glm::uvec4> dummySumTableData(numSumElements);
 	this->radixSortSumTableBuffer.createGpuBuffer(
 		this->gfxAllocContext,
@@ -815,7 +815,9 @@ void Renderer::initForScene(Scene& scene)
 		dummySumTableData.data()
 	);
 
-	const std::vector<glm::uvec4> dummyReduceData(numCountThreadGroups);
+	uint32_t numReduceBlocks = (numCountThreadGroups + RS_WORK_GROUP_SIZE - 1) / RS_WORK_GROUP_SIZE;
+	uint32_t numReduceElements = numReduceBlocks * RS_BIN_COUNT;
+	const std::vector<glm::uvec4> dummyReduceData(numReduceElements);
 	this->radixSortReduceBuffer.createGpuBuffer(
 		this->gfxAllocContext,
 		sizeof(dummyReduceData[0]) * dummyReduceData.size(),

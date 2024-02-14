@@ -4,9 +4,7 @@
 #extension GL_EXT_shader_explicit_arithmetic_types_int64: require
 
 #include "../Common/GaussiansStructs.glsl"
-
-// Has to reflect RS_BITS_PER_PASS in Renderer.h
-#define BITS_PER_PASS_SIZE 4u
+#include "../Common/CommonRadix.glsl"
 
 // Receive work group size as a specialization constant
 layout(constant_id = 0) const uint WORK_GROUP_SIZE = 512u;
@@ -28,28 +26,48 @@ layout(binding = 1) buffer SumTableBuffer
 // Push constant
 layout(push_constant) uniform PushConstantData
 {
-	uvec4 data; // uvec4(numSortElements, shiftBits, 0, 0)
+	uvec4 data; // uvec4(numSortElements, shiftBits, numSumThreadGroups, 0)
 } pc;
+
+// Shared memory (1024 * 16 = 16384 bytes are guaranteed to be available in Vulkan)
+shared uint sharedHistogram[WORK_GROUP_SIZE * BIN_COUNT];
 
 void main()
 {
 	uint threadIndex = gl_GlobalInvocationID.x;
+	uint localIndex = gl_LocalInvocationID.x;
+	uint groupIndex = gl_WorkGroupID.x;
+	uint numWorkGroups = gl_NumWorkGroups.x;
 	uint numSortElements = pc.data.x;
 
-	// Make sure compute work is within bounds
-	if(threadIndex >= numSortElements)
-		return;
-		
-	// Initial clear
-	sumTable.buckets[threadIndex].x = 0;
+	// Clear shared memory
+	for(uint i = 0; i < BIN_COUNT; ++i) 
+	{
+		sharedHistogram[(i * WORK_GROUP_SIZE) + localIndex] = 0u;
+	}
 	barrier();
 
-	// Retrieve masked value to sort
-	uint threadGroupId = gl_WorkGroupID.x;
-	uint shiftBits = pc.data.y;
-	uint64_t sortValue = (uint64_t(listBuffer.sortData[threadIndex].data.x) << 32u) | uint64_t(listBuffer.sortData[threadIndex].data.y);
-	sortValue = (sortValue >> shiftBits) & ((1u << BITS_PER_PASS_SIZE) - 1u);
+	// Increment buckets in shared memory
+	if(threadIndex < numSortElements) 
+	{
+		uint64_t shiftBits = uint64_t(pc.data.y);
+		uint64_t sortValue = (uint64_t(listBuffer.sortData[threadIndex].data.x) << 32u) | uint64_t(listBuffer.sortData[threadIndex].data.y);
+		uint finalSortValue = uint(sortValue >> shiftBits) & uint(BIN_COUNT - 1u);
 
-	// Add value to specific bucket for that value and this thread group
-	atomicAdd(sumTable.buckets[threadGroupId * WORK_GROUP_SIZE + uint(sortValue)].x, 1u);
+		// TODO: check if this can be done without atomics. Should be possible, since it seems 
+		// that each thread gets its own set of unique buckets.
+		atomicAdd(sharedHistogram[finalSortValue * WORK_GROUP_SIZE + localIndex], 1u);
+	}
+	barrier();
+
+	// Compute sum into sum table
+	if(localIndex < BIN_COUNT) 
+	{
+		uint sum = 0u;
+		for(uint i = 0u; i < WORK_GROUP_SIZE; ++i) 
+		{
+			sum += sharedHistogram[localIndex * WORK_GROUP_SIZE + i];
+		}
+		sumTable.buckets[localIndex * numWorkGroups + groupIndex].x = sum;
+	}
 }

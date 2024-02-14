@@ -241,6 +241,11 @@ void Renderer::computeSortGaussiansBMS(CommandBuffer& commandBuffer, uint32_t nu
 
 void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t numElemToSort)
 {
+	uint32_t numThreadGroups = (numElemToSort + RS_WORK_GROUP_SIZE - 1) / RS_WORK_GROUP_SIZE;
+	//uint32_t numReducedThreadGroups = RS_BIN_COUNT * ((RS_WORK_GROUP_SIZE > numThreadGroups) ? 1u : (numThreadGroups + RS_WORK_GROUP_SIZE - 1u) / RS_WORK_GROUP_SIZE);
+	uint32_t numReducedThreadGroups = RS_BIN_COUNT * ((numThreadGroups + RS_WORK_GROUP_SIZE - 1u) / RS_WORK_GROUP_SIZE);
+	assert(!(RS_WORK_GROUP_SIZE > numThreadGroups));
+
 	// ------------------ 1. Count ------------------
 	{
 		commandBuffer.bufferMemoryBarrier(
@@ -266,7 +271,7 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t num
 		outputSumTableInfo.range = this->radixSortSumTableBuffer.getBufferSize();
 
 		// Descriptor sets
-		std::array<VkWriteDescriptorSet, 2> computeWriteDescriptorSets
+		std::array<VkWriteDescriptorSet, 2> countDescriptorSets
 		{
 			DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansSortInfo),
 			DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputSumTableInfo),
@@ -274,23 +279,22 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t num
 		commandBuffer.pushDescriptorSet(
 			this->radixSortCountPipelineLayout,
 			0,
-			uint32_t(computeWriteDescriptorSets.size()),
-			computeWriteDescriptorSets.data()
+			uint32_t(countDescriptorSets.size()),
+			countDescriptorSets.data()
 		);
 
 		// Push constant
 		SortGaussiansRsPCD sortGaussiansPcData{};
 		sortGaussiansPcData.data.x = numElemToSort;
 		sortGaussiansPcData.data.y = 0u;
+		sortGaussiansPcData.data.z = numThreadGroups;
 		commandBuffer.pushConstant(
 			this->radixSortCountPipelineLayout,
 			(void*)&sortGaussiansPcData
 		);
 
 		// Dispatch
-		commandBuffer.dispatch(
-			(numElemToSort + RS_WORK_GROUP_SIZE - 1) / RS_WORK_GROUP_SIZE
-		);
+		commandBuffer.dispatch(numThreadGroups);
 	}
 
 	// ------------------ 2. Reduce ------------------
@@ -318,7 +322,7 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t num
 		outputReduceInfo.range = this->radixSortReduceBuffer.getBufferSize();
 
 		// Descriptor sets
-		std::array<VkWriteDescriptorSet, 2> computeWriteDescriptorSets
+		std::array<VkWriteDescriptorSet, 2> reduceDescriptorSets
 		{
 			DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputSumTableInfo),
 			DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputReduceInfo),
@@ -326,14 +330,12 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t num
 		commandBuffer.pushDescriptorSet(
 			this->radixSortReducePipelineLayout,
 			0,
-			uint32_t(computeWriteDescriptorSets.size()),
-			computeWriteDescriptorSets.data()
+			uint32_t(reduceDescriptorSets.size()),
+			reduceDescriptorSets.data()
 		);
 
 		// Dispatch
-		commandBuffer.dispatch(
-			(numElemToSort + RS_WORK_GROUP_SIZE - 1) / RS_WORK_GROUP_SIZE
-		);
+		commandBuffer.dispatch(numReducedThreadGroups);
 	}
 }
 
@@ -345,7 +347,7 @@ void Renderer::computeSortGaussians(CommandBuffer& commandBuffer, uint32_t numEl
 
 void Renderer::computeRanges(CommandBuffer& commandBuffer)
 {
-	// Gaussians cull data
+	// Gaussians cull data (wait for usage from init pass, just to be sure)
 	commandBuffer.bufferMemoryBarrier(
 		VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
 		VK_ACCESS_SHADER_READ_BIT,

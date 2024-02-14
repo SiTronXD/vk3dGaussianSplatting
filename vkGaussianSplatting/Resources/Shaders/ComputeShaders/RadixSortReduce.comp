@@ -3,6 +3,8 @@
 #extension GL_GOOGLE_include_directive: require
 #extension GL_EXT_shader_explicit_arithmetic_types_int64: require
 
+#include "../Common/CommonRadix.glsl"
+
 // Receive work group size as a specialization constant
 layout(constant_id = 0) const uint WORK_GROUP_SIZE = 512u;
 
@@ -20,9 +22,39 @@ layout(binding = 1) buffer ReduceBuffer
 	uvec4 data[];
 } reduce;
 
+// Push constant
+layout(push_constant) uniform PushConstantData
+{
+	uvec4 data; // uvec4(numSortElements, shiftBits, numCountWorkGroups, 0)
+} pc;
+
 void main()
 {
-	uint localThreadIndex = gl_LocalInvocationID.x;
+	uint groupIndex = gl_WorkGroupID.x;
+	uint localIndex = gl_LocalInvocationID.x;
+	uint numCountWorkGroups = pc.data.z;
+	uint numReduceGroupPerBin = gl_NumWorkGroups.x / BIN_COUNT;
+
+	uint binId = groupIndex / numReduceGroupPerBin;
+	uint binOffset = binId * numCountWorkGroups;
+
+	uint baseIndex = (groupIndex % numReduceGroupPerBin) * WORK_GROUP_SIZE;
+	//uint dataIndex = baseIndex + localIndex;
+	//uint loadedValue = dataIndex < numCountWorkGroups ? sumTable.buckets[binOffset + dataIndex].x : 0u;
+
+	// TODO: Replace with sum from shared memory or subgroups
+	uint sum = 0u;
+	for(uint i = 0; i < WORK_GROUP_SIZE; ++i)
+	{
+		uint dataIndex = baseIndex + i;
+		sum += dataIndex < numCountWorkGroups ? sumTable.buckets[binOffset + dataIndex].x : 0u;
+	}
+
+	if(localIndex == 0)
+		reduce.data[groupIndex].x = sum;
+
+	// Assume this is incorrect for now
+	/*uint localThreadIndex = gl_LocalInvocationID.x;
 	uint threadGroupId = gl_WorkGroupID.x;
 
 	uint sum = 0;
@@ -34,5 +66,5 @@ void main()
 	if(localThreadIndex == 0)
 	{
 		reduce.data[threadGroupId].x = sum;
-	}
+	}*/
 }
