@@ -111,6 +111,8 @@ private:
 	Pipeline radixSortCountPipeline;
 	PipelineLayout radixSortReducePipelineLayout;
 	Pipeline radixSortReducePipeline;
+	PipelineLayout radixSortScanPipelineLayout;
+	Pipeline radixSortScanPipeline;
 
 	CommandPool commandPool;
 	CommandPool singleTimeCommandPool;

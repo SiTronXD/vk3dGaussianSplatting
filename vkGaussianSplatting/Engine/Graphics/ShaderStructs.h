@@ -17,7 +17,7 @@ struct SortGaussiansBmsPCD // Bitonic merge sort
 
 struct SortGaussiansRsPCD // Radix sort
 {
-	glm::uvec4 data; // uvec4(numSortElements, shiftBits, numCountWorkGroups, 0)
+	glm::uvec4 data; // uvec4(numSortElements, shiftBits, numCountWorkGroups, numReducedWorkGroups)
 };
 
 struct FindRangesPCD

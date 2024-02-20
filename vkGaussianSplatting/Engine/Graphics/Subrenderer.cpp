@@ -246,6 +246,12 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t num
 	uint32_t numReducedThreadGroups = RS_BIN_COUNT * ((numThreadGroups + RS_WORK_GROUP_SIZE - 1u) / RS_WORK_GROUP_SIZE);
 	assert(!(RS_WORK_GROUP_SIZE > numThreadGroups));
 
+	SortGaussiansRsPCD sortGaussiansPcData{};
+	sortGaussiansPcData.data.x = numElemToSort;
+	sortGaussiansPcData.data.y = 0u;
+	sortGaussiansPcData.data.z = numThreadGroups;
+	sortGaussiansPcData.data.w = numReducedThreadGroups;
+
 	// ------------------ 1. Count ------------------
 	{
 		commandBuffer.bufferMemoryBarrier(
@@ -284,10 +290,6 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t num
 		);
 
 		// Push constant
-		SortGaussiansRsPCD sortGaussiansPcData{};
-		sortGaussiansPcData.data.x = numElemToSort;
-		sortGaussiansPcData.data.y = 0u;
-		sortGaussiansPcData.data.z = numThreadGroups;
 		commandBuffer.pushConstant(
 			this->radixSortCountPipelineLayout,
 			(void*)&sortGaussiansPcData
@@ -336,6 +338,48 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t num
 
 		// Dispatch
 		commandBuffer.dispatch(numReducedThreadGroups);
+	}
+
+	// ------------------ 3. Scan ------------------
+	{
+		commandBuffer.bufferMemoryBarrier(
+			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			this->radixSortReduceBuffer.getVkBuffer(),
+			this->radixSortReduceBuffer.getBufferSize()
+		);
+
+
+		// Compute pipeline
+		commandBuffer.bindPipeline(this->radixSortScanPipeline);
+
+		// Binding 0
+		VkDescriptorBufferInfo inputOutputReduceInfo{};
+		inputOutputReduceInfo.buffer = this->radixSortReduceBuffer.getVkBuffer();
+		inputOutputReduceInfo.range = this->radixSortReduceBuffer.getBufferSize();
+
+		// Descriptor sets
+		std::array<VkWriteDescriptorSet, 1> scanDescriptorSets
+		{
+			DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputOutputReduceInfo)
+		};
+		commandBuffer.pushDescriptorSet(
+			this->radixSortScanPipelineLayout,
+			0,
+			uint32_t(scanDescriptorSets.size()),
+			scanDescriptorSets.data()
+		);
+
+		// Push constant
+		commandBuffer.pushConstant(
+			this->radixSortScanPipelineLayout,
+			(void*)&sortGaussiansPcData
+		);
+
+		// Dispatch
+		commandBuffer.dispatch(1u);
 	}
 }
 

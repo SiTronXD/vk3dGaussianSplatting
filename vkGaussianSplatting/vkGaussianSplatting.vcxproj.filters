@@ -433,5 +433,6 @@
     <CustomBuild Include="Resources\Shaders\ComputeShaders\FindRanges.comp" />
     <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortCount.comp" />
     <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortReduce.comp" />
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortScan.comp" />
   </ItemGroup>
 </Project>

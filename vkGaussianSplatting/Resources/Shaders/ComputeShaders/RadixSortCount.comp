@@ -26,7 +26,7 @@ layout(binding = 1) buffer SumTableBuffer
 // Push constant
 layout(push_constant) uniform PushConstantData
 {
-	uvec4 data; // uvec4(numSortElements, shiftBits, numSumThreadGroups, 0)
+	uvec4 data; // uvec4(numSortElements, shiftBits, numCountWorkGroups, numReducedWorkGroups)
 } pc;
 
 // Shared memory (1024 * 16 = 16384 bytes are guaranteed to be available in Vulkan)
