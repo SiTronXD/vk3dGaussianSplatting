@@ -381,6 +381,54 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t num
 		// Dispatch
 		commandBuffer.dispatch(1u);
 	}
+
+	// ------------------ 4. Scan add ------------------
+	{
+		commandBuffer.bufferMemoryBarrier(
+			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+			VK_ACCESS_SHADER_READ_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			this->radixSortReduceBuffer.getVkBuffer(),
+			this->radixSortReduceBuffer.getBufferSize()
+		);
+
+
+		// Compute pipeline
+		commandBuffer.bindPipeline(this->radixSortScanAddPipeline);
+
+		// Binding 0
+		VkDescriptorBufferInfo inputReduceInfo{};
+		inputReduceInfo.buffer = this->radixSortReduceBuffer.getVkBuffer();
+		inputReduceInfo.range = this->radixSortReduceBuffer.getBufferSize();
+
+		// Binding 1
+		VkDescriptorBufferInfo inputOutputSumTableInfo{};
+		inputOutputSumTableInfo.buffer = this->radixSortSumTableBuffer.getVkBuffer();
+		inputOutputSumTableInfo.range = this->radixSortSumTableBuffer.getBufferSize();
+
+		// Descriptor sets
+		std::array<VkWriteDescriptorSet, 2> scanAddDescriptorSets
+		{
+			DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputReduceInfo),
+			DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputOutputSumTableInfo)
+		};
+		commandBuffer.pushDescriptorSet(
+			this->radixSortScanAddPipelineLayout,
+			0,
+			uint32_t(scanAddDescriptorSets.size()),
+			scanAddDescriptorSets.data()
+		);
+
+		// Push constant
+		commandBuffer.pushConstant(
+			this->radixSortScanAddPipelineLayout,
+			(void*)&sortGaussiansPcData
+		);
+
+		// Dispatch
+		commandBuffer.dispatch(numReducedThreadGroups);
+	}
 }
 
 void Renderer::computeSortGaussians(CommandBuffer& commandBuffer, uint32_t numElemToSort)

@@ -1,0 +1,66 @@
+#version 450
+
+#extension GL_GOOGLE_include_directive: require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64: require
+
+#include "../Common/CommonRadix.glsl"
+
+// Receive work group size as a specialization constant
+layout(constant_id = 0) const uint WORK_GROUP_SIZE = 512u;
+
+layout (local_size_x_id = 0, local_size_y = 1, local_size_z = 1) in;
+
+
+// SBO
+layout(binding = 0) buffer ReduceBuffer
+{
+	uvec4 data[];
+} reduceBuffer;
+
+// SBO
+layout(binding = 1) buffer SumBuffer
+{
+	uvec4 data[];
+} sumTableBuffer;
+
+// Push constant
+layout(push_constant) uniform PushConstantData
+{
+	uvec4 data; // uvec4(numSortElements, shiftBits, numCountWorkGroups, numReducedWorkGroups)
+} pc;
+
+// Shared memory (1024 * 16 = 16384 bytes are guaranteed to be available in Vulkan)
+shared uint loadedElements[WORK_GROUP_SIZE];
+
+void main()
+{
+	uint localIndex = gl_LocalInvocationID.x;
+	uint groupIndex = gl_WorkGroupID.x;
+	uint numScanAddElements = pc.data.z;
+	uint numReduceWorkGroupsPerBin = pc.data.w / BIN_COUNT;
+
+	uint binOffset = (groupIndex / numReduceWorkGroupsPerBin) * numScanAddElements;
+	uint baseIndex = (groupIndex % numReduceWorkGroupsPerBin) * WORK_GROUP_SIZE;
+	uint dataIndex = baseIndex + localIndex;
+
+	// Load
+	loadedElements[localIndex] = 
+		dataIndex < numScanAddElements ? 
+		sumTableBuffer.data[binOffset + dataIndex].x : 
+		0u;
+	barrier();
+
+	// Sum
+	uint sum = 0u;
+	for(uint i = 0u; i < localIndex; ++i)
+	{
+		sum += loadedElements[i];
+	}
+
+	// Add "prefix offset" from reduce buffer
+	sum += reduceBuffer.data[groupIndex].x;
+
+	// Write
+	if(dataIndex < numScanAddElements)
+		sumTableBuffer.data[binOffset + dataIndex].x = sum;
+}

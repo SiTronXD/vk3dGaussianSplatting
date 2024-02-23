@@ -174,6 +174,25 @@ void Renderer::initVulkan()
 		}
 	);
 
+	// Radix sort compute pipeline (scan add)
+	this->radixSortScanAddPipelineLayout.createPipelineLayout(
+		this->device,
+		{
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
+		},
+		VK_SHADER_STAGE_COMPUTE_BIT,
+		sizeof(SortGaussiansRsPCD)
+	);
+	this->radixSortScanAddPipeline.createComputePipeline(
+		this->device,
+		this->radixSortScanAddPipelineLayout,
+		"Resources/Shaders/RadixSortScanAdd.comp.spv",
+		{
+			SpecializationConstant{ (void*)Renderer::RS_WORK_GROUP_SIZE, sizeof(uint32_t)}
+		}
+	);
+
 	// Find ranges compute pipeline
 	this->findRangesPipelineLayout.createPipelineLayout(
 		this->device,
@@ -330,6 +349,8 @@ void Renderer::cleanup()
 	this->findRangesPipeline.cleanup();
 	this->findRangesPipelineLayout.cleanup();
 
+	this->radixSortScanAddPipelineLayout.cleanup();
+	this->radixSortScanAddPipeline.cleanup();
 	this->radixSortScanPipelineLayout.cleanup();
 	this->radixSortScanPipeline.cleanup();
 	this->radixSortReducePipelineLayout.cleanup();
