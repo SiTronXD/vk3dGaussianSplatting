@@ -193,6 +193,26 @@ void Renderer::initVulkan()
 		}
 	);
 
+	// Radix sort compute pipeline (scatter)
+	this->radixSortScatterPipelineLayout.createPipelineLayout(
+		this->device,
+		{
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
+		},
+		VK_SHADER_STAGE_COMPUTE_BIT,
+		sizeof(SortGaussiansRsPCD)
+	);
+	this->radixSortScatterPipeline.createComputePipeline(
+		this->device,
+		this->radixSortScatterPipelineLayout,
+		"Resources/Shaders/RadixSortScatter.comp.spv",
+		{
+			SpecializationConstant{ (void*)Renderer::RS_WORK_GROUP_SIZE, sizeof(uint32_t)}
+		}
+	);
+
 	// Find ranges compute pipeline
 	this->findRangesPipelineLayout.createPipelineLayout(
 		this->device,
@@ -325,6 +345,7 @@ void Renderer::cleanup()
 
 	this->swapchain.cleanup();
 
+	this->radixSortPingPongBuffer.cleanup();
 	this->radixSortReduceBuffer.cleanup();
 	this->radixSortSumTableBuffer.cleanup();
 
@@ -349,6 +370,8 @@ void Renderer::cleanup()
 	this->findRangesPipeline.cleanup();
 	this->findRangesPipelineLayout.cleanup();
 
+	this->radixSortScatterPipelineLayout.cleanup();
+	this->radixSortScatterPipeline.cleanup();
 	this->radixSortScanAddPipelineLayout.cleanup();
 	this->radixSortScanAddPipeline.cleanup();
 	this->radixSortScanPipelineLayout.cleanup();
@@ -864,6 +887,12 @@ void Renderer::initForScene(Scene& scene)
 		this->gfxAllocContext,
 		sizeof(dummyReduceData[0]) * dummyReduceData.size(),
 		dummyReduceData.data()
+	);
+
+	this->radixSortPingPongBuffer.createGpuBuffer(
+		this->gfxAllocContext,
+		sizeof(sortData[0]) * sortData.size(),
+		sortData.data()
 	);
 }
 

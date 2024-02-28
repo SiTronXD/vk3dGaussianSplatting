@@ -115,6 +115,8 @@ private:
 	Pipeline radixSortScanPipeline;
 	PipelineLayout radixSortScanAddPipelineLayout;
 	Pipeline radixSortScanAddPipeline;
+	PipelineLayout radixSortScatterPipelineLayout;
+	Pipeline radixSortScatterPipeline;
 
 	CommandPool commandPool;
 	CommandPool singleTimeCommandPool;
@@ -139,6 +141,7 @@ private:
 	// Buffers for radix sort
 	StorageBuffer radixSortSumTableBuffer;
 	StorageBuffer radixSortReduceBuffer;
+	StorageBuffer radixSortPingPongBuffer;
 
 	uint32_t numGaussians;
 	uint32_t numSortElements;

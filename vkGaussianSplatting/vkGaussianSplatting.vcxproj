@@ -322,6 +322,9 @@
     <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortScanAdd.comp">
       <FileType>Document</FileType>
     </CustomBuild>
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortScatter.comp">
+      <FileType>Document</FileType>
+    </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

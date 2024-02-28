@@ -25,7 +25,7 @@ layout(binding = 1) buffer ReduceBuffer
 // Push constant
 layout(push_constant) uniform PushConstantData
 {
-	uvec4 data; // uvec4(numSortElements, shiftBits, numCountWorkGroups, 0)
+	uvec4 data; // uvec4(numSortElements, shiftBits, numCountWorkGroups, numReducedWorkGroups)
 } pc;
 
 void main()

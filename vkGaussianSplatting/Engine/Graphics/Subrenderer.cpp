@@ -241,6 +241,18 @@ void Renderer::computeSortGaussiansBMS(CommandBuffer& commandBuffer, uint32_t nu
 
 void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t numElemToSort)
 {
+	// TODO: add static asserts concerning shared memory limitations based on 
+	// WORK_GROUP_SIZE and BIN_COUNT.
+
+	// Sanity check for now, to ensure that no bits outside of 64 are evaluated.
+	// This check might be removed if RS_BITS_PER_PASS is increased to 5 or 6. But should that 
+	// be the case, then the shaders have to take that change into account.
+	assert(64 % RS_BITS_PER_PASS == 0);
+
+	// Limitation of the scatter shader
+	assert(RS_BITS_PER_PASS % 2 == 0);
+	assert(RS_WORK_GROUP_SIZE >= RS_BIN_COUNT);
+
 	uint32_t numThreadGroups = (numElemToSort + RS_WORK_GROUP_SIZE - 1) / RS_WORK_GROUP_SIZE;
 	//uint32_t numReducedThreadGroups = RS_BIN_COUNT * ((RS_WORK_GROUP_SIZE > numThreadGroups) ? 1u : (numThreadGroups + RS_WORK_GROUP_SIZE - 1u) / RS_WORK_GROUP_SIZE);
 	uint32_t numReducedThreadGroups = RS_BIN_COUNT * ((numThreadGroups + RS_WORK_GROUP_SIZE - 1u) / RS_WORK_GROUP_SIZE);
@@ -251,6 +263,9 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t num
 	sortGaussiansPcData.data.y = 0u;
 	sortGaussiansPcData.data.z = numThreadGroups;
 	sortGaussiansPcData.data.w = numReducedThreadGroups;
+
+	StorageBuffer* srcSortBuffer = &this->gaussiansSortListSBO;
+	StorageBuffer* dstSortBuffer = &this->radixSortPingPongBuffer;
 
 	// ------------------ 1. Count ------------------
 	{
@@ -428,6 +443,69 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t num
 
 		// Dispatch
 		commandBuffer.dispatch(numReducedThreadGroups);
+	}
+
+	// ------------------ 5. Scatter ------------------
+	{
+		commandBuffer.bufferMemoryBarrier(
+			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+			VK_ACCESS_SHADER_READ_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			this->radixSortSumTableBuffer.getVkBuffer(),
+			this->radixSortSumTableBuffer.getBufferSize()
+		);
+
+
+		// Compute pipeline
+		commandBuffer.bindPipeline(this->radixSortScatterPipeline);
+
+		// Binding 0
+		VkDescriptorBufferInfo inputSumTableInfo{};
+		inputSumTableInfo.buffer = this->radixSortSumTableBuffer.getVkBuffer();
+		inputSumTableInfo.range = this->radixSortSumTableBuffer.getBufferSize();
+
+		// Binding 1
+		VkDescriptorBufferInfo inputSortSourceInfo{};
+		inputSortSourceInfo.buffer = srcSortBuffer->getVkBuffer();
+		inputSortSourceInfo.range = srcSortBuffer->getBufferSize();
+
+		// Binding 2
+		VkDescriptorBufferInfo outputSortDestinationInfo{};
+		outputSortDestinationInfo.buffer = dstSortBuffer->getVkBuffer();
+		outputSortDestinationInfo.range = dstSortBuffer->getBufferSize();
+
+		// Descriptor sets
+		std::array<VkWriteDescriptorSet, 3> scatterDescriptorSets
+		{
+			DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputSumTableInfo),
+			DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputSortSourceInfo),
+			DescriptorSet::writeBuffer(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputSortDestinationInfo)
+		};
+		commandBuffer.pushDescriptorSet(
+			this->radixSortScatterPipelineLayout,
+			0,
+			uint32_t(scatterDescriptorSets.size()),
+			scatterDescriptorSets.data()
+		);
+
+		// Push constant
+		commandBuffer.pushConstant(
+			this->radixSortScatterPipelineLayout,
+			(void*)&sortGaussiansPcData
+		);
+
+		// Dispatch
+		commandBuffer.dispatch(numThreadGroups);
+
+		// Ensure the number of swaps is divisible by two, to avoid the case where a 
+		// buffer copy is needed after an uneven number of swaps.
+		assert((64 / RS_BITS_PER_PASS) % 2 == 0);
+
+		// Swap
+		StorageBuffer* temp = srcSortBuffer;
+		srcSortBuffer = dstSortBuffer;
+		dstSortBuffer = temp;
 	}
 }
 
