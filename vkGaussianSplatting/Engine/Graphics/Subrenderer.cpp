@@ -503,18 +503,15 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t num
 			// Dispatch
 			commandBuffer.dispatch(numThreadGroups);
 
-			// Not the last pass
-			if (shiftBits + RS_BITS_PER_PASS < 64u)
-			{
-				commandBuffer.bufferMemoryBarrier(
-					VK_ACCESS_SHADER_WRITE_BIT,
-					VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
-					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-					dstSortBuffer->getVkBuffer(),
-					dstSortBuffer->getBufferSize()
-				);
-			}
+			// No matter which shader reads dst next, the shader should wait for dst
+			commandBuffer.bufferMemoryBarrier(
+				VK_ACCESS_SHADER_WRITE_BIT,
+				VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+				dstSortBuffer->getVkBuffer(),
+				dstSortBuffer->getBufferSize()
+			);
 
 			// Ensure the number of swaps is divisible by two, to avoid the case where a 
 			// buffer copy is needed after an uneven number of swaps.
