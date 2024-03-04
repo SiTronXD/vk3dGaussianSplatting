@@ -258,6 +258,16 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t num
 	uint32_t numReducedThreadGroups = RS_BIN_COUNT * ((numThreadGroups + RS_WORK_GROUP_SIZE - 1u) / RS_WORK_GROUP_SIZE);
 	assert(!(RS_WORK_GROUP_SIZE > numThreadGroups));
 
+	// Wait for work on the sorting list to finish
+	commandBuffer.bufferMemoryBarrier(
+		VK_ACCESS_SHADER_WRITE_BIT,
+		VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+		this->gaussiansSortListSBO.getVkBuffer(),
+		this->gaussiansSortListSBO.getBufferSize()
+	);
+
 	SortGaussiansRsPCD sortGaussiansPcData{};
 	sortGaussiansPcData.data.x = numElemToSort;
 	sortGaussiansPcData.data.y = 0u;
@@ -267,245 +277,254 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t num
 	StorageBuffer* srcSortBuffer = &this->gaussiansSortListSBO;
 	StorageBuffer* dstSortBuffer = &this->radixSortPingPongBuffer;
 
-	// ------------------ 1. Count ------------------
+	for (uint64_t shiftBits = 0; shiftBits < 64; shiftBits += RS_BITS_PER_PASS)
 	{
-		commandBuffer.bufferMemoryBarrier(
-			VK_ACCESS_SHADER_WRITE_BIT,
-			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			this->gaussiansSortListSBO.getVkBuffer(),
-			this->gaussiansSortListSBO.getBufferSize()
-		);
+		sortGaussiansPcData.data.y = shiftBits;
 
-		// Compute pipeline
-		commandBuffer.bindPipeline(this->radixSortCountPipeline);
-
-		// Binding 0
-		VkDescriptorBufferInfo inputGaussiansSortInfo{};
-		inputGaussiansSortInfo.buffer = this->gaussiansSortListSBO.getVkBuffer();
-		inputGaussiansSortInfo.range = this->gaussiansSortListSBO.getBufferSize();
-
-		// Binding 1
-		VkDescriptorBufferInfo outputSumTableInfo{};
-		outputSumTableInfo.buffer = this->radixSortSumTableBuffer.getVkBuffer();
-		outputSumTableInfo.range = this->radixSortSumTableBuffer.getBufferSize();
-
-		// Descriptor sets
-		std::array<VkWriteDescriptorSet, 2> countDescriptorSets
+		// ------------------ 1. Count ------------------
 		{
-			DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansSortInfo),
-			DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputSumTableInfo),
-		};
-		commandBuffer.pushDescriptorSet(
-			this->radixSortCountPipelineLayout,
-			0,
-			uint32_t(countDescriptorSets.size()),
-			countDescriptorSets.data()
-		);
+			// Compute pipeline
+			commandBuffer.bindPipeline(this->radixSortCountPipeline);
 
-		// Push constant
-		commandBuffer.pushConstant(
-			this->radixSortCountPipelineLayout,
-			(void*)&sortGaussiansPcData
-		);
+			// Binding 0
+			VkDescriptorBufferInfo inputGaussiansSortInfo{};
+			inputGaussiansSortInfo.buffer = srcSortBuffer->getVkBuffer();
+			inputGaussiansSortInfo.range = srcSortBuffer->getBufferSize();
 
-		// Dispatch
-		commandBuffer.dispatch(numThreadGroups);
-	}
+			// Binding 1
+			VkDescriptorBufferInfo outputSumTableInfo{};
+			outputSumTableInfo.buffer = this->radixSortSumTableBuffer.getVkBuffer();
+			outputSumTableInfo.range = this->radixSortSumTableBuffer.getBufferSize();
 
-	// ------------------ 2. Reduce ------------------
-	{
-		commandBuffer.bufferMemoryBarrier(
-			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
-			VK_ACCESS_SHADER_READ_BIT,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			this->radixSortSumTableBuffer.getVkBuffer(),
-			this->radixSortSumTableBuffer.getBufferSize()
-		);
+			// Descriptor sets
+			std::array<VkWriteDescriptorSet, 2> countDescriptorSets
+			{
+				DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansSortInfo),
+				DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputSumTableInfo),
+			};
+			commandBuffer.pushDescriptorSet(
+				this->radixSortCountPipelineLayout,
+				0,
+				uint32_t(countDescriptorSets.size()),
+				countDescriptorSets.data()
+			);
 
-		// Compute pipeline
-		commandBuffer.bindPipeline(this->radixSortReducePipeline);
+			// Push constant
+			commandBuffer.pushConstant(
+				this->radixSortCountPipelineLayout,
+				(void*)&sortGaussiansPcData
+			);
 
-		// Binding 0
-		VkDescriptorBufferInfo inputSumTableInfo{};
-		inputSumTableInfo.buffer = this->radixSortSumTableBuffer.getVkBuffer();
-		inputSumTableInfo.range = this->radixSortSumTableBuffer.getBufferSize();
+			// Dispatch
+			commandBuffer.dispatch(numThreadGroups);
+		}
 
-		// Binding 1
-		VkDescriptorBufferInfo outputReduceInfo{};
-		outputReduceInfo.buffer = this->radixSortReduceBuffer.getVkBuffer();
-		outputReduceInfo.range = this->radixSortReduceBuffer.getBufferSize();
-
-		// Descriptor sets
-		std::array<VkWriteDescriptorSet, 2> reduceDescriptorSets
+		// ------------------ 2. Reduce ------------------
 		{
-			DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputSumTableInfo),
-			DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputReduceInfo),
-		};
-		commandBuffer.pushDescriptorSet(
-			this->radixSortReducePipelineLayout,
-			0,
-			uint32_t(reduceDescriptorSets.size()),
-			reduceDescriptorSets.data()
-		);
+			commandBuffer.bufferMemoryBarrier(
+				VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+				VK_ACCESS_SHADER_READ_BIT,
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+				this->radixSortSumTableBuffer.getVkBuffer(),
+				this->radixSortSumTableBuffer.getBufferSize()
+			);
 
-		// Dispatch
-		commandBuffer.dispatch(numReducedThreadGroups);
-	}
+			// Compute pipeline
+			commandBuffer.bindPipeline(this->radixSortReducePipeline);
 
-	// ------------------ 3. Scan ------------------
-	{
-		commandBuffer.bufferMemoryBarrier(
-			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
-			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			this->radixSortReduceBuffer.getVkBuffer(),
-			this->radixSortReduceBuffer.getBufferSize()
-		);
+			// Binding 0
+			VkDescriptorBufferInfo inputSumTableInfo{};
+			inputSumTableInfo.buffer = this->radixSortSumTableBuffer.getVkBuffer();
+			inputSumTableInfo.range = this->radixSortSumTableBuffer.getBufferSize();
 
+			// Binding 1
+			VkDescriptorBufferInfo outputReduceInfo{};
+			outputReduceInfo.buffer = this->radixSortReduceBuffer.getVkBuffer();
+			outputReduceInfo.range = this->radixSortReduceBuffer.getBufferSize();
 
-		// Compute pipeline
-		commandBuffer.bindPipeline(this->radixSortScanPipeline);
+			// Descriptor sets
+			std::array<VkWriteDescriptorSet, 2> reduceDescriptorSets
+			{
+				DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputSumTableInfo),
+				DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputReduceInfo),
+			};
+			commandBuffer.pushDescriptorSet(
+				this->radixSortReducePipelineLayout,
+				0,
+				uint32_t(reduceDescriptorSets.size()),
+				reduceDescriptorSets.data()
+			);
 
-		// Binding 0
-		VkDescriptorBufferInfo inputOutputReduceInfo{};
-		inputOutputReduceInfo.buffer = this->radixSortReduceBuffer.getVkBuffer();
-		inputOutputReduceInfo.range = this->radixSortReduceBuffer.getBufferSize();
+			// Dispatch
+			commandBuffer.dispatch(numReducedThreadGroups);
+		}
 
-		// Descriptor sets
-		std::array<VkWriteDescriptorSet, 1> scanDescriptorSets
+		// ------------------ 3. Scan ------------------
 		{
-			DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputOutputReduceInfo)
-		};
-		commandBuffer.pushDescriptorSet(
-			this->radixSortScanPipelineLayout,
-			0,
-			uint32_t(scanDescriptorSets.size()),
-			scanDescriptorSets.data()
-		);
-
-		// Push constant
-		commandBuffer.pushConstant(
-			this->radixSortScanPipelineLayout,
-			(void*)&sortGaussiansPcData
-		);
-
-		// Dispatch
-		commandBuffer.dispatch(1u);
-	}
-
-	// ------------------ 4. Scan add ------------------
-	{
-		commandBuffer.bufferMemoryBarrier(
-			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
-			VK_ACCESS_SHADER_READ_BIT,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			this->radixSortReduceBuffer.getVkBuffer(),
-			this->radixSortReduceBuffer.getBufferSize()
-		);
+			commandBuffer.bufferMemoryBarrier(
+				VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+				VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+				this->radixSortReduceBuffer.getVkBuffer(),
+				this->radixSortReduceBuffer.getBufferSize()
+			);
 
 
-		// Compute pipeline
-		commandBuffer.bindPipeline(this->radixSortScanAddPipeline);
+			// Compute pipeline
+			commandBuffer.bindPipeline(this->radixSortScanPipeline);
 
-		// Binding 0
-		VkDescriptorBufferInfo inputReduceInfo{};
-		inputReduceInfo.buffer = this->radixSortReduceBuffer.getVkBuffer();
-		inputReduceInfo.range = this->radixSortReduceBuffer.getBufferSize();
+			// Binding 0
+			VkDescriptorBufferInfo inputOutputReduceInfo{};
+			inputOutputReduceInfo.buffer = this->radixSortReduceBuffer.getVkBuffer();
+			inputOutputReduceInfo.range = this->radixSortReduceBuffer.getBufferSize();
 
-		// Binding 1
-		VkDescriptorBufferInfo inputOutputSumTableInfo{};
-		inputOutputSumTableInfo.buffer = this->radixSortSumTableBuffer.getVkBuffer();
-		inputOutputSumTableInfo.range = this->radixSortSumTableBuffer.getBufferSize();
+			// Descriptor sets
+			std::array<VkWriteDescriptorSet, 1> scanDescriptorSets
+			{
+				DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputOutputReduceInfo)
+			};
+			commandBuffer.pushDescriptorSet(
+				this->radixSortScanPipelineLayout,
+				0,
+				uint32_t(scanDescriptorSets.size()),
+				scanDescriptorSets.data()
+			);
 
-		// Descriptor sets
-		std::array<VkWriteDescriptorSet, 2> scanAddDescriptorSets
+			// Push constant
+			commandBuffer.pushConstant(
+				this->radixSortScanPipelineLayout,
+				(void*)&sortGaussiansPcData
+			);
+
+			// Dispatch
+			commandBuffer.dispatch(1u);
+		}
+
+		// ------------------ 4. Scan add ------------------
 		{
-			DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputReduceInfo),
-			DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputOutputSumTableInfo)
-		};
-		commandBuffer.pushDescriptorSet(
-			this->radixSortScanAddPipelineLayout,
-			0,
-			uint32_t(scanAddDescriptorSets.size()),
-			scanAddDescriptorSets.data()
-		);
-
-		// Push constant
-		commandBuffer.pushConstant(
-			this->radixSortScanAddPipelineLayout,
-			(void*)&sortGaussiansPcData
-		);
-
-		// Dispatch
-		commandBuffer.dispatch(numReducedThreadGroups);
-	}
-
-	// ------------------ 5. Scatter ------------------
-	{
-		commandBuffer.bufferMemoryBarrier(
-			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
-			VK_ACCESS_SHADER_READ_BIT,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			this->radixSortSumTableBuffer.getVkBuffer(),
-			this->radixSortSumTableBuffer.getBufferSize()
-		);
+			commandBuffer.bufferMemoryBarrier(
+				VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+				VK_ACCESS_SHADER_READ_BIT,
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+				this->radixSortReduceBuffer.getVkBuffer(),
+				this->radixSortReduceBuffer.getBufferSize()
+			);
 
 
-		// Compute pipeline
-		commandBuffer.bindPipeline(this->radixSortScatterPipeline);
+			// Compute pipeline
+			commandBuffer.bindPipeline(this->radixSortScanAddPipeline);
 
-		// Binding 0
-		VkDescriptorBufferInfo inputSumTableInfo{};
-		inputSumTableInfo.buffer = this->radixSortSumTableBuffer.getVkBuffer();
-		inputSumTableInfo.range = this->radixSortSumTableBuffer.getBufferSize();
+			// Binding 0
+			VkDescriptorBufferInfo inputReduceInfo{};
+			inputReduceInfo.buffer = this->radixSortReduceBuffer.getVkBuffer();
+			inputReduceInfo.range = this->radixSortReduceBuffer.getBufferSize();
 
-		// Binding 1
-		VkDescriptorBufferInfo inputSortSourceInfo{};
-		inputSortSourceInfo.buffer = srcSortBuffer->getVkBuffer();
-		inputSortSourceInfo.range = srcSortBuffer->getBufferSize();
+			// Binding 1
+			VkDescriptorBufferInfo inputOutputSumTableInfo{};
+			inputOutputSumTableInfo.buffer = this->radixSortSumTableBuffer.getVkBuffer();
+			inputOutputSumTableInfo.range = this->radixSortSumTableBuffer.getBufferSize();
 
-		// Binding 2
-		VkDescriptorBufferInfo outputSortDestinationInfo{};
-		outputSortDestinationInfo.buffer = dstSortBuffer->getVkBuffer();
-		outputSortDestinationInfo.range = dstSortBuffer->getBufferSize();
+			// Descriptor sets
+			std::array<VkWriteDescriptorSet, 2> scanAddDescriptorSets
+			{
+				DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputReduceInfo),
+				DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputOutputSumTableInfo)
+			};
+			commandBuffer.pushDescriptorSet(
+				this->radixSortScanAddPipelineLayout,
+				0,
+				uint32_t(scanAddDescriptorSets.size()),
+				scanAddDescriptorSets.data()
+			);
 
-		// Descriptor sets
-		std::array<VkWriteDescriptorSet, 3> scatterDescriptorSets
+			// Push constant
+			commandBuffer.pushConstant(
+				this->radixSortScanAddPipelineLayout,
+				(void*)&sortGaussiansPcData
+			);
+
+			// Dispatch
+			commandBuffer.dispatch(numReducedThreadGroups);
+		}
+
+		// ------------------ 5. Scatter ------------------
 		{
-			DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputSumTableInfo),
-			DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputSortSourceInfo),
-			DescriptorSet::writeBuffer(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputSortDestinationInfo)
-		};
-		commandBuffer.pushDescriptorSet(
-			this->radixSortScatterPipelineLayout,
-			0,
-			uint32_t(scatterDescriptorSets.size()),
-			scatterDescriptorSets.data()
-		);
+			commandBuffer.bufferMemoryBarrier(
+				VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+				VK_ACCESS_SHADER_READ_BIT,
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+				this->radixSortSumTableBuffer.getVkBuffer(),
+				this->radixSortSumTableBuffer.getBufferSize()
+			);
 
-		// Push constant
-		commandBuffer.pushConstant(
-			this->radixSortScatterPipelineLayout,
-			(void*)&sortGaussiansPcData
-		);
 
-		// Dispatch
-		commandBuffer.dispatch(numThreadGroups);
+			// Compute pipeline
+			commandBuffer.bindPipeline(this->radixSortScatterPipeline);
 
-		// Ensure the number of swaps is divisible by two, to avoid the case where a 
-		// buffer copy is needed after an uneven number of swaps.
-		assert((64 / RS_BITS_PER_PASS) % 2 == 0);
+			// Binding 0
+			VkDescriptorBufferInfo inputSumTableInfo{};
+			inputSumTableInfo.buffer = this->radixSortSumTableBuffer.getVkBuffer();
+			inputSumTableInfo.range = this->radixSortSumTableBuffer.getBufferSize();
 
-		// Swap
-		StorageBuffer* temp = srcSortBuffer;
-		srcSortBuffer = dstSortBuffer;
-		dstSortBuffer = temp;
+			// Binding 1
+			VkDescriptorBufferInfo inputSortSourceInfo{};
+			inputSortSourceInfo.buffer = srcSortBuffer->getVkBuffer();
+			inputSortSourceInfo.range = srcSortBuffer->getBufferSize();
+
+			// Binding 2
+			VkDescriptorBufferInfo outputSortDestinationInfo{};
+			outputSortDestinationInfo.buffer = dstSortBuffer->getVkBuffer();
+			outputSortDestinationInfo.range = dstSortBuffer->getBufferSize();
+
+			// Descriptor sets
+			std::array<VkWriteDescriptorSet, 3> scatterDescriptorSets
+			{
+				DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputSumTableInfo),
+				DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputSortSourceInfo),
+				DescriptorSet::writeBuffer(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputSortDestinationInfo)
+			};
+			commandBuffer.pushDescriptorSet(
+				this->radixSortScatterPipelineLayout,
+				0,
+				uint32_t(scatterDescriptorSets.size()),
+				scatterDescriptorSets.data()
+			);
+
+			// Push constant
+			commandBuffer.pushConstant(
+				this->radixSortScatterPipelineLayout,
+				(void*)&sortGaussiansPcData
+			);
+
+			// Dispatch
+			commandBuffer.dispatch(numThreadGroups);
+
+			// Not the last pass
+			if (shiftBits + RS_BITS_PER_PASS < 64u)
+			{
+				commandBuffer.bufferMemoryBarrier(
+					VK_ACCESS_SHADER_WRITE_BIT,
+					VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+					dstSortBuffer->getVkBuffer(),
+					dstSortBuffer->getBufferSize()
+				);
+			}
+
+			// Ensure the number of swaps is divisible by two, to avoid the case where a 
+			// buffer copy is needed after an uneven number of swaps.
+			assert((64 / RS_BITS_PER_PASS) % 2 == 0);
+
+			// Swap
+			StorageBuffer* temp = srcSortBuffer;
+			srcSortBuffer = dstSortBuffer;
+			dstSortBuffer = temp;
+		}
 	}
 }
 
