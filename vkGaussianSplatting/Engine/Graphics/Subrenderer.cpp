@@ -47,6 +47,13 @@ void Renderer::computeInitSortList(
 		std::numeric_limits<uint32_t>::max()
 	);
 
+	// Reset radix sort ping pong buffer, similar to gaussian sort keys
+	commandBuffer.fillBuffer(
+		this->radixSortPingPongBuffer.getVkBuffer(),
+		sizeof(GaussianSortData) * this->numSortElements,
+		std::numeric_limits<uint32_t>::max()
+	);
+
 	// Reset gaussian count before culling
 	commandBuffer.fillBuffer(
 		this->gaussiansCullDataSBO.getVkBuffer(),
@@ -61,7 +68,7 @@ void Renderer::computeInitSortList(
 		0
 	);
 
-	std::array<VkBufferMemoryBarrier2, 3> initBufferBarriers =
+	std::array<VkBufferMemoryBarrier2, 4> initBufferBarriers =
 	{
 		// Gaussians sort list
 		PipelineBarrier::bufferMemoryBarrier2(
@@ -71,6 +78,16 @@ void Renderer::computeInitSortList(
 			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 			this->gaussiansSortListSBO.getVkBuffer(),
 			this->gaussiansSortListSBO.getBufferSize()
+		),
+
+		// Radix sort ping pong buffer
+		PipelineBarrier::bufferMemoryBarrier2(
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			this->radixSortPingPongBuffer.getVkBuffer(),
+			this->radixSortPingPongBuffer.getBufferSize()
 		),
 
 		// Gaussians cull data
@@ -125,8 +142,8 @@ void Renderer::computeInitSortList(
 	std::array<VkWriteDescriptorSet, 4> computeWriteDescriptorSets
 	{
 		DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &inputCamUboInfo),
-
 		DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansBufferInfo),
+
 		DescriptorSet::writeBuffer(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputGaussiansSortInfo),
 		DescriptorSet::writeBuffer(3, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputGaussiansCullInfo)
 	};
@@ -277,7 +294,7 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t num
 	StorageBuffer* srcSortBuffer = &this->gaussiansSortListSBO;
 	StorageBuffer* dstSortBuffer = &this->radixSortPingPongBuffer;
 
-	for (uint64_t shiftBits = 0; shiftBits < 64; shiftBits += RS_BITS_PER_PASS)
+	for (uint32_t shiftBits = 0u; shiftBits < 64u; shiftBits += RS_BITS_PER_PASS)
 	{
 		sortGaussiansPcData.data.y = shiftBits;
 

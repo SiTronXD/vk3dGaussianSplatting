@@ -13,7 +13,7 @@ void TestSortScene::init()
 
 
 	// Add gaussians in front of the camera
-	for (uint32_t i = 0; i < 16*3; ++i) {
+	for (uint32_t i = 0; i < 64*3; ++i) {
 
 		uint32_t keyDepth = (i + 1) * 1024;
 		float zOffset = ((float)keyDepth / (float)4294967295u) *

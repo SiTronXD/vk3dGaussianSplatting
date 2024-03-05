@@ -39,7 +39,7 @@ void main()
 	uint numScanAddElements = pc.data.z;
 	uint numReduceWorkGroupsPerBin = pc.data.w / BIN_COUNT;
 
-	uint binOffset = (groupIndex / numReduceWorkGroupsPerBin) * numScanAddElements;
+	uint binOffset = uint(groupIndex / numReduceWorkGroupsPerBin) * numScanAddElements;
 	uint baseIndex = (groupIndex % numReduceWorkGroupsPerBin) * WORK_GROUP_SIZE;
 	uint dataIndex = baseIndex + localIndex;
 

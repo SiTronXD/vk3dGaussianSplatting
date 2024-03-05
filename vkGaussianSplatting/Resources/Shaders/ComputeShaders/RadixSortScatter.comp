@@ -158,9 +158,9 @@ void main()
 			// Store
 			if(totalOffset < numSortElements)
 			{
-				dstBuffer.sortData[dataIndex].data.x = uint(localKey >> 32u);
-				dstBuffer.sortData[dataIndex].data.y = uint(localKey);
-				dstBuffer.sortData[dataIndex].data.z = uint(localValue);
+				dstBuffer.sortData[uint(totalOffset)].data.x = uint(localKey >> 32u);
+				dstBuffer.sortData[uint(totalOffset)].data.y = uint(localKey);
+				dstBuffer.sortData[uint(totalOffset)].data.z = uint(localValue);
 			}
 		}
 	}
