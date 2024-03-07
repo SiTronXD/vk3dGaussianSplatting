@@ -115,7 +115,7 @@ void main()
 				barrier();
 				localKey = sums[localIndex];
 
-				barrier(); // I'm not completely convinced that this barrier() is necessary here.
+				barrier();
 
 				// Re-arrange values
 				sums[keyOffset] = localValue;
