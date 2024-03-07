@@ -134,17 +134,19 @@ private:
 
 	UniformBuffer camUBO;
 	StorageBuffer gaussiansSBO;
-	StorageBuffer gaussiansSortListSBO;
 	StorageBuffer gaussiansCullDataSBO;
 	StorageBuffer gaussiansTileRangesSBO;
+	std::shared_ptr<StorageBuffer> gaussiansSortListSBO;
 
 	// Buffers for radix sort
 	StorageBuffer radixSortSumTableBuffer;
 	StorageBuffer radixSortReduceBuffer;
-	StorageBuffer radixSortPingPongBuffer;
+	std::shared_ptr<StorageBuffer> radixSortPingPongBuffer;
+	std::shared_ptr<StorageBuffer> tempSwapPingPongBuffer;
 
 	uint32_t numGaussians;
 	uint32_t numSortElements;
+	uint32_t radixSortNumSortBits;
 
 	Window* window;
 	ResourceManager* resourceManager;
@@ -180,6 +182,7 @@ private:
 
 	uint32_t getNumTiles() const;
 	uint32_t getCeilPowTwo(uint32_t x) const;
+	uint32_t getMinNumBits(uint32_t x) const;
 
 	inline const VkDevice& getVkDevice() const { return this->device.getVkDevice(); }
 

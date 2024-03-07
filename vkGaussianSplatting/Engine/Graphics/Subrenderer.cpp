@@ -42,14 +42,14 @@ void Renderer::computeInitSortList(
 {
 	// Reset gaussian sort keys (make sure close sorted gaussians have lower valued keys)
 	commandBuffer.fillBuffer(
-		this->gaussiansSortListSBO.getVkBuffer(),
+		this->gaussiansSortListSBO->getVkBuffer(),
 		sizeof(GaussianSortData) * this->numSortElements,
 		std::numeric_limits<uint32_t>::max()
 	);
 
 	// Reset radix sort ping pong buffer, similar to gaussian sort keys
 	commandBuffer.fillBuffer(
-		this->radixSortPingPongBuffer.getVkBuffer(),
+		this->radixSortPingPongBuffer->getVkBuffer(),
 		sizeof(GaussianSortData) * this->numSortElements,
 		std::numeric_limits<uint32_t>::max()
 	);
@@ -76,8 +76,8 @@ void Renderer::computeInitSortList(
 			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
 			VK_PIPELINE_STAGE_TRANSFER_BIT,
 			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			this->gaussiansSortListSBO.getVkBuffer(),
-			this->gaussiansSortListSBO.getBufferSize()
+			this->gaussiansSortListSBO->getVkBuffer(),
+			this->gaussiansSortListSBO->getBufferSize()
 		),
 
 		// Radix sort ping pong buffer
@@ -86,8 +86,8 @@ void Renderer::computeInitSortList(
 			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
 			VK_PIPELINE_STAGE_TRANSFER_BIT,
 			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			this->radixSortPingPongBuffer.getVkBuffer(),
-			this->radixSortPingPongBuffer.getBufferSize()
+			this->radixSortPingPongBuffer->getVkBuffer(),
+			this->radixSortPingPongBuffer->getBufferSize()
 		),
 
 		// Gaussians cull data
@@ -130,8 +130,8 @@ void Renderer::computeInitSortList(
 
 	// Binding 2
 	VkDescriptorBufferInfo outputGaussiansSortInfo{};
-	outputGaussiansSortInfo.buffer = this->gaussiansSortListSBO.getVkBuffer();
-	outputGaussiansSortInfo.range = this->gaussiansSortListSBO.getBufferSize();
+	outputGaussiansSortInfo.buffer = this->gaussiansSortListSBO->getVkBuffer();
+	outputGaussiansSortInfo.range = this->gaussiansSortListSBO->getBufferSize();
 
 	// Binding 3
 	VkDescriptorBufferInfo outputGaussiansCullInfo{};
@@ -187,8 +187,8 @@ void Renderer::computeSortGaussiansBMS(CommandBuffer& commandBuffer, uint32_t nu
 		VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
 		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-		this->gaussiansSortListSBO.getVkBuffer(),
-		this->gaussiansSortListSBO.getBufferSize()
+		this->gaussiansSortListSBO->getVkBuffer(),
+		this->gaussiansSortListSBO->getBufferSize()
 	);
 
 	// Compute pipeline
@@ -196,8 +196,8 @@ void Renderer::computeSortGaussiansBMS(CommandBuffer& commandBuffer, uint32_t nu
 
 	// Binding 0
 	VkDescriptorBufferInfo inputOutputGaussiansSortInfo{};
-	inputOutputGaussiansSortInfo.buffer = this->gaussiansSortListSBO.getVkBuffer();
-	inputOutputGaussiansSortInfo.range = this->gaussiansSortListSBO.getBufferSize();
+	inputOutputGaussiansSortInfo.buffer = this->gaussiansSortListSBO->getVkBuffer();
+	inputOutputGaussiansSortInfo.range = this->gaussiansSortListSBO->getBufferSize();
 
 	// Descriptor set
 	std::array<VkWriteDescriptorSet, 1> computeWriteDescriptorSets
@@ -264,7 +264,7 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t num
 	// Sanity check for now, to ensure that no bits outside of 64 are evaluated.
 	// This check might be removed if RS_BITS_PER_PASS is increased to 5 or 6. But should that 
 	// be the case, then the shaders have to take that change into account.
-	assert(64 % RS_BITS_PER_PASS == 0);
+	assert(this->radixSortNumSortBits % RS_BITS_PER_PASS == 0);
 
 	// Limitation of the scatter shader
 	assert(RS_BITS_PER_PASS % 2 == 0);
@@ -281,8 +281,8 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t num
 		VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
 		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-		this->gaussiansSortListSBO.getVkBuffer(),
-		this->gaussiansSortListSBO.getBufferSize()
+		this->gaussiansSortListSBO->getVkBuffer(),
+		this->gaussiansSortListSBO->getBufferSize()
 	);
 
 	SortGaussiansRsPCD sortGaussiansPcData{};
@@ -291,10 +291,10 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t num
 	sortGaussiansPcData.data.z = numThreadGroups;
 	sortGaussiansPcData.data.w = numReducedThreadGroups;
 
-	StorageBuffer* srcSortBuffer = &this->gaussiansSortListSBO;
-	StorageBuffer* dstSortBuffer = &this->radixSortPingPongBuffer;
+	StorageBuffer* srcSortBuffer = this->gaussiansSortListSBO.get();
+	StorageBuffer* dstSortBuffer = this->radixSortPingPongBuffer.get();
 
-	for (uint32_t shiftBits = 0u; shiftBits < 64u; shiftBits += RS_BITS_PER_PASS)
+	for (uint32_t shiftBits = 0u; shiftBits < this->radixSortNumSortBits; shiftBits += RS_BITS_PER_PASS)
 	{
 		sortGaussiansPcData.data.y = shiftBits;
 
@@ -530,14 +530,19 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t num
 				dstSortBuffer->getBufferSize()
 			);
 
-			// Ensure the number of swaps is divisible by two, to avoid the case where a 
-			// buffer copy is needed after an uneven number of swaps.
-			assert((64 / RS_BITS_PER_PASS) % 2 == 0);
-
 			// Swap
 			StorageBuffer* temp = srcSortBuffer;
 			srcSortBuffer = dstSortBuffer;
 			dstSortBuffer = temp;
+		}
+
+		// Swap if original sort list is not pointing to correct buffer
+		if ((this->radixSortNumSortBits / RS_BITS_PER_PASS) % 2 != 0)
+		{
+			// Swap
+			this->tempSwapPingPongBuffer = this->gaussiansSortListSBO;
+			this->gaussiansSortListSBO = this->radixSortPingPongBuffer;
+			this->radixSortPingPongBuffer = this->tempSwapPingPongBuffer;
 		}
 	}
 }
@@ -565,8 +570,8 @@ void Renderer::computeRanges(CommandBuffer& commandBuffer)
 
 	// Binding 0
 	VkDescriptorBufferInfo inputGaussiansSortInfo{};
-	inputGaussiansSortInfo.buffer = this->gaussiansSortListSBO.getVkBuffer();
-	inputGaussiansSortInfo.range = this->gaussiansSortListSBO.getBufferSize();
+	inputGaussiansSortInfo.buffer = this->gaussiansSortListSBO->getVkBuffer();
+	inputGaussiansSortInfo.range = this->gaussiansSortListSBO->getBufferSize();
 
 	// Binding 1
 	VkDescriptorBufferInfo outputGaussiansRangeInfo{};
@@ -663,8 +668,8 @@ void Renderer::computeRenderGaussians(
 
 	// Binding 1
 	VkDescriptorBufferInfo inputGaussiansSortListInfo{};
-	inputGaussiansSortListInfo.buffer = this->gaussiansSortListSBO.getVkBuffer();
-	inputGaussiansSortListInfo.range = this->gaussiansSortListSBO.getBufferSize();
+	inputGaussiansSortListInfo.buffer = this->gaussiansSortListSBO->getVkBuffer();
+	inputGaussiansSortListInfo.range = this->gaussiansSortListSBO->getBufferSize();
 
 	// Binding 2
 	VkDescriptorBufferInfo inputGaussiansCullDataInfo{};
@@ -764,7 +769,7 @@ void Renderer::dispatchBms(
 		VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, // TODO: should only be read after last dispatch
 		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-		this->gaussiansSortListSBO.getVkBuffer(),
-		this->gaussiansSortListSBO.getBufferSize()
+		this->gaussiansSortListSBO->getVkBuffer(),
+		this->gaussiansSortListSBO->getBufferSize()
 	);
 }

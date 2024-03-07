@@ -345,13 +345,13 @@ void Renderer::cleanup()
 
 	this->swapchain.cleanup();
 
-	this->radixSortPingPongBuffer.cleanup();
+	this->radixSortPingPongBuffer->cleanup();
 	this->radixSortReduceBuffer.cleanup();
 	this->radixSortSumTableBuffer.cleanup();
 
+	this->gaussiansSortListSBO->cleanup();
 	this->gaussiansTileRangesSBO.cleanup();
 	this->gaussiansCullDataSBO.cleanup();
-	this->gaussiansSortListSBO.cleanup();
 	this->gaussiansSBO.cleanup();
 	this->camUBO.cleanup();
 
@@ -755,7 +755,7 @@ void Renderer::recordCommandBuffer(
 void Renderer::resizeWindow()
 {
 	assert(false);
-	Log::warning("Gaussian tile range buffer needs to be recreated...");
+	Log::warning("gaussiansTileRangesSBO and radixSortNumSortBits (and possibly more) need to be recreated...");
 
 	this->swapchain.recreate();
 }
@@ -822,9 +822,20 @@ uint32_t Renderer::getCeilPowTwo(uint32_t x) const
 {
 	uint32_t num = 1;
 	while (num < x)
-		num *= 2u;
+		num *= 2;
 
 	return num;
+}
+
+uint32_t Renderer::getMinNumBits(uint32_t x) const
+{
+	for (int32_t i = 32 - 1; i >= 0; --i)
+	{
+		if (uint32_t(x >> i) & 1)
+			return static_cast<uint32_t>(i + 1);
+	}
+
+	return 0;
 }
 
 void Renderer::initForScene(Scene& scene)
@@ -844,7 +855,8 @@ void Renderer::initForScene(Scene& scene)
 
 	// Gaussians list SBO for sorting
 	std::vector<GaussianSortData> sortData(this->numSortElements); // Dummy data
-	this->gaussiansSortListSBO.createGpuBuffer(
+	this->gaussiansSortListSBO = std::make_shared<StorageBuffer>();
+	this->gaussiansSortListSBO->createGpuBuffer(
 		this->gfxAllocContext,
 		sizeof(sortData[0]) * sortData.size(),
 		sortData.data()
@@ -889,11 +901,17 @@ void Renderer::initForScene(Scene& scene)
 		dummyReduceData.data()
 	);
 
-	this->radixSortPingPongBuffer.createGpuBuffer(
+	this->radixSortPingPongBuffer = std::make_shared<StorageBuffer>();
+	this->radixSortPingPongBuffer->createGpuBuffer(
 		this->gfxAllocContext,
 		sizeof(sortData[0]) * sortData.size(),
 		sortData.data()
 	);
+
+	// Not all of the highest bits in the sorting keys are utilized, 
+	// meaning that sorting only needs to be done for the lowest bits actually being used.
+	uint32_t sortBits = 32 + this->getMinNumBits(this->getNumTiles() - 1);
+	this->radixSortNumSortBits = uint32_t((sortBits + RS_BITS_PER_PASS - 1) / RS_BITS_PER_PASS) * RS_BITS_PER_PASS;
 }
 
 void Renderer::setWindow(Window& window)
