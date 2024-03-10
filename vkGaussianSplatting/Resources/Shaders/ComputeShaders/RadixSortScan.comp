@@ -31,6 +31,8 @@ void main()
 	uint localIndex = gl_LocalInvocationID.x;
 	uint numScanElements = pc.data.w;
 	uint numIterations = (numScanElements + WORK_GROUP_SIZE - 1u) / WORK_GROUP_SIZE;
+	if(localIndex == 0u)
+		highestOffset = 0u;
 
 	for(uint i = 0u; i < numIterations; ++i)
 	{
@@ -45,17 +47,17 @@ void main()
 		// Prefix sum
 		uint newSum;
 		{
-			newSum = subgroupExclusiveAdd(loadedElement);
+			newSum = highestOffset + subgroupExclusiveAdd(loadedElement);
 
 			if((localIndex + 1u) % gl_SubgroupSize == 0)
-				loadedElements[localIndex / gl_SubgroupSize] = newSum + loadedElement;
+				loadedElements[localIndex / gl_SubgroupSize] = newSum - highestOffset + loadedElement;
 			barrier();
+
 			uint numIt = localIndex / gl_SubgroupSize;
 			for(uint j = 0; j < numIt; ++j)
 			{
 				newSum += loadedElements[j];
 			}
-			newSum += highestOffset;
 		}
 
 		// Write to global buffer
@@ -63,9 +65,7 @@ void main()
 			inputOutputBuffer.data[loadIndex].x = newSum;
 
 		// Highest offset for next iteration
-		if(localIndex == WORK_GROUP_SIZE - 1u) 
-		{
+		if(localIndex == WORK_GROUP_SIZE - 1u)
 			highestOffset = newSum;
-		}
 	}
 }
