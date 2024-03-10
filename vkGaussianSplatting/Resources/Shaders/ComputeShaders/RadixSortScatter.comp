@@ -42,7 +42,7 @@ shared uint binOffsets[BIN_COUNT]; // AMD incorrectly allocate WORK_GROUP_SIZE, 
 shared uint histogram[BIN_COUNT];
 shared uint prefixSums[WORK_GROUP_SIZE];
 shared uint singleScratchArea;
-shared uint64_t scratchArea[WORK_GROUP_SIZE];
+shared uint scratchArea[WORK_GROUP_SIZE];
 shared uint64_t sums[WORK_GROUP_SIZE];
 
 // Odd choices by AMD:
@@ -138,7 +138,7 @@ void main()
 
 			// Prefix histogram
 			uint histogramLocalSum = localIndex < BIN_COUNT ? histogram[localIndex] : 0u;
-			uint64_t histogramPrefixSum = subgroupExclusiveAdd(histogramLocalSum); // Assumption: gl_SubgroupSize <= BIN_COUNT
+			uint histogramPrefixSum = subgroupExclusiveAdd(histogramLocalSum); // Assumption: gl_SubgroupSize <= BIN_COUNT
 
 			// Store prefix in shared memory
 			if(localIndex < BIN_COUNT)
@@ -148,23 +148,17 @@ void main()
 
 			barrier();
 
-			uint64_t localOffset = uint64_t(localIndex) - scratchArea[keyIndex];
+			uint localOffset = localIndex - scratchArea[keyIndex];
 
 			// Final offset
-			uint64_t totalOffset = uint64_t(globalOffset) + localOffset;
+			uint totalOffset = globalOffset + localOffset;
 
 			// Store
 			if(totalOffset < numSortElements)
 			{
-				dstBuffer.sortData[uint(totalOffset)].data.x = uint(localKey >> 32u);
-				dstBuffer.sortData[uint(totalOffset)].data.y = uint(localKey);
-				dstBuffer.sortData[uint(totalOffset)].data.z = uint(localValue);
-
-				/*dstBuffer.sortData[uint(totalOffset)].data.xyz = uvec3(
-					localKey >> 32u, 
-					localKey,
-					localValue
-				);*/
+				dstBuffer.sortData[totalOffset].data.x = uint(localKey >> 32u);
+				dstBuffer.sortData[totalOffset].data.y = uint(localKey);
+				dstBuffer.sortData[totalOffset].data.z = uint(localValue);
 			}
 		}
 	}

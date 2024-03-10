@@ -176,7 +176,7 @@ private:
 
 public:
 	const static uint32_t WAIT_ELAPSED_WARMUP_FRAMES_FOR_AVG = 1000;
-	const static uint32_t WAIT_ELAPSED_FRAMES_FOR_AVG = 500;
+	const static uint32_t WAIT_ELAPSED_FRAMES_FOR_AVG = 1000;
 
 	const static uint32_t INIT_LIST_WORK_GROUP_SIZE = 32;
 	const static uint32_t BMS_WORK_GROUP_SIZE = 512;
