@@ -1,7 +1,6 @@
 #version 450
 
 #extension GL_GOOGLE_include_directive: require
-#extension GL_EXT_shader_explicit_arithmetic_types_int64: require
 
 #include "../Common/GaussiansStructs.glsl"
 #include "../Common/CommonRadix.glsl"
@@ -50,13 +49,26 @@ void main()
 	// Increment buckets in shared memory
 	if(threadIndex < numSortElements) 
 	{
-		uint64_t shiftBits = uint64_t(pc.data.y);
-		uint64_t sortValue = (uint64_t(listBuffer.sortData[threadIndex].data.x) << 32u) | uint64_t(listBuffer.sortData[threadIndex].data.y);
-		uint finalSortValue = uint(sortValue >> shiftBits) & uint(BIN_COUNT - 1u);
+		uint shiftBits = pc.data.y;
+		uint sortValue = 0u;
+		if(shiftBits < 32u - BITS_PER_PASS_SIZE + 1u)
+		{
+			sortValue = (listBuffer.sortData[threadIndex].data.y >> shiftBits) & SHIFT_MASK;
+		} 
+		else if(shiftBits >= 32u)
+		{
+			sortValue = (listBuffer.sortData[threadIndex].data.x >> shiftBits - 32u) & SHIFT_MASK;
+		}
+		else
+		{
+			sortValue = 
+				((listBuffer.sortData[threadIndex].data.x >> shiftBits - 32u) |
+				(listBuffer.sortData[threadIndex].data.y >> shiftBits)) & SHIFT_MASK;
+		}
 
-		// TODO: check if this can be done without atomics. Should be possible, since it seems 
-		// that each thread gets its own set of unique buckets.
-		atomicAdd(sharedHistogram[finalSortValue * WORK_GROUP_SIZE + localIndex], 1u);
+		// Atomics are unnecessary here. 
+		// But removing the atomic results in worse performance on my test bench.
+		atomicAdd(sharedHistogram[sortValue * WORK_GROUP_SIZE + localIndex], 1u);
 	}
 	barrier();
 
