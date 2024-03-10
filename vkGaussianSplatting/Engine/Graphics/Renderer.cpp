@@ -170,7 +170,7 @@ void Renderer::initVulkan()
 		this->radixSortScanPipelineLayout,
 		"Resources/Shaders/RadixSortScan.comp.spv",
 		{
-			SpecializationConstant{ (void*)Renderer::RS_WORK_GROUP_SIZE, sizeof(uint32_t)}
+			SpecializationConstant{ (void*)Renderer::RS_SCAN_WORK_GROUP_SIZE, sizeof(uint32_t)}
 		}
 	);
 
