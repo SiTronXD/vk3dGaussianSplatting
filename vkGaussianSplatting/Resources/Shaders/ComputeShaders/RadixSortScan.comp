@@ -24,7 +24,7 @@ layout(push_constant) uniform PushConstantData
 
 // Shared memory (1024 * 16 = 16384 bytes are guaranteed to be available in Vulkan)
 shared uint loadedElements[WORK_GROUP_SIZE];
-shared uint distributeLastOffset;
+shared uint highestOffset;
 
 void main()
 {
@@ -32,7 +32,6 @@ void main()
 	uint numScanElements = pc.data.w;
 	uint numIterations = (numScanElements + WORK_GROUP_SIZE - 1u) / WORK_GROUP_SIZE;
 
-	uint highestOffset = 0u;
 	for(uint i = 0u; i < numIterations; ++i)
 	{
 		// Load
@@ -59,19 +58,14 @@ void main()
 			newSum += highestOffset;
 		}
 
-		// Write
+		// Write to global buffer
 		if(loadIndex < numScanElements)
 			inputOutputBuffer.data[loadIndex].x = newSum;
 
-		// TODO: clean this up.
-		// Synchronizing this way is necessary only because the number of 
-		// reduce work groups can be larger than a work group size.
+		// Highest offset for next iteration
 		if(localIndex == WORK_GROUP_SIZE - 1u) 
 		{
-			distributeLastOffset = newSum;
+			highestOffset = newSum;
 		}
-		barrier();
-		highestOffset = distributeLastOffset;
-		barrier();
 	}
 }
