@@ -53,10 +53,9 @@ void main()
 		if(loadIndex < numScanElements)
 			inputOutputBuffer.data[loadIndex].x = newSum;
 
-		// This should be cleaned up.
+		// TODO: clean this up.
 		// Synchronizing this way is necessary only because the number of 
 		// reduce work groups can be larger than a work group size.
-		barrier();
 		if(localIndex == WORK_GROUP_SIZE - 1u) 
 		{
 			loadedElements[WORK_GROUP_SIZE - 1u] = newSum;
