@@ -2,6 +2,7 @@
 
 #extension GL_GOOGLE_include_directive: require
 #extension GL_EXT_shader_explicit_arithmetic_types_int64: require
+#extension GL_KHR_shader_subgroup_arithmetic: require
 
 #include "../Common/CommonRadix.glsl"
 #include "../Common/GaussiansStructs.glsl"
@@ -63,7 +64,6 @@ void main()
 	// (offsets are otherwise scattered in global memory)
 	if(localIndex < BIN_COUNT)
 		binOffsets[localIndex] = sumTableBuffer.data[localIndex * numThreadGroups + groupIndex].x;
-	barrier();
 
 	{
 		uint64_t srcKey = dataIndex < numSortElements ? 
@@ -92,11 +92,16 @@ void main()
 				// Prefix sum
 				uint localSum = 0u;
 				{
-					prefixSums[localIndex] = packedHistogram;
+					localSum = subgroupExclusiveAdd(packedHistogram);
+
+					if((localIndex + 1u) % gl_SubgroupSize == 0)
+						prefixSums[localIndex / gl_SubgroupSize] = localSum + packedHistogram;
 					barrier();
-					for(uint i = 0u; i < localIndex; ++i)
+					uint numIt = localIndex / gl_SubgroupSize;
+					for(uint i = 0; i < numIt; ++i)
+					{
 						localSum += prefixSums[i];
-					barrier(); // I'm not completely convinced that this barrier() is necessary here.
+					}
 				}
 
 				if(localIndex == WORK_GROUP_SIZE - 1u)
@@ -108,7 +113,7 @@ void main()
 				localSum += packedHistogram;
 
 				// Target offset
-				uint keyOffset = (localSum >> (bitKey << 3u)) & 0xff; // This assumes WORK_GROUP_SIZE <= 256
+				uint keyOffset = (localSum >> (bitKey << 3u)) & 0xff; // Assumption: WORK_GROUP_SIZE <= 256
 
 				// Re-arrange keys (This can most likely be done as 2 operations to split 64-bit keys)
 				sums[keyOffset] = localKey;
@@ -121,8 +126,6 @@ void main()
 				sums[keyOffset] = localValue;
 				barrier();
 				localValue = sums[localIndex];
-				
-				barrier(); // I'm not completely convinced that this barrier() is necessary here.
 			}
 
 			// Recalculate key index after re-arrangement
@@ -135,12 +138,7 @@ void main()
 
 			// Prefix histogram
 			uint histogramLocalSum = localIndex < BIN_COUNT ? histogram[localIndex] : 0u;
-			sums[localIndex] = histogramLocalSum;
-			barrier();
-			uint64_t histogramPrefixSum = 0u;
-			for(uint i = 0; i < localIndex; ++i)
-				histogramPrefixSum += sums[i];
-			barrier();
+			uint64_t histogramPrefixSum = subgroupExclusiveAdd(histogramLocalSum); // Assumption: gl_SubgroupSize <= BIN_COUNT
 
 			// Store prefix in shared memory
 			if(localIndex < BIN_COUNT)
@@ -161,6 +159,12 @@ void main()
 				dstBuffer.sortData[uint(totalOffset)].data.x = uint(localKey >> 32u);
 				dstBuffer.sortData[uint(totalOffset)].data.y = uint(localKey);
 				dstBuffer.sortData[uint(totalOffset)].data.z = uint(localValue);
+
+				/*dstBuffer.sortData[uint(totalOffset)].data.xyz = uvec3(
+					localKey >> 32u, 
+					localKey,
+					localValue
+				);*/
 			}
 		}
 	}

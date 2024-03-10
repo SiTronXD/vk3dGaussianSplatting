@@ -65,7 +65,7 @@
       <Command>xcopy $(ProjectDir)Resources $(Outdir)Resources /Y /I /E</Command>
     </PostBuildEvent>
     <CustomBuild>
-      <Command>glslangValidator -V %(FullPath) -o $(ProjectDir)Resources\Shaders\%(Filename)%(Extension).spv</Command>
+      <Command>glslangValidator --target-env vulkan1.1 -V %(FullPath) -o $(ProjectDir)Resources\Shaders\%(Filename)%(Extension).spv</Command>
     </CustomBuild>
     <CustomBuild>
       <Outputs>%(Filename)%(Extension).spv</Outputs>
@@ -102,7 +102,7 @@
       <Command>xcopy $(ProjectDir)Resources $(Outdir)Resources /Y /I /E</Command>
     </PostBuildEvent>
     <CustomBuild>
-      <Command>glslangValidator -V %(FullPath) -o $(ProjectDir)Resources\Shaders\%(Filename)%(Extension).spv</Command>
+      <Command>glslangValidator --target-env vulkan1.1 -V %(FullPath) -o $(ProjectDir)Resources\Shaders\%(Filename)%(Extension).spv</Command>
     </CustomBuild>
     <CustomBuild>
       <Outputs>%(Filename)%(Extension).spv</Outputs>

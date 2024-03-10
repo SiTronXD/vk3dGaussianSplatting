@@ -40,25 +40,12 @@ enum class BmsSubAlgorithm
 	BIG_DISPERSE = 3
 };
 
-//#define RECORD_GPU_TIMES
+#define RECORD_GPU_TIMES
 //#define RECORD_CPU_TIMES
 
 class Renderer
 {
 private:
-	const float WAIT_ELAPSED_FRAMES_FOR_AVG = 500.0f;
-
-	const uint32_t INIT_LIST_WORK_GROUP_SIZE = 32;
-
-	const uint32_t BMS_WORK_GROUP_SIZE = 512;
-
-	const uint32_t RS_BITS_PER_PASS = 4;
-	const uint32_t RS_BIN_COUNT = 1u << RS_BITS_PER_PASS;
-	const uint32_t RS_WORK_GROUP_SIZE = 64;
-
-	const uint32_t TILE_SIZE = 16;
-	const uint32_t FIND_RANGES_GROUP_SIZE = 16;
-
 	VulkanInstance instance;
 	DebugMessenger debugMessenger;
 	Surface surface;
@@ -187,6 +174,18 @@ private:
 	inline const VkDevice& getVkDevice() const { return this->device.getVkDevice(); }
 
 public:
+	const static uint32_t WAIT_ELAPSED_FRAMES_FOR_AVG = 500;
+
+	const static uint32_t INIT_LIST_WORK_GROUP_SIZE = 32;
+	const static uint32_t BMS_WORK_GROUP_SIZE = 512;
+
+	const static uint32_t RS_BITS_PER_PASS = 4;
+	const static uint32_t RS_BIN_COUNT = 1u << RS_BITS_PER_PASS;
+	const static uint32_t RS_WORK_GROUP_SIZE = 64;
+
+	const static uint32_t TILE_SIZE = 16;
+	const static uint32_t FIND_RANGES_GROUP_SIZE = 16;
+
 	bool framebufferResized = false;
 
 	Renderer();

@@ -1,11 +1,22 @@
 #include "pch.h"
 #include "GpuProperties.h"
+#include "Renderer.h"
 
 VkPhysicalDevice* GpuProperties::physicalDevice = nullptr;
 float GpuProperties::maxAnisotropy = 0.0f;
 float GpuProperties::timestampPeriod = 0.0f;
 uint32_t GpuProperties::memoryTypeCount = 0;
 VkMemoryType GpuProperties::memoryTypes[32]{};
+
+bool GpuProperties::assertGpu(bool condition, const std::string& warningMessage)
+{
+	if (!condition)
+	{
+		Log::warning(warningMessage);
+	}
+
+	return condition;
+}
 
 void GpuProperties::updateProperties(
 	VkPhysicalDevice* physicalDevice)
@@ -184,6 +195,15 @@ bool GpuProperties::isPhysicalDeviceSuitable(
 	const Surface& surface,
 	QueueFamilyIndices& outputIndices)
 {
+	bool foundSuitableDevice = true;
+	auto assertFound = [&foundSuitableDevice](bool condition, const std::string& warningMessage)
+	{
+		foundSuitableDevice = foundSuitableDevice && assertGpu(
+			condition,
+			warningMessage
+		);
+	};
+
 	outputIndices = QueueFamilies::findQueueFamilies(surface.getVkSurface(), physDevice);
 
 	// Find required extension support
@@ -211,19 +231,46 @@ bool GpuProperties::isPhysicalDeviceSuitable(
 	VkPhysicalDeviceProperties properties{};
 	vkGetPhysicalDeviceProperties(physDevice, &properties);
 
+	// Get device properties for newer vulkan features
+	VkPhysicalDeviceSubgroupProperties subgroupProperties{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES };
+	VkPhysicalDeviceProperties2 properties2{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2 };
+	properties2.pNext = &subgroupProperties;
+	vkGetPhysicalDeviceProperties2(physDevice, &properties2);
+
 	// Timestamps
 	bool supportsTimestamps = true;
 #ifdef RECORD_GPU_TIMES
 	supportsTimestamps = properties.limits.timestampComputeAndGraphics;
 #endif
 
-	bool foundSuitableDevice = outputIndices.isComplete() &&
-		extensionsSupported &&
-		swapchainAdequate &&
-		supportedFeatures.samplerAnisotropy &&
-		supportedFeatures.fillModeNonSolid &&
-		VK_API_VERSION_MINOR(properties.apiVersion) >= 3 && // Make sure atleast vulkan 1.3 is supported
-		supportsTimestamps; 
+	// ------------------ Check support based on features/properties ------------------
+
+	// Assert subgroup size
+	assertFound(
+		subgroupProperties.subgroupSize >= Renderer::RS_BIN_COUNT, 
+		"GPU has insufficient subgroup size: " + std::to_string(subgroupProperties.subgroupSize)
+	);
+
+	// Timestamps
+	assertFound(supportsTimestamps, "GPU does not support timestamps");
+
+	// Sampler anisotropy
+	assertFound(supportedFeatures.samplerAnisotropy, "GPU does not support sampler anisotropy");
+
+	// Non-solid fill mode
+	assertFound(supportedFeatures.fillModeNonSolid, "GPU does not support non-solid fill mode");
+
+	// Extensions
+	assertFound(extensionsSupported, "GPU does not support the required extensions");
+
+	// Swapchain
+	assertFound(swapchainAdequate, "Swapchain does not support proper formats or present modes");
+
+	// Queue families
+	assertFound(outputIndices.isComplete(), "Proper queue families could not be found");
+
+	// Vulkan 1.3
+	assertFound(VK_API_VERSION_MINOR(properties.apiVersion) >= 3, "GPU does not support Vulkan 1.3");
 
 	return foundSuitableDevice;
 }
