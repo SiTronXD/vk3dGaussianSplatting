@@ -590,9 +590,11 @@ void Renderer::draw(Scene& scene)
 	// Gather this frame's data
 	auto computeDiffs = [&](uint32_t startQueryIndex, uint32_t endQueryIndex)
 	{
-		return float(this->queryPools.getQueryResult(GfxState::getFrameIndex(), endQueryIndex) -
+		return static_cast<float>(
+			(this->queryPools.getQueryResult(GfxState::getFrameIndex(), endQueryIndex) -
 			this->queryPools.getQueryResult(GfxState::getFrameIndex(), startQueryIndex)) *
-			GpuProperties::getTimestampPeriod() * 1e-6;
+			GpuProperties::getTimestampPeriod() * 1e-6
+		);
 	};
 	float initSortListMs = computeDiffs(1, 2);
 	float sortMs = computeDiffs(2, 3);
@@ -601,12 +603,15 @@ void Renderer::draw(Scene& scene)
 	float totalGpuTimeMs = computeDiffs(0, 6);
 
 	// Average timings
-	float t = 1.0f / (this->elapsedFrames + 1.0f);
-	this->avgInitSortListMs = this->getNewAvgTime(this->avgInitSortListMs, initSortListMs, t);
-	this->avgSortMs = this->getNewAvgTime(this->avgSortMs, sortMs, t);
-	this->avgFindRangesMs = this->getNewAvgTime(this->avgFindRangesMs, findRangesMs, t);
-	this->avgRenderGaussiansMs = this->getNewAvgTime(this->avgRenderGaussiansMs, renderGaussiansMs, t);
-	this->avgTotalGpuTimeMs = this->getNewAvgTime(this->avgTotalGpuTimeMs, totalGpuTimeMs, t);
+	if (this->elapsedFrames >= this->WAIT_ELAPSED_WARMUP_FRAMES_FOR_AVG)
+	{
+		float t = 1.0f / (this->elapsedFrames - this->WAIT_ELAPSED_WARMUP_FRAMES_FOR_AVG + 1.0f);
+		this->avgInitSortListMs = this->getNewAvgTime(this->avgInitSortListMs, initSortListMs, t);
+		this->avgSortMs = this->getNewAvgTime(this->avgSortMs, sortMs, t);
+		this->avgFindRangesMs = this->getNewAvgTime(this->avgFindRangesMs, findRangesMs, t);
+		this->avgRenderGaussiansMs = this->getNewAvgTime(this->avgRenderGaussiansMs, renderGaussiansMs, t);
+		this->avgTotalGpuTimeMs = this->getNewAvgTime(this->avgTotalGpuTimeMs, totalGpuTimeMs, t);
+	}
 	this->elapsedFrames++;
 
 	// Print
@@ -616,20 +621,19 @@ void Renderer::draw(Scene& scene)
 		"   sort ms: " + std::to_string(sortMs) +
 		"   find ranges ms: " + std::to_string(findRangesMs) +
 		"   render gaussians ms: " + std::to_string(renderGaussiansMs) + 
-		"   total gpu time ms: " + std::to_string(totalGpuTimeMs)
+		"   total GPU time ms: " + std::to_string(totalGpuTimeMs)
 	);
 	
 	// Print average times after a number of frames
 #ifdef ALERT_FINAL_AVERAGE
-	if (this->elapsedFrames >= this->WAIT_ELAPSED_FRAMES_FOR_AVG - 0.5f)
+	if (this->elapsedFrames >= this->WAIT_ELAPSED_WARMUP_FRAMES_FOR_AVG + this->WAIT_ELAPSED_FRAMES_FOR_AVG - 0.5f)
 	{
-		Log::writeAlert("Not properly implemented yet...");
 		Log::writeAlert(
-			"rsm ms: " + StrHelper::toTimingStr(this->avgRsmMs) + "\n" +
-			"sm ms: " + StrHelper::toTimingStr(this->avgSmMs) + "\n" +
-			"deferred geom ms: " + StrHelper::toTimingStr(this->avgDeferredGeomMs) + "\n" +
-			"deferred light ms: " + StrHelper::toTimingStr(this->avgDeferredLightMs) + "\n" +
-			"GPU frame time ms: " + StrHelper::toTimingStr(this->avgGpuFrameTimeMs));
+			"init sort list ms: " + StrHelper::toTimingStr(this->avgInitSortListMs) + "\n" +
+			"sort ms: " + StrHelper::toTimingStr(this->avgSortMs) + "\n" +
+			"find ranges ms: " + StrHelper::toTimingStr(this->avgFindRangesMs) + "\n" +
+			"render gaussians ms: " + StrHelper::toTimingStr(this->avgRenderGaussiansMs) + "\n" +
+			"total gpu time ms: " + StrHelper::toTimingStr(this->avgTotalGpuTimeMs));
 	}
 #endif
 #endif
@@ -795,7 +799,8 @@ Renderer::Renderer()
 
 	vmaAllocator(nullptr),
 	numGaussians(0),
-	numSortElements(0)
+	numSortElements(0),
+	radixSortNumSortBits(0)
 {
 }
 

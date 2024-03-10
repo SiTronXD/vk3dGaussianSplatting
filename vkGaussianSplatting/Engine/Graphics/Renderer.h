@@ -42,6 +42,7 @@ enum class BmsSubAlgorithm
 
 #define RECORD_GPU_TIMES
 //#define RECORD_CPU_TIMES
+#define ALERT_FINAL_AVERAGE
 
 class Renderer
 {
@@ -174,6 +175,7 @@ private:
 	inline const VkDevice& getVkDevice() const { return this->device.getVkDevice(); }
 
 public:
+	const static uint32_t WAIT_ELAPSED_WARMUP_FRAMES_FOR_AVG = 1000;
 	const static uint32_t WAIT_ELAPSED_FRAMES_FOR_AVG = 500;
 
 	const static uint32_t INIT_LIST_WORK_GROUP_SIZE = 32;
