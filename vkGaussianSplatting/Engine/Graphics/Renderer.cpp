@@ -1,10 +1,6 @@
 #include "pch.h"
 #include "Renderer.h"
 #include "../ResourceManager.h"
-#include "Vulkan/PipelineBarrier.h"
-#include "Vulkan/DescriptorSet.h"
-#include "Texture/TextureCube.h"
-#include "../Dev/StrHelper.h"
 
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
@@ -348,6 +344,7 @@ void Renderer::cleanup()
 	this->radixSortPingPongBuffer->cleanup();
 	this->radixSortReduceBuffer.cleanup();
 	this->radixSortSumTableBuffer.cleanup();
+	this->radixSortIndirectDispatchBuffer.cleanup();
 
 	this->gaussiansSortListSBO->cleanup();
 	this->gaussiansTileRangesSBO.cleanup();
@@ -887,9 +884,25 @@ void Renderer::initForScene(Scene& scene)
 
 
 
-	// Buffers for radix sort
+	// -------------- Buffers for radix sort --------------
+
 	uint32_t numCountThreadGroups = (this->numSortElements + RS_WORK_GROUP_SIZE - 1) / RS_WORK_GROUP_SIZE;
 	uint32_t numSumElements = numCountThreadGroups * RS_BIN_COUNT;
+	uint32_t numReduceBlocks = (numCountThreadGroups + RS_WORK_GROUP_SIZE - 1) / RS_WORK_GROUP_SIZE;
+	uint32_t numReduceElements = numReduceBlocks * RS_BIN_COUNT;
+
+	// Indirect dispatch buffer
+	RadixIndirectDispatch initIndirectDispatch{};
+	initIndirectDispatch.countSizeX = numCountThreadGroups;
+	initIndirectDispatch.reduceSizeX = numReduceElements; // TODO: double check this
+	this->radixSortIndirectDispatchBuffer.createGpuBuffer(
+		this->gfxAllocContext,
+		sizeof(RadixIndirectDispatch),
+		&initIndirectDispatch,
+		VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT
+	);
+
+	// Sum table
 	const std::vector<glm::uvec4> dummySumTableData(numSumElements);
 	this->radixSortSumTableBuffer.createGpuBuffer(
 		this->gfxAllocContext,
@@ -897,8 +910,7 @@ void Renderer::initForScene(Scene& scene)
 		dummySumTableData.data()
 	);
 
-	uint32_t numReduceBlocks = (numCountThreadGroups + RS_WORK_GROUP_SIZE - 1) / RS_WORK_GROUP_SIZE;
-	uint32_t numReduceElements = numReduceBlocks * RS_BIN_COUNT;
+	// Reduce buffer
 	const std::vector<glm::uvec4> dummyReduceData(numReduceElements);
 	this->radixSortReduceBuffer.createGpuBuffer(
 		this->gfxAllocContext,
@@ -906,6 +918,7 @@ void Renderer::initForScene(Scene& scene)
 		dummyReduceData.data()
 	);
 
+	// Ping pong buffer
 	this->radixSortPingPongBuffer = std::make_shared<StorageBuffer>();
 	this->radixSortPingPongBuffer->createGpuBuffer(
 		this->gfxAllocContext,

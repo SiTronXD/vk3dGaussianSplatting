@@ -1,8 +1,5 @@
 #include "pch.h"
 #include "Renderer.h"
-#include "../ResourceManager.h"
-#include "Texture/TextureCube.h"
-#include "../Components.h"
 
 void Renderer::renderImgui(CommandBuffer& commandBuffer, ImDrawData* imguiDrawData, uint32_t imageIndex)
 {
@@ -333,7 +330,10 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t num
 			);
 
 			// Dispatch
-			commandBuffer.dispatch(numThreadGroups);
+			commandBuffer.dispatchIndirect(
+				this->radixSortIndirectDispatchBuffer.getVkBuffer(), 
+				offsetof(RadixIndirectDispatch, countSizeX)
+			);
 		}
 
 		// ------------------ 2. Reduce ------------------
@@ -374,7 +374,10 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t num
 			);
 
 			// Dispatch
-			commandBuffer.dispatch(numReducedThreadGroups);
+			commandBuffer.dispatchIndirect(
+				this->radixSortIndirectDispatchBuffer.getVkBuffer(), 
+				offsetof(RadixIndirectDispatch, reduceSizeX)
+			);
 		}
 
 		// ------------------ 3. Scan ------------------
@@ -464,7 +467,10 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t num
 			);
 
 			// Dispatch
-			commandBuffer.dispatch(numReducedThreadGroups);
+			commandBuffer.dispatchIndirect(
+				this->radixSortIndirectDispatchBuffer.getVkBuffer(), 
+				offsetof(RadixIndirectDispatch, reduceSizeX)
+			);
 		}
 
 		// ------------------ 5. Scatter ------------------
@@ -518,7 +524,10 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t num
 			);
 
 			// Dispatch
-			commandBuffer.dispatch(numThreadGroups);
+			commandBuffer.dispatchIndirect(
+				this->radixSortIndirectDispatchBuffer.getVkBuffer(), 
+				offsetof(RadixIndirectDispatch, countSizeX)
+			);
 
 			// No matter which shader reads dst next, the shader should wait for dst
 			commandBuffer.bufferMemoryBarrier(

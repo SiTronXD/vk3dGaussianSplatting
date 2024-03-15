@@ -41,6 +41,19 @@ struct CamUBO
 
 // ----------------- Data for storage buffers -----------------
 
+struct RadixIndirectDispatch // Radix sort
+{
+	uint32_t countSizeX = 1;
+	uint32_t countSizeY = 1;
+	uint32_t countSizeZ = 1;
+	uint32_t padding0;
+
+	uint32_t reduceSizeX = 1;
+	uint32_t reduceSizeY = 1;
+	uint32_t reduceSizeZ = 1;
+	uint32_t padding1;
+};
+
 struct GaussianData
 {
 	glm::vec4 position; // vec4(x, y, z, 0.0f)

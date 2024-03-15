@@ -1,8 +1,5 @@
 #pragma once
 
-#include <vector>
-
-#include "CommandPool.h"
 #include "Pipeline.h"
 
 class Buffer;
@@ -48,6 +45,7 @@ public:
 	void fillBuffer(VkBuffer buffer, VkDeviceSize size, uint32_t data);
 	void drawIndexed(uint32_t numIndices, uint32_t firstIndex);
 	void dispatch(uint32_t groupCountX, uint32_t groupCountY = 1, uint32_t groupCountZ = 1);
+	void dispatchIndirect(VkBuffer buffer, VkDeviceSize offset);
 	void blit(
 		const VkImage& srcImage, VkImageLayout srcImageLayout,
 		const VkImage& dstImage, VkImageLayout dstImageLayout,

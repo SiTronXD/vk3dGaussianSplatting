@@ -11,18 +11,14 @@
 #include "Vulkan/DebugMessenger.h"
 #include "Vulkan/Surface.h"
 #include "Vulkan/PhysicalDevice.h"
-#include "Vulkan/DescriptorSetLayout.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/CommandBufferArray.h"
-#include "Vulkan/QueryPoolArray.h"
 #include "Vulkan/SemaphoreArray.h"
 #include "Vulkan/FenceArray.h"
 #include "Buffer/UniformBuffer.h"
 #include "Buffer/StorageBuffer.h"
-#include "Texture/Texture.h"
 #include "Swapchain.h"
 #include "Camera.h"
-#include "Mesh.h"
 #include "GfxAllocContext.h"
 
 // For imgui
@@ -40,9 +36,9 @@ enum class BmsSubAlgorithm
 	BIG_DISPERSE = 3
 };
 
-#define RECORD_GPU_TIMES
+//#define RECORD_GPU_TIMES
 //#define RECORD_CPU_TIMES
-#define ALERT_FINAL_AVERAGE
+//#define ALERT_FINAL_AVERAGE
 
 class Renderer
 {
@@ -127,6 +123,7 @@ private:
 	std::shared_ptr<StorageBuffer> gaussiansSortListSBO;
 
 	// Buffers for radix sort
+	StorageBuffer radixSortIndirectDispatchBuffer;
 	StorageBuffer radixSortSumTableBuffer;
 	StorageBuffer radixSortReduceBuffer;
 	std::shared_ptr<StorageBuffer> radixSortPingPongBuffer;
