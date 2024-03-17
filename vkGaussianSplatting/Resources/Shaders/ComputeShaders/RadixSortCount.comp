@@ -11,13 +11,25 @@ layout(constant_id = 0) const uint WORK_GROUP_SIZE = 512u;
 layout (local_size_x_id = 0, local_size_y = 1, local_size_z = 1) in;
 
 // SBO
-layout(binding = 0) buffer GaussiansSortListBuffer
+layout(binding = 0) buffer GaussiansCullDataBuffer
+{
+	GaussianCullData data;
+} cullData;
+
+// SBO
+layout(binding = 1) buffer RadixIndirectDispatchBuffer
+{
+	RadixIndirectSetupData data;
+} indirectBuffer;
+
+// SBO
+layout(binding = 2) buffer GaussiansSortListBuffer
 {
 	GaussianSortData sortData[];
 } listBuffer;
 
 // SBO
-layout(binding = 1) buffer SumTableBuffer
+layout(binding = 3) buffer SumTableBuffer
 {
 	uvec4 buckets[];
 } sumTable;
@@ -25,7 +37,7 @@ layout(binding = 1) buffer SumTableBuffer
 // Push constant
 layout(push_constant) uniform PushConstantData
 {
-	uvec4 data; // uvec4(numSortElements, shiftBits, numCountWorkGroups, numReducedWorkGroups)
+	uvec4 data; // uvec4(shiftBits, 0, 0, 0)
 } pc;
 
 // Shared memory (1024 * 16 = 16384 bytes are guaranteed to be available in Vulkan)
@@ -36,8 +48,8 @@ void main()
 	uint threadIndex = gl_GlobalInvocationID.x;
 	uint localIndex = gl_LocalInvocationID.x;
 	uint groupIndex = gl_WorkGroupID.x;
-	uint numWorkGroups = gl_NumWorkGroups.x;
-	uint numSortElements = pc.data.x;
+	uint numWorkGroups = indirectBuffer.data.countSizeX; 
+	uint numSortElements = cullData.data.numGaussiansToRender.x;
 
 	// Clear shared memory
 	for(uint i = 0; i < BIN_COUNT; ++i) 
@@ -49,7 +61,7 @@ void main()
 	// Increment buckets in shared memory
 	if(threadIndex < numSortElements) 
 	{
-		uint shiftBits = pc.data.y;
+		uint shiftBits = pc.data.x;
 		uint sortValue = 0u;
 		if(shiftBits < 32u - BITS_PER_PASS_SIZE + 1u)
 		{

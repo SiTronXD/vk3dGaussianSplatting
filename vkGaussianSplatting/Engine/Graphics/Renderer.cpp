@@ -114,10 +114,30 @@ void Renderer::initVulkan()
 		}
 	);
 
+	// Radix sort compute pipeline (indirect setup)
+	this->radixSortIndirectSetupPipelineLayout.createPipelineLayout(
+		this->device,
+		{
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
+		},
+		VK_SHADER_STAGE_COMPUTE_BIT
+	);
+	this->radixSortIndirectSetupPipeline.createComputePipeline(
+		this->device,
+		this->radixSortIndirectSetupPipelineLayout,
+		"Resources/Shaders/RadixSortIndirectSetup.comp.spv",
+		{
+			SpecializationConstant{ (void*) Renderer::RS_WORK_GROUP_SIZE, sizeof(uint32_t)}
+		}
+	);
+
 	// Radix sort compute pipeline (count)
 	this->radixSortCountPipelineLayout.createPipelineLayout(
 		this->device,
 		{
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
 		},
@@ -138,6 +158,7 @@ void Renderer::initVulkan()
 		this->device,
 		{
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
 		},
 		VK_SHADER_STAGE_COMPUTE_BIT
@@ -156,10 +177,10 @@ void Renderer::initVulkan()
 		this->device,
 		{
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
 		},
-		VK_SHADER_STAGE_COMPUTE_BIT,
-		sizeof(SortGaussiansRsPCD)
+		VK_SHADER_STAGE_COMPUTE_BIT
 	);
 	this->radixSortScanPipeline.createComputePipeline(
 		this->device,
@@ -175,10 +196,10 @@ void Renderer::initVulkan()
 		this->device,
 		{
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
 		},
-		VK_SHADER_STAGE_COMPUTE_BIT,
-		sizeof(SortGaussiansRsPCD)
+		VK_SHADER_STAGE_COMPUTE_BIT
 	);
 	this->radixSortScanAddPipeline.createComputePipeline(
 		this->device,
@@ -193,6 +214,8 @@ void Renderer::initVulkan()
 	this->radixSortScatterPipelineLayout.createPipelineLayout(
 		this->device,
 		{
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
@@ -377,6 +400,8 @@ void Renderer::cleanup()
 	this->radixSortReducePipeline.cleanup();
 	this->radixSortCountPipelineLayout.cleanup();
 	this->radixSortCountPipeline.cleanup();
+	this->radixSortIndirectSetupPipelineLayout.cleanup();
+	this->radixSortIndirectSetupPipeline.cleanup();
 
 	this->sortGaussiansBmsPipeline.cleanup();
 	this->sortGaussiansBmsPipelineLayout.cleanup();
@@ -894,7 +919,9 @@ void Renderer::initForScene(Scene& scene)
 	// Indirect dispatch buffer
 	RadixIndirectDispatch initIndirectDispatch{};
 	initIndirectDispatch.countSizeX = numCountThreadGroups;
+	initIndirectDispatch.maxCountSizeX = numCountThreadGroups;
 	initIndirectDispatch.reduceSizeX = numReduceElements; // TODO: double check this
+	initIndirectDispatch.maxReduceSizeX = numReduceElements; // TODO: double check this
 	this->radixSortIndirectDispatchBuffer.createGpuBuffer(
 		this->gfxAllocContext,
 		sizeof(RadixIndirectDispatch),

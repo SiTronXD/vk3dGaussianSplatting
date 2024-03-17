@@ -91,6 +91,8 @@ private:
 	Pipeline sortGaussiansBmsPipeline;
 
 	// Pipeline/layouts for radix sort
+	PipelineLayout radixSortIndirectSetupPipelineLayout;
+	Pipeline radixSortIndirectSetupPipeline;
 	PipelineLayout radixSortCountPipelineLayout;
 	Pipeline radixSortCountPipeline;
 	PipelineLayout radixSortReducePipelineLayout;

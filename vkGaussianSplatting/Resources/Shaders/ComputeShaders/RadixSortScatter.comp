@@ -4,6 +4,7 @@
 #extension GL_EXT_shader_explicit_arithmetic_types_int64: require
 #extension GL_KHR_shader_subgroup_arithmetic: require
 
+#include "../Common/Common.glsl"
 #include "../Common/CommonRadix.glsl"
 #include "../Common/GaussiansStructs.glsl"
 
@@ -14,19 +15,31 @@ layout (local_size_x_id = 0, local_size_y = 1, local_size_z = 1) in;
 
 
 // SBO
-layout(binding = 0) buffer SumBuffer
+layout(binding = 0) buffer GaussiansCullDataBuffer
+{
+	GaussianCullData data;
+} cullData;
+
+// SBO
+layout(binding = 1) buffer RadixIndirectDispatchBuffer
+{
+	RadixIndirectSetupData data;
+} indirectBuffer;
+
+// SBO
+layout(binding = 2) buffer SumBuffer
 {
 	uvec4 data[];
 } sumTableBuffer;
 
 // SBO
-layout(binding = 1) buffer SortSourceBuffer
+layout(binding = 3) buffer SortSourceBuffer
 {
 	GaussianSortData sortData[];
 } srcBuffer;
 
 // SBO
-layout(binding = 2) buffer SortDestinationBuffer
+layout(binding = 4) buffer SortDestinationBuffer
 {
 	GaussianSortData sortData[];
 } dstBuffer;
@@ -34,7 +47,7 @@ layout(binding = 2) buffer SortDestinationBuffer
 // Push constant
 layout(push_constant) uniform PushConstantData
 {
-	uvec4 data; // uvec4(numSortElements, shiftBits, numCountWorkGroups, numReducedWorkGroups)
+	uvec4 data; // uvec4(shiftBits, 0, 0, 0)
 } pc;
 
 // Shared memory (1024 * 16 = 16384 bytes are guaranteed to be available in Vulkan)
@@ -54,9 +67,9 @@ void main()
 	uint localIndex = gl_LocalInvocationID.x;
 	uint groupIndex = gl_WorkGroupID.x;
 	uint threadIndex = gl_GlobalInvocationID.x;
-	uint numThreadGroups = gl_NumWorkGroups.x;
-	uint numSortElements = pc.data.x;
-	uint shift = pc.data.y;
+	uint numThreadGroups = indirectBuffer.data.countSizeX;
+	uint numSortElements = cullData.data.numGaussiansToRender.x;
+	uint shift = pc.data.x;
 
 	uint dataIndex = threadIndex;
 
@@ -68,7 +81,7 @@ void main()
 	{
 		uint64_t srcKey = dataIndex < numSortElements ? 
 			(uint64_t(srcBuffer.sortData[dataIndex].data.x) << 32u) | uint64_t(srcBuffer.sortData[dataIndex].data.y) : 
-			0u;
+			~uint64_t(0); // Max value to push unused keys back in the list
 		uint srcValue = dataIndex < numSortElements ?
 			srcBuffer.sortData[dataIndex].data.z : 
 			0u;

@@ -17,7 +17,7 @@ struct SortGaussiansBmsPCD // Bitonic merge sort
 
 struct SortGaussiansRsPCD // Radix sort
 {
-	glm::uvec4 data; // uvec4(numSortElements, shiftBits, numCountWorkGroups, numReducedWorkGroups)
+	glm::uvec4 data; // uvec4(shiftBits, 0, 0, 0)
 };
 
 struct FindRangesPCD
@@ -46,12 +46,12 @@ struct RadixIndirectDispatch // Radix sort
 	uint32_t countSizeX = 1;
 	uint32_t countSizeY = 1;
 	uint32_t countSizeZ = 1;
-	uint32_t padding0;
+	uint32_t maxCountSizeX;
 
 	uint32_t reduceSizeX = 1;
 	uint32_t reduceSizeY = 1;
 	uint32_t reduceSizeZ = 1;
-	uint32_t padding1;
+	uint32_t maxReduceSizeX;
 };
 
 struct GaussianData

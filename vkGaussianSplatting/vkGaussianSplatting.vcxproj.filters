@@ -436,5 +436,6 @@
     <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortScan.comp" />
     <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortScanAdd.comp" />
     <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortScatter.comp" />
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortIndirectSetup.comp" />
   </ItemGroup>
 </Project>

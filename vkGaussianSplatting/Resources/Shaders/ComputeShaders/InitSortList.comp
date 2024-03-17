@@ -128,6 +128,7 @@ void main()
 			//tileKey = uint(abs(sin(threadIndex * 15.34) * 2124.12)); // TODO: remove after sorting is implemented
 
 			// Add gaussian to list
+			// TODO: fix for overflow
 			uint id = atomicAdd(cullData.data.numGaussiansToRender.x, 1u);
 			if(id < cullData.data.numGaussiansToRender.y) // Temporary solution to avoid overflow
 			{

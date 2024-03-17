@@ -11,16 +11,16 @@ layout(constant_id = 0) const uint WORK_GROUP_SIZE = 512u;
 layout (local_size_x_id = 0, local_size_y = 1, local_size_z = 1) in;
 
 // SBO
-layout(binding = 0) buffer InputOutputBuffer
+layout(binding = 0) buffer RadixIndirectDispatchBuffer
+{
+	RadixIndirectSetupData data;
+} indirectBuffer;
+
+// SBO
+layout(binding = 1) buffer InputOutputBuffer
 {
 	uvec4 data[];
 } inputOutputBuffer;
-
-// Push constant
-layout(push_constant) uniform PushConstantData
-{
-	uvec4 data; // uvec4(numSortElements, shiftBits, numCountWorkGroups, numReducedWorkGroups)
-} pc;
 
 // Shared memory (1024 * 16 = 16384 bytes are guaranteed to be available in Vulkan)
 shared uint loadedElements[WORK_GROUP_SIZE];
@@ -29,7 +29,7 @@ shared uint highestOffset;
 void main()
 {
 	uint localIndex = gl_LocalInvocationID.x;
-	uint numScanElements = pc.data.w;
+	uint numScanElements = indirectBuffer.data.reduceSizeX;
 	uint numIterations = (numScanElements + WORK_GROUP_SIZE - 1u) / WORK_GROUP_SIZE;
 	if(localIndex == 0u)
 		highestOffset = 0u;
