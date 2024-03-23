@@ -11,31 +11,27 @@ layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 layout(constant_id = 0) const uint RS_WORK_GROUP_SIZE = 512u;
 
 // SBO
-layout(binding = 0) buffer GaussiansCullDataBuffer
+layout(binding = 0) readonly buffer GaussiansCullDataBuffer
 {
 	GaussianCullData data;
 } cullData;
 
 // SBO
-layout(binding = 1) buffer RadixIndirectDispatchBuffer
+layout(binding = 1) writeonly buffer RadixIndirectDispatchBuffer
 {
 	RadixIndirectSetupData data;
 } indirectBuffer;
 
 void main()
 {
-	// Temporary way of minimizing errors due to overflow
-	if(cullData.data.numGaussiansToRender.x > cullData.data.numGaussiansToRender.y)
-		cullData.data.numGaussiansToRender.x = cullData.data.numGaussiansToRender.y;
-
-	//cullData.data.numGaussiansToRender.x = cullData.data.numGaussiansToRender.y;
-
-	uint numSortElements = cullData.data.numGaussiansToRender.x;
+	// The min() is a temporary way of minimizing errors due to overflow
+	uint numSortElements = min(cullData.data.numGaussiansToRender.x, cullData.data.numGaussiansToRender.y);
 
 	uint numCountThreadGroups = (numSortElements + RS_WORK_GROUP_SIZE - 1u) / RS_WORK_GROUP_SIZE;
 	uint numReduceBlocks = (numCountThreadGroups + RS_WORK_GROUP_SIZE - 1u) / RS_WORK_GROUP_SIZE;
 	uint numReduceElements = numReduceBlocks * BIN_COUNT;
 
+	indirectBuffer.data.numSortElements = numSortElements;
 	indirectBuffer.data.countSizeX = numCountThreadGroups;
 	indirectBuffer.data.reduceSizeX = numReduceElements;
 }

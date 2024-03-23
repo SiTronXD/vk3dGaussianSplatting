@@ -138,7 +138,6 @@ void Renderer::initVulkan()
 		{
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
 		},
 		VK_SHADER_STAGE_COMPUTE_BIT,
@@ -217,7 +216,6 @@ void Renderer::initVulkan()
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
 		},
 		VK_SHADER_STAGE_COMPUTE_BIT,
@@ -252,7 +250,6 @@ void Renderer::initVulkan()
 	this->renderGaussiansPipelineLayout.createPipelineLayout(
 		this->device,
 		{
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
@@ -918,10 +915,9 @@ void Renderer::initForScene(Scene& scene)
 
 	// Indirect dispatch buffer
 	RadixIndirectDispatch initIndirectDispatch{};
+	initIndirectDispatch.numSortElements = this->numSortElements;
 	initIndirectDispatch.countSizeX = numCountThreadGroups;
-	initIndirectDispatch.maxCountSizeX = numCountThreadGroups;
-	initIndirectDispatch.reduceSizeX = numReduceElements; // TODO: double check this
-	initIndirectDispatch.maxReduceSizeX = numReduceElements; // TODO: double check this
+	initIndirectDispatch.reduceSizeX = numReduceElements;
 	this->radixSortIndirectDispatchBuffer.createGpuBuffer(
 		this->gfxAllocContext,
 		sizeof(RadixIndirectDispatch),

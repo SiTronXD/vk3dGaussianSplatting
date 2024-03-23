@@ -11,10 +11,11 @@ struct RadixIndirectSetupData
 	uint countSizeX;
 	uint countSizeY;
 	uint countSizeZ;
-	uint maxCountSizeX;
+
+	uint numSortElements;
 
 	uint reduceSizeX;
 	uint reduceSizeY;
 	uint reduceSizeZ;
-	uint maxReduceSizeX;
+	uint padding;
 };

@@ -11,25 +11,19 @@ layout(constant_id = 0) const uint WORK_GROUP_SIZE = 512u;
 layout (local_size_x_id = 0, local_size_y = 1, local_size_z = 1) in;
 
 // SBO
-layout(binding = 0) buffer GaussiansCullDataBuffer
-{
-	GaussianCullData data;
-} cullData;
-
-// SBO
-layout(binding = 1) buffer RadixIndirectDispatchBuffer
+layout(binding = 0) readonly buffer RadixIndirectDispatchBuffer
 {
 	RadixIndirectSetupData data;
 } indirectBuffer;
 
 // SBO
-layout(binding = 2) buffer GaussiansSortListBuffer
+layout(binding = 1) readonly buffer GaussiansSortListBuffer
 {
 	GaussianSortData sortData[];
 } listBuffer;
 
 // SBO
-layout(binding = 3) buffer SumTableBuffer
+layout(binding = 2) writeonly buffer SumTableBuffer
 {
 	uvec4 buckets[];
 } sumTable;
@@ -48,8 +42,8 @@ void main()
 	uint threadIndex = gl_GlobalInvocationID.x;
 	uint localIndex = gl_LocalInvocationID.x;
 	uint groupIndex = gl_WorkGroupID.x;
-	uint numWorkGroups = indirectBuffer.data.countSizeX; 
-	uint numSortElements = cullData.data.numGaussiansToRender.x;
+	uint numWorkGroups = indirectBuffer.data.countSizeX;
+	uint numSortElements = indirectBuffer.data.numSortElements;
 
 	// Clear shared memory
 	for(uint i = 0; i < BIN_COUNT; ++i) 

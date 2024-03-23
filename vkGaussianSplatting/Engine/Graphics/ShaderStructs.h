@@ -46,12 +46,13 @@ struct RadixIndirectDispatch // Radix sort
 	uint32_t countSizeX = 1;
 	uint32_t countSizeY = 1;
 	uint32_t countSizeZ = 1;
-	uint32_t maxCountSizeX;
+
+	uint32_t numSortElements;
 
 	uint32_t reduceSizeX = 1;
 	uint32_t reduceSizeY = 1;
 	uint32_t reduceSizeZ = 1;
-	uint32_t maxReduceSizeX;
+	uint32_t padding;
 };
 
 struct GaussianData

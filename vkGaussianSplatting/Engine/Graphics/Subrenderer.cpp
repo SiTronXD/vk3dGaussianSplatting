@@ -367,32 +367,26 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t num
 			commandBuffer.bindPipeline(this->radixSortCountPipeline);
 
 			// Binding 0
-			VkDescriptorBufferInfo inputCullInfo{};
-			inputCullInfo.buffer = this->gaussiansCullDataSBO.getVkBuffer();
-			inputCullInfo.range = this->gaussiansCullDataSBO.getBufferSize();
-
-			// Binding 1
 			VkDescriptorBufferInfo inputIndirectDispatchInfo{};
 			inputIndirectDispatchInfo.buffer = this->radixSortIndirectDispatchBuffer.getVkBuffer();
 			inputIndirectDispatchInfo.range = this->radixSortIndirectDispatchBuffer.getBufferSize();
 
-			// Binding 2
+			// Binding 1
 			VkDescriptorBufferInfo inputGaussiansSortInfo{};
 			inputGaussiansSortInfo.buffer = srcSortBuffer->getVkBuffer();
 			inputGaussiansSortInfo.range = srcSortBuffer->getBufferSize();
 
-			// Binding 3
+			// Binding 2
 			VkDescriptorBufferInfo outputSumTableInfo{};
 			outputSumTableInfo.buffer = this->radixSortSumTableBuffer.getVkBuffer();
 			outputSumTableInfo.range = this->radixSortSumTableBuffer.getBufferSize();
 
 			// Descriptor sets
-			std::array<VkWriteDescriptorSet, 4> countDescriptorSets
+			std::array<VkWriteDescriptorSet, 3> countDescriptorSets
 			{
-				DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputCullInfo),
-				DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputIndirectDispatchInfo),
-				DescriptorSet::writeBuffer(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansSortInfo),
-				DescriptorSet::writeBuffer(3, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputSumTableInfo),
+				DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputIndirectDispatchInfo),
+				DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansSortInfo),
+				DescriptorSet::writeBuffer(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputSumTableInfo)
 			};
 			commandBuffer.pushDescriptorSet(
 				this->radixSortCountPipelineLayout,
@@ -572,38 +566,32 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t num
 			commandBuffer.bindPipeline(this->radixSortScatterPipeline);
 
 			// Binding 0
-			VkDescriptorBufferInfo inputCullInfo{};
-			inputCullInfo.buffer = this->gaussiansCullDataSBO.getVkBuffer();
-			inputCullInfo.range = this->gaussiansCullDataSBO.getBufferSize();
-
-			// Binding 1
 			VkDescriptorBufferInfo inputIndirectDispatchInfo{};
 			inputIndirectDispatchInfo.buffer = this->radixSortIndirectDispatchBuffer.getVkBuffer();
 			inputIndirectDispatchInfo.range = this->radixSortIndirectDispatchBuffer.getBufferSize();
 
-			// Binding 2
+			// Binding 1
 			VkDescriptorBufferInfo inputSumTableInfo{};
 			inputSumTableInfo.buffer = this->radixSortSumTableBuffer.getVkBuffer();
 			inputSumTableInfo.range = this->radixSortSumTableBuffer.getBufferSize();
 
-			// Binding 3
+			// Binding 2
 			VkDescriptorBufferInfo inputSortSourceInfo{};
 			inputSortSourceInfo.buffer = srcSortBuffer->getVkBuffer();
 			inputSortSourceInfo.range = srcSortBuffer->getBufferSize();
 
-			// Binding 4
+			// Binding 3
 			VkDescriptorBufferInfo outputSortDestinationInfo{};
 			outputSortDestinationInfo.buffer = dstSortBuffer->getVkBuffer();
 			outputSortDestinationInfo.range = dstSortBuffer->getBufferSize();
 
 			// Descriptor sets
-			std::array<VkWriteDescriptorSet, 5> scatterDescriptorSets
+			std::array<VkWriteDescriptorSet, 4> scatterDescriptorSets
 			{
-				DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputCullInfo),
-				DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputIndirectDispatchInfo),
-				DescriptorSet::writeBuffer(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputSumTableInfo),
-				DescriptorSet::writeBuffer(3, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputSortSourceInfo),
-				DescriptorSet::writeBuffer(4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputSortDestinationInfo)
+				DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputIndirectDispatchInfo),
+				DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputSumTableInfo),
+				DescriptorSet::writeBuffer(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputSortSourceInfo),
+				DescriptorSet::writeBuffer(3, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputSortDestinationInfo)
 			};
 			commandBuffer.pushDescriptorSet(
 				this->radixSortScatterPipelineLayout,
@@ -659,15 +647,7 @@ void Renderer::computeSortGaussians(CommandBuffer& commandBuffer, uint32_t numEl
 
 void Renderer::computeRanges(CommandBuffer& commandBuffer)
 {
-	// Gaussians cull data (wait for usage from init pass, just to be sure)
-	commandBuffer.bufferMemoryBarrier(
-		VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
-		VK_ACCESS_SHADER_READ_BIT,
-		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-		this->gaussiansCullDataSBO.getVkBuffer(),
-		this->gaussiansCullDataSBO.getBufferSize()
-	);
+	// *Memory barrier has already been inserted at the end of the last sorting pass*
 
 	// Compute pipeline
 	commandBuffer.bindPipeline(this->findRangesPipeline);
@@ -734,18 +714,8 @@ void Renderer::computeRenderGaussians(
 		(uint32_t) renderGaussiansMemoryBarriers.size()
 	);
 
-	std::array<VkBufferMemoryBarrier2, 2> renderGaussiansBufferBarriers =
+	std::array<VkBufferMemoryBarrier2, 1> renderGaussiansBufferBarriers =
 	{
-		// Cull data
-		PipelineBarrier::bufferMemoryBarrier2(
-			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
-			VK_ACCESS_SHADER_READ_BIT,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			this->gaussiansCullDataSBO.getVkBuffer(),
-			this->gaussiansCullDataSBO.getBufferSize()
-		),
-
 		// Range data
 		PipelineBarrier::bufferMemoryBarrier2(
 			VK_ACCESS_SHADER_WRITE_BIT,
@@ -777,36 +747,30 @@ void Renderer::computeRenderGaussians(
 	inputGaussiansSortListInfo.range = this->gaussiansSortListSBO->getBufferSize();
 
 	// Binding 2
-	VkDescriptorBufferInfo inputGaussiansCullDataInfo{};
-	inputGaussiansCullDataInfo.buffer = this->gaussiansCullDataSBO.getVkBuffer();
-	inputGaussiansCullDataInfo.range = this->gaussiansCullDataSBO.getBufferSize();
-
-	// Binding 3
 	VkDescriptorBufferInfo inputGaussiansRangeInfo{};
 	inputGaussiansRangeInfo.buffer = this->gaussiansTileRangesSBO.getVkBuffer();
 	inputGaussiansRangeInfo.range = this->gaussiansTileRangesSBO.getBufferSize();
 
-	// Binding 4
+	// Binding 3
 	VkDescriptorBufferInfo inputCamUboInfo{};
 	inputCamUboInfo.buffer = this->camUBO.getVkBuffer(GfxState::currentFrameIndex);
 	inputCamUboInfo.range = this->camUBO.getBufferSize();
 
-	// Binding 5
+	// Binding 4
 	VkDescriptorImageInfo outputImageInfo{};
 	outputImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 	outputImageInfo.imageView = this->swapchain.getVkImageView(imageIndex);
 
 	// Descriptor set
-	std::array<VkWriteDescriptorSet, 6> computeWriteDescriptorSets
+	std::array<VkWriteDescriptorSet, 5> computeWriteDescriptorSets
 	{
 		DescriptorSet::writeBuffer(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansInfo),
 		DescriptorSet::writeBuffer(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansSortListInfo),
-		DescriptorSet::writeBuffer(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansCullDataInfo),
-		DescriptorSet::writeBuffer(3, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansRangeInfo),
+		DescriptorSet::writeBuffer(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputGaussiansRangeInfo),
 
-		DescriptorSet::writeBuffer(4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &inputCamUboInfo),
+		DescriptorSet::writeBuffer(3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &inputCamUboInfo),
 
-		DescriptorSet::writeImage(5, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &outputImageInfo)
+		DescriptorSet::writeImage(4, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &outputImageInfo)
 	};
 	commandBuffer.pushDescriptorSet(
 		this->renderGaussiansPipelineLayout,
