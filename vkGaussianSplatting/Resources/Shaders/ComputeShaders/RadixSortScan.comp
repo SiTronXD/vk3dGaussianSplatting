@@ -38,7 +38,7 @@ void main()
 	{
 		// Load
 		uint loadIndex = i * WORK_GROUP_SIZE + localIndex;
-		uint loadedElement = 
+		uint localThreadElement = 
 			loadIndex < numScanElements ? 
 			inputOutputBuffer.data[loadIndex].x : 
 			0u;
@@ -47,10 +47,10 @@ void main()
 		// Prefix sum
 		uint newSum;
 		{
-			newSum = highestOffset + subgroupExclusiveAdd(loadedElement);
+			newSum = highestOffset + subgroupExclusiveAdd(localThreadElement);
 
 			if((localIndex + 1u) % gl_SubgroupSize == 0)
-				loadedElements[localIndex / gl_SubgroupSize] = newSum - highestOffset + loadedElement;
+				loadedElements[localIndex / gl_SubgroupSize] = newSum - highestOffset + localThreadElement;
 			barrier();
 
 			uint numIt = localIndex / gl_SubgroupSize;
@@ -66,6 +66,6 @@ void main()
 
 		// Highest offset for next iteration
 		if(localIndex == WORK_GROUP_SIZE - 1u)
-			highestOffset = newSum + loadedElement;
+			highestOffset = newSum + localThreadElement;
 	}
 }

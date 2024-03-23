@@ -15,6 +15,7 @@
 #include "Vulkan/CommandBufferArray.h"
 #include "Vulkan/SemaphoreArray.h"
 #include "Vulkan/FenceArray.h"
+#include "Vulkan/QueryPoolArray.h"
 #include "Buffer/UniformBuffer.h"
 #include "Buffer/StorageBuffer.h"
 #include "Swapchain.h"
