@@ -28,6 +28,8 @@ void main()
 	if(cullData.data.numGaussiansToRender.x > cullData.data.numGaussiansToRender.y)
 		cullData.data.numGaussiansToRender.x = cullData.data.numGaussiansToRender.y;
 
+	//cullData.data.numGaussiansToRender.x = cullData.data.numGaussiansToRender.y;
+
 	uint numSortElements = cullData.data.numGaussiansToRender.x;
 
 	uint numCountThreadGroups = (numSortElements + RS_WORK_GROUP_SIZE - 1u) / RS_WORK_GROUP_SIZE;
@@ -35,5 +37,5 @@ void main()
 	uint numReduceElements = numReduceBlocks * BIN_COUNT;
 
 	indirectBuffer.data.countSizeX = numCountThreadGroups;
-	indirectBuffer.data.reduceSizeX = numReduceElements; // TODO: double check this
+	indirectBuffer.data.reduceSizeX = numReduceElements;
 }

@@ -66,6 +66,6 @@ void main()
 
 		// Highest offset for next iteration
 		if(localIndex == WORK_GROUP_SIZE - 1u)
-			highestOffset = newSum;
+			highestOffset = newSum + loadedElement;
 	}
 }
