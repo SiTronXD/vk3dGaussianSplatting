@@ -10,9 +10,14 @@ struct InitSortListPCD
 	glm::uvec4 resolution; // uvec4(width, height, 0, 0)
 };
 
-struct SortGaussiansPCD
+struct SortGaussiansBmsPCD // Bitonic merge sort
 {
 	glm::uvec4 data; // uvec4(algorithm type, h, 0, 0)
+};
+
+struct SortGaussiansRsPCD // Radix sort
+{
+	glm::uvec4 data; // uvec4(shiftBits, 0, 0, 0)
 };
 
 struct FindRangesPCD
@@ -35,6 +40,20 @@ struct CamUBO
 };
 
 // ----------------- Data for storage buffers -----------------
+
+struct RadixIndirectDispatch // Radix sort
+{
+	uint32_t countSizeX = 1;
+	uint32_t countSizeY = 1;
+	uint32_t countSizeZ = 1;
+
+	uint32_t numSortElements;
+
+	uint32_t reduceSizeX = 1;
+	uint32_t reduceSizeY = 1;
+	uint32_t reduceSizeZ = 1;
+	uint32_t padding;
+};
 
 struct GaussianData
 {

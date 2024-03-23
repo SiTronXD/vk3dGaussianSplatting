@@ -3,6 +3,7 @@
 #include "../Buffer/VertexBuffer.h"
 #include "../Buffer/IndexBuffer.h"
 #include "PipelineBarrier.h"
+#include "CommandPool.h"
 
 CommandBuffer::CommandBuffer()
 	: commandBuffer(VK_NULL_HANDLE),
@@ -154,6 +155,11 @@ void CommandBuffer::drawIndexed(uint32_t numIndices, uint32_t firstIndex)
 void CommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
 {
 	vkCmdDispatch(this->commandBuffer, groupCountX, groupCountY, groupCountZ);
+}
+
+void CommandBuffer::dispatchIndirect(VkBuffer buffer, VkDeviceSize offset)
+{
+	vkCmdDispatchIndirect(this->commandBuffer, buffer, offset);
 }
 
 void CommandBuffer::blit(

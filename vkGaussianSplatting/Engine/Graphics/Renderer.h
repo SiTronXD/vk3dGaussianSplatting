@@ -11,18 +11,15 @@
 #include "Vulkan/DebugMessenger.h"
 #include "Vulkan/Surface.h"
 #include "Vulkan/PhysicalDevice.h"
-#include "Vulkan/DescriptorSetLayout.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/CommandBufferArray.h"
-#include "Vulkan/QueryPoolArray.h"
 #include "Vulkan/SemaphoreArray.h"
 #include "Vulkan/FenceArray.h"
+#include "Vulkan/QueryPoolArray.h"
 #include "Buffer/UniformBuffer.h"
 #include "Buffer/StorageBuffer.h"
-#include "Texture/Texture.h"
 #include "Swapchain.h"
 #include "Camera.h"
-#include "Mesh.h"
 #include "GfxAllocContext.h"
 
 // For imgui
@@ -42,17 +39,11 @@ enum class BmsSubAlgorithm
 
 //#define RECORD_GPU_TIMES
 //#define RECORD_CPU_TIMES
+//#define ALERT_FINAL_AVERAGE
 
 class Renderer
 {
 private:
-	const float WAIT_ELAPSED_FRAMES_FOR_AVG = 500.0f;
-
-	const uint32_t INIT_LIST_WORK_GROUP_SIZE = 32;
-	const uint32_t BMS_WORK_GROUP_SIZE = 512;
-	const uint32_t TILE_SIZE = 16;
-	const uint32_t FIND_RANGES_GROUP_SIZE = 16;
-
 	VulkanInstance instance;
 	DebugMessenger debugMessenger;
 	Surface surface;
@@ -88,15 +79,31 @@ private:
 	THIS_IS_NOT_ALLOWED___MAKE_A_COMPILE_ERROR
 #endif
 
-	// Pipelines and layouts
+	// Pipelines/layouts
 	PipelineLayout initSortListPipelineLayout;
 	Pipeline initSortListPipeline;
-	PipelineLayout sortGaussiansPipelineLayout;
-	Pipeline sortGaussiansPipeline;
 	PipelineLayout findRangesPipelineLayout;
 	Pipeline findRangesPipeline;
 	PipelineLayout renderGaussiansPipelineLayout;
 	Pipeline renderGaussiansPipeline;
+
+	// Pipeline/layouts for bitonic merge sort
+	PipelineLayout sortGaussiansBmsPipelineLayout;
+	Pipeline sortGaussiansBmsPipeline;
+
+	// Pipeline/layouts for radix sort
+	PipelineLayout radixSortIndirectSetupPipelineLayout;
+	Pipeline radixSortIndirectSetupPipeline;
+	PipelineLayout radixSortCountPipelineLayout;
+	Pipeline radixSortCountPipeline;
+	PipelineLayout radixSortReducePipelineLayout;
+	Pipeline radixSortReducePipeline;
+	PipelineLayout radixSortScanPipelineLayout;
+	Pipeline radixSortScanPipeline;
+	PipelineLayout radixSortScanAddPipelineLayout;
+	Pipeline radixSortScanAddPipeline;
+	PipelineLayout radixSortScatterPipelineLayout;
+	Pipeline radixSortScatterPipeline;
 
 	CommandPool commandPool;
 	CommandPool singleTimeCommandPool;
@@ -114,12 +121,20 @@ private:
 
 	UniformBuffer camUBO;
 	StorageBuffer gaussiansSBO;
-	StorageBuffer gaussiansSortListSBO;
 	StorageBuffer gaussiansCullDataSBO;
 	StorageBuffer gaussiansTileRangesSBO;
+	std::shared_ptr<StorageBuffer> gaussiansSortListSBO;
+
+	// Buffers for radix sort
+	StorageBuffer radixSortIndirectDispatchBuffer;
+	StorageBuffer radixSortSumTableBuffer;
+	StorageBuffer radixSortReduceBuffer;
+	std::shared_ptr<StorageBuffer> radixSortPingPongBuffer;
+	std::shared_ptr<StorageBuffer> tempSwapPingPongBuffer;
 
 	uint32_t numGaussians;
 	uint32_t numSortElements;
+	uint32_t radixSortNumSortBits;
 
 	Window* window;
 	ResourceManager* resourceManager;
@@ -140,6 +155,9 @@ private:
 	void resizeWindow();
 	void cleanupImgui();
 
+	void computeSortGaussiansBMS(CommandBuffer& commandBuffer, uint32_t numElemToSort);
+	void computeSortGaussiansRS(CommandBuffer& commandBuffer);
+
 	void renderImgui(CommandBuffer& commandBuffer, ImDrawData* imguiDrawData, uint32_t imageIndex);
 	void computeInitSortList(CommandBuffer& commandBuffer, const Camera& camera);
 	void computeSortGaussians(CommandBuffer& commandBuffer, uint32_t numElemToSort);
@@ -152,10 +170,25 @@ private:
 
 	uint32_t getNumTiles() const;
 	uint32_t getCeilPowTwo(uint32_t x) const;
+	uint32_t getMinNumBits(uint32_t x) const;
 
 	inline const VkDevice& getVkDevice() const { return this->device.getVkDevice(); }
 
 public:
+	const static uint32_t WAIT_ELAPSED_WARMUP_FRAMES_FOR_AVG = 1000;
+	const static uint32_t WAIT_ELAPSED_FRAMES_FOR_AVG = 1000;
+
+	const static uint32_t INIT_LIST_WORK_GROUP_SIZE = 32;
+	const static uint32_t BMS_WORK_GROUP_SIZE = 512;
+
+	const static uint32_t RS_BITS_PER_PASS = 4;
+	const static uint32_t RS_BIN_COUNT = 1u << RS_BITS_PER_PASS;
+	const static uint32_t RS_WORK_GROUP_SIZE = 64; // 128 saves 0.5 ms on sorting, but seems to worsen rendering timings by 1 ms (before rendering optimization).
+	const static uint32_t RS_SCAN_WORK_GROUP_SIZE = 1024;
+
+	const static uint32_t TILE_SIZE = 16;
+	const static uint32_t FIND_RANGES_GROUP_SIZE = 16;
+
 	bool framebufferResized = false;
 
 	Renderer();

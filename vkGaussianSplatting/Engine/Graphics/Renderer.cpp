@@ -1,9 +1,6 @@
 #include "pch.h"
 #include "Renderer.h"
 #include "../ResourceManager.h"
-#include "Vulkan/PipelineBarrier.h"
-#include "Vulkan/DescriptorSet.h"
-#include "Texture/TextureCube.h"
 #include "../Dev/StrHelper.h"
 
 #define VMA_IMPLEMENTATION
@@ -100,21 +97,137 @@ void Renderer::initVulkan()
 		"Resources/Shaders/InitSortList.comp.spv"
 	);
 
-	// Sort gaussians compute pipeline
-	this->sortGaussiansPipelineLayout.createPipelineLayout(
+	// Sort gaussians bitonic merge sort compute pipeline
+	this->sortGaussiansBmsPipelineLayout.createPipelineLayout(
 		this->device,
 		{
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
 		},
 		VK_SHADER_STAGE_COMPUTE_BIT,
-		sizeof(SortGaussiansPCD)
+		sizeof(SortGaussiansBmsPCD)
 	);
-	this->sortGaussiansPipeline.createComputePipeline(
+	this->sortGaussiansBmsPipeline.createComputePipeline(
 		this->device,
-		this->sortGaussiansPipelineLayout,
+		this->sortGaussiansBmsPipelineLayout,
 		"Resources/Shaders/BitonicMergeSort.comp.spv",
 		{
 			SpecializationConstant{ (void*) Renderer::BMS_WORK_GROUP_SIZE, sizeof(uint32_t)}
+		}
+	);
+
+	// Radix sort compute pipeline (indirect setup)
+	this->radixSortIndirectSetupPipelineLayout.createPipelineLayout(
+		this->device,
+		{
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
+		},
+		VK_SHADER_STAGE_COMPUTE_BIT
+	);
+	this->radixSortIndirectSetupPipeline.createComputePipeline(
+		this->device,
+		this->radixSortIndirectSetupPipelineLayout,
+		"Resources/Shaders/RadixSortIndirectSetup.comp.spv",
+		{
+			SpecializationConstant{ (void*) Renderer::RS_WORK_GROUP_SIZE, sizeof(uint32_t)}
+		}
+	);
+
+	// Radix sort compute pipeline (count)
+	this->radixSortCountPipelineLayout.createPipelineLayout(
+		this->device,
+		{
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
+		},
+		VK_SHADER_STAGE_COMPUTE_BIT,
+		sizeof(SortGaussiansRsPCD)
+	);
+	this->radixSortCountPipeline.createComputePipeline(
+		this->device,
+		this->radixSortCountPipelineLayout,
+		"Resources/Shaders/RadixSortCount.comp.spv",
+		{
+			SpecializationConstant{ (void*)Renderer::RS_WORK_GROUP_SIZE, sizeof(uint32_t)}
+		}
+	);
+
+	// Radix sort compute pipeline (reduce)
+	this->radixSortReducePipelineLayout.createPipelineLayout(
+		this->device,
+		{
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
+		},
+		VK_SHADER_STAGE_COMPUTE_BIT
+	);
+	this->radixSortReducePipeline.createComputePipeline(
+		this->device,
+		this->radixSortReducePipelineLayout,
+		"Resources/Shaders/RadixSortReduce.comp.spv",
+		{
+			SpecializationConstant{ (void*)Renderer::RS_WORK_GROUP_SIZE, sizeof(uint32_t)}
+		}
+	);
+
+	// Radix sort compute pipeline (scan)
+	this->radixSortScanPipelineLayout.createPipelineLayout(
+		this->device,
+		{
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
+		},
+		VK_SHADER_STAGE_COMPUTE_BIT
+	);
+	this->radixSortScanPipeline.createComputePipeline(
+		this->device,
+		this->radixSortScanPipelineLayout,
+		"Resources/Shaders/RadixSortScan.comp.spv",
+		{
+			SpecializationConstant{ (void*)Renderer::RS_SCAN_WORK_GROUP_SIZE, sizeof(uint32_t)}
+		}
+	);
+
+	// Radix sort compute pipeline (scan add)
+	this->radixSortScanAddPipelineLayout.createPipelineLayout(
+		this->device,
+		{
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
+		},
+		VK_SHADER_STAGE_COMPUTE_BIT
+	);
+	this->radixSortScanAddPipeline.createComputePipeline(
+		this->device,
+		this->radixSortScanAddPipelineLayout,
+		"Resources/Shaders/RadixSortScanAdd.comp.spv",
+		{
+			SpecializationConstant{ (void*)Renderer::RS_WORK_GROUP_SIZE, sizeof(uint32_t)}
+		}
+	);
+
+	// Radix sort compute pipeline (scatter)
+	this->radixSortScatterPipelineLayout.createPipelineLayout(
+		this->device,
+		{
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
+		},
+		VK_SHADER_STAGE_COMPUTE_BIT,
+		sizeof(SortGaussiansRsPCD)
+	);
+	this->radixSortScatterPipeline.createComputePipeline(
+		this->device,
+		this->radixSortScatterPipelineLayout,
+		"Resources/Shaders/RadixSortScatter.comp.spv",
+		{
+			SpecializationConstant{ (void*)Renderer::RS_WORK_GROUP_SIZE, sizeof(uint32_t)}
 		}
 	);
 
@@ -138,7 +251,6 @@ void Renderer::initVulkan()
 	this->renderGaussiansPipelineLayout.createPipelineLayout(
 		this->device,
 		{
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
@@ -250,9 +362,14 @@ void Renderer::cleanup()
 
 	this->swapchain.cleanup();
 
+	this->radixSortPingPongBuffer->cleanup();
+	this->radixSortReduceBuffer.cleanup();
+	this->radixSortSumTableBuffer.cleanup();
+	this->radixSortIndirectDispatchBuffer.cleanup();
+
+	this->gaussiansSortListSBO->cleanup();
 	this->gaussiansTileRangesSBO.cleanup();
 	this->gaussiansCullDataSBO.cleanup();
-	this->gaussiansSortListSBO.cleanup();
 	this->gaussiansSBO.cleanup();
 	this->camUBO.cleanup();
 
@@ -270,8 +387,23 @@ void Renderer::cleanup()
 	this->renderGaussiansPipelineLayout.cleanup();
 	this->findRangesPipeline.cleanup();
 	this->findRangesPipelineLayout.cleanup();
-	this->sortGaussiansPipeline.cleanup();
-	this->sortGaussiansPipelineLayout.cleanup();
+
+	this->radixSortScatterPipelineLayout.cleanup();
+	this->radixSortScatterPipeline.cleanup();
+	this->radixSortScanAddPipelineLayout.cleanup();
+	this->radixSortScanAddPipeline.cleanup();
+	this->radixSortScanPipelineLayout.cleanup();
+	this->radixSortScanPipeline.cleanup();
+	this->radixSortReducePipelineLayout.cleanup();
+	this->radixSortReducePipeline.cleanup();
+	this->radixSortCountPipelineLayout.cleanup();
+	this->radixSortCountPipeline.cleanup();
+	this->radixSortIndirectSetupPipelineLayout.cleanup();
+	this->radixSortIndirectSetupPipeline.cleanup();
+
+	this->sortGaussiansBmsPipeline.cleanup();
+	this->sortGaussiansBmsPipelineLayout.cleanup();
+
 	this->initSortListPipeline.cleanup();
 	this->initSortListPipelineLayout.cleanup();
 	
@@ -478,9 +610,11 @@ void Renderer::draw(Scene& scene)
 	// Gather this frame's data
 	auto computeDiffs = [&](uint32_t startQueryIndex, uint32_t endQueryIndex)
 	{
-		return float(this->queryPools.getQueryResult(GfxState::getFrameIndex(), endQueryIndex) -
+		return static_cast<float>(
+			(this->queryPools.getQueryResult(GfxState::getFrameIndex(), endQueryIndex) -
 			this->queryPools.getQueryResult(GfxState::getFrameIndex(), startQueryIndex)) *
-			GpuProperties::getTimestampPeriod() * 1e-6;
+			GpuProperties::getTimestampPeriod() * 1e-6
+		);
 	};
 	float initSortListMs = computeDiffs(1, 2);
 	float sortMs = computeDiffs(2, 3);
@@ -489,12 +623,15 @@ void Renderer::draw(Scene& scene)
 	float totalGpuTimeMs = computeDiffs(0, 6);
 
 	// Average timings
-	float t = 1.0f / (this->elapsedFrames + 1.0f);
-	this->avgInitSortListMs = this->getNewAvgTime(this->avgInitSortListMs, initSortListMs, t);
-	this->avgSortMs = this->getNewAvgTime(this->avgSortMs, sortMs, t);
-	this->avgFindRangesMs = this->getNewAvgTime(this->avgFindRangesMs, findRangesMs, t);
-	this->avgRenderGaussiansMs = this->getNewAvgTime(this->avgRenderGaussiansMs, renderGaussiansMs, t);
-	this->avgTotalGpuTimeMs = this->getNewAvgTime(this->avgTotalGpuTimeMs, totalGpuTimeMs, t);
+	if (this->elapsedFrames >= this->WAIT_ELAPSED_WARMUP_FRAMES_FOR_AVG)
+	{
+		float t = 1.0f / (this->elapsedFrames - this->WAIT_ELAPSED_WARMUP_FRAMES_FOR_AVG + 1.0f);
+		this->avgInitSortListMs = this->getNewAvgTime(this->avgInitSortListMs, initSortListMs, t);
+		this->avgSortMs = this->getNewAvgTime(this->avgSortMs, sortMs, t);
+		this->avgFindRangesMs = this->getNewAvgTime(this->avgFindRangesMs, findRangesMs, t);
+		this->avgRenderGaussiansMs = this->getNewAvgTime(this->avgRenderGaussiansMs, renderGaussiansMs, t);
+		this->avgTotalGpuTimeMs = this->getNewAvgTime(this->avgTotalGpuTimeMs, totalGpuTimeMs, t);
+	}
 	this->elapsedFrames++;
 
 	// Print
@@ -504,20 +641,19 @@ void Renderer::draw(Scene& scene)
 		"   sort ms: " + std::to_string(sortMs) +
 		"   find ranges ms: " + std::to_string(findRangesMs) +
 		"   render gaussians ms: " + std::to_string(renderGaussiansMs) + 
-		"   total gpu time ms: " + std::to_string(totalGpuTimeMs)
+		"   total GPU time ms: " + std::to_string(totalGpuTimeMs)
 	);
 	
 	// Print average times after a number of frames
 #ifdef ALERT_FINAL_AVERAGE
-	if (this->elapsedFrames >= this->WAIT_ELAPSED_FRAMES_FOR_AVG - 0.5f)
+	if (this->elapsedFrames >= this->WAIT_ELAPSED_WARMUP_FRAMES_FOR_AVG + this->WAIT_ELAPSED_FRAMES_FOR_AVG - 0.5f)
 	{
-		Log::writeAlert("Not properly implemented yet...");
 		Log::writeAlert(
-			"rsm ms: " + StrHelper::toTimingStr(this->avgRsmMs) + "\n" +
-			"sm ms: " + StrHelper::toTimingStr(this->avgSmMs) + "\n" +
-			"deferred geom ms: " + StrHelper::toTimingStr(this->avgDeferredGeomMs) + "\n" +
-			"deferred light ms: " + StrHelper::toTimingStr(this->avgDeferredLightMs) + "\n" +
-			"GPU frame time ms: " + StrHelper::toTimingStr(this->avgGpuFrameTimeMs));
+			"init sort list ms: " + StrHelper::toTimingStr(this->avgInitSortListMs) + "\n" +
+			"sort ms: " + StrHelper::toTimingStr(this->avgSortMs) + "\n" +
+			"find ranges ms: " + StrHelper::toTimingStr(this->avgFindRangesMs) + "\n" +
+			"render gaussians ms: " + StrHelper::toTimingStr(this->avgRenderGaussiansMs) + "\n" +
+			"total gpu time ms: " + StrHelper::toTimingStr(this->avgTotalGpuTimeMs));
 	}
 #endif
 #endif
@@ -643,7 +779,7 @@ void Renderer::recordCommandBuffer(
 void Renderer::resizeWindow()
 {
 	assert(false);
-	Log::warning("Gaussian tile range buffer needs to be recreated...");
+	Log::warning("gaussiansTileRangesSBO and radixSortNumSortBits (and possibly more) need to be recreated...");
 
 	this->swapchain.recreate();
 }
@@ -683,7 +819,8 @@ Renderer::Renderer()
 
 	vmaAllocator(nullptr),
 	numGaussians(0),
-	numSortElements(0)
+	numSortElements(0),
+	radixSortNumSortBits(0)
 {
 }
 
@@ -710,9 +847,20 @@ uint32_t Renderer::getCeilPowTwo(uint32_t x) const
 {
 	uint32_t num = 1;
 	while (num < x)
-		num *= 2u;
+		num *= 2;
 
 	return num;
+}
+
+uint32_t Renderer::getMinNumBits(uint32_t x) const
+{
+	for (int32_t i = 32 - 1; i >= 0; --i)
+	{
+		if (uint32_t(x >> i) & 1)
+			return static_cast<uint32_t>(i + 1);
+	}
+
+	return 0;
 }
 
 void Renderer::initForScene(Scene& scene)
@@ -732,7 +880,8 @@ void Renderer::initForScene(Scene& scene)
 
 	// Gaussians list SBO for sorting
 	std::vector<GaussianSortData> sortData(this->numSortElements); // Dummy data
-	this->gaussiansSortListSBO.createGpuBuffer(
+	this->gaussiansSortListSBO = std::make_shared<StorageBuffer>();
+	this->gaussiansSortListSBO->createGpuBuffer(
 		this->gfxAllocContext,
 		sizeof(sortData[0]) * sortData.size(),
 		sortData.data()
@@ -749,12 +898,62 @@ void Renderer::initForScene(Scene& scene)
 
 	// Range data
 	uint32_t numTiles = this->getNumTiles();
-	std::vector<GaussianTileRangeData> dummyRangeData(numTiles);
+	const std::vector<GaussianTileRangeData> dummyRangeData(numTiles);
 	this->gaussiansTileRangesSBO.createGpuBuffer(
 		this->gfxAllocContext,
 		sizeof(dummyRangeData[0]) * dummyRangeData.size(),
 		dummyRangeData.data()
 	);
+
+
+
+	// -------------- Buffers for radix sort --------------
+
+	uint32_t numCountThreadGroups = (this->numSortElements + RS_WORK_GROUP_SIZE - 1) / RS_WORK_GROUP_SIZE;
+	uint32_t numSumElements = numCountThreadGroups * RS_BIN_COUNT;
+	uint32_t numReduceBlocks = (numCountThreadGroups + RS_WORK_GROUP_SIZE - 1) / RS_WORK_GROUP_SIZE;
+	uint32_t numReduceElements = numReduceBlocks * RS_BIN_COUNT;
+
+	// Indirect dispatch buffer
+	RadixIndirectDispatch initIndirectDispatch{};
+	initIndirectDispatch.numSortElements = this->numSortElements;
+	initIndirectDispatch.countSizeX = numCountThreadGroups;
+	initIndirectDispatch.reduceSizeX = numReduceElements;
+	this->radixSortIndirectDispatchBuffer.createGpuBuffer(
+		this->gfxAllocContext,
+		sizeof(RadixIndirectDispatch),
+		&initIndirectDispatch,
+		VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT
+	);
+
+	// Sum table
+	const std::vector<glm::uvec4> dummySumTableData(numSumElements);
+	this->radixSortSumTableBuffer.createGpuBuffer(
+		this->gfxAllocContext,
+		sizeof(dummySumTableData[0]) * dummySumTableData.size(),
+		dummySumTableData.data()
+	);
+
+	// Reduce buffer
+	const std::vector<glm::uvec4> dummyReduceData(numReduceElements);
+	this->radixSortReduceBuffer.createGpuBuffer(
+		this->gfxAllocContext,
+		sizeof(dummyReduceData[0]) * dummyReduceData.size(),
+		dummyReduceData.data()
+	);
+
+	// Ping pong buffer
+	this->radixSortPingPongBuffer = std::make_shared<StorageBuffer>();
+	this->radixSortPingPongBuffer->createGpuBuffer(
+		this->gfxAllocContext,
+		sizeof(sortData[0]) * sortData.size(),
+		sortData.data()
+	);
+
+	// Not all of the highest bits in the sorting keys are utilized, 
+	// meaning that sorting only needs to be done for the lowest bits actually being used.
+	uint32_t sortBits = 32 + this->getMinNumBits(this->getNumTiles() - 1);
+	this->radixSortNumSortBits = uint32_t((sortBits + RS_BITS_PER_PASS - 1) / RS_BITS_PER_PASS) * RS_BITS_PER_PASS;
 }
 
 void Renderer::setWindow(Window& window)

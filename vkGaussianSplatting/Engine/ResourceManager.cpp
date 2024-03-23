@@ -6,9 +6,7 @@
 #include "Graphics/Texture/Texture2D.h"
 
 ResourceManager::ResourceManager()
-	: gfxAllocContext(nullptr),
-	numCoefficientsPerAngle(0),
-	numCoefficientsCosTermPerAngle(0)
+	: gfxAllocContext(nullptr)
 {
 }
 

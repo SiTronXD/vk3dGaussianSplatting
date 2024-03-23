@@ -1,0 +1,91 @@
+#version 450
+
+#extension GL_GOOGLE_include_directive: require
+
+#include "../Common/GaussiansStructs.glsl"
+#include "../Common/CommonRadix.glsl"
+
+// Receive work group size as a specialization constant
+layout(constant_id = 0) const uint WORK_GROUP_SIZE = 512u;
+
+layout (local_size_x_id = 0, local_size_y = 1, local_size_z = 1) in;
+
+// SBO
+layout(binding = 0) readonly buffer RadixIndirectDispatchBuffer
+{
+	RadixIndirectSetupData data;
+} indirectBuffer;
+
+// SBO
+layout(binding = 1) readonly buffer GaussiansSortListBuffer
+{
+	GaussianSortData sortData[];
+} listBuffer;
+
+// SBO
+layout(binding = 2) writeonly buffer SumTableBuffer
+{
+	uvec4 buckets[];
+} sumTable;
+
+// Push constant
+layout(push_constant) uniform PushConstantData
+{
+	uvec4 data; // uvec4(shiftBits, 0, 0, 0)
+} pc;
+
+// Shared memory (1024 * 16 = 16384 bytes are guaranteed to be available in Vulkan)
+shared uint sharedHistogram[WORK_GROUP_SIZE * BIN_COUNT];
+
+void main()
+{
+	uint threadIndex = gl_GlobalInvocationID.x;
+	uint localIndex = gl_LocalInvocationID.x;
+	uint groupIndex = gl_WorkGroupID.x;
+	uint numWorkGroups = indirectBuffer.data.countSizeX;
+	uint numSortElements = indirectBuffer.data.numSortElements;
+
+	// Clear shared memory
+	for(uint i = 0; i < BIN_COUNT; ++i) 
+	{
+		sharedHistogram[(i * WORK_GROUP_SIZE) + localIndex] = 0u;
+	}
+	barrier();
+
+	// Increment buckets in shared memory
+	if(threadIndex < numSortElements) 
+	{
+		uint shiftBits = pc.data.x;
+		uint sortValue = 0u;
+		if(shiftBits < 32u - BITS_PER_PASS_SIZE + 1u)
+		{
+			sortValue = (listBuffer.sortData[threadIndex].data.y >> shiftBits) & SHIFT_MASK;
+		} 
+		else if(shiftBits >= 32u)
+		{
+			sortValue = (listBuffer.sortData[threadIndex].data.x >> shiftBits - 32u) & SHIFT_MASK;
+		}
+		else
+		{
+			sortValue = 
+				((listBuffer.sortData[threadIndex].data.x >> shiftBits - 32u) |
+				(listBuffer.sortData[threadIndex].data.y >> shiftBits)) & SHIFT_MASK;
+		}
+
+		// Atomics are unnecessary here. 
+		// But removing the atomic results in worse performance on my test bench.
+		atomicAdd(sharedHistogram[sortValue * WORK_GROUP_SIZE + localIndex], 1u);
+	}
+	barrier();
+
+	// Compute sum into sum table
+	if(localIndex < BIN_COUNT) 
+	{
+		uint sum = 0u;
+		for(uint i = 0u; i < WORK_GROUP_SIZE; ++i) 
+		{
+			sum += sharedHistogram[localIndex * WORK_GROUP_SIZE + i];
+		}
+		sumTable.buckets[localIndex * numWorkGroups + groupIndex].x = sum;
+	}
+}

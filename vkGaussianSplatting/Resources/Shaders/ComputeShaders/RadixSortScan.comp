@@ -1,0 +1,71 @@
+#version 450
+
+#extension GL_GOOGLE_include_directive: require
+#extension GL_KHR_shader_subgroup_arithmetic: require
+
+#include "../Common/CommonRadix.glsl"
+
+// Receive work group size as a specialization constant
+layout(constant_id = 0) const uint WORK_GROUP_SIZE = 512u;
+
+layout (local_size_x_id = 0, local_size_y = 1, local_size_z = 1) in;
+
+// SBO
+layout(binding = 0) readonly buffer RadixIndirectDispatchBuffer
+{
+	RadixIndirectSetupData data;
+} indirectBuffer;
+
+// SBO
+layout(binding = 1) buffer InputOutputBuffer
+{
+	uvec4 data[];
+} inputOutputBuffer;
+
+// Shared memory (1024 * 16 = 16384 bytes are guaranteed to be available in Vulkan)
+shared uint loadedElements[WORK_GROUP_SIZE];
+shared uint highestOffset;
+
+void main()
+{
+	uint localIndex = gl_LocalInvocationID.x;
+	uint numScanElements = indirectBuffer.data.reduceSizeX;
+	uint numIterations = (numScanElements + WORK_GROUP_SIZE - 1u) / WORK_GROUP_SIZE;
+	if(localIndex == 0u)
+		highestOffset = 0u;
+
+	for(uint i = 0u; i < numIterations; ++i)
+	{
+		// Load
+		uint loadIndex = i * WORK_GROUP_SIZE + localIndex;
+		uint localThreadElement = 
+			loadIndex < numScanElements ? 
+			inputOutputBuffer.data[loadIndex].x : 
+			0u;
+		barrier();
+
+		// Prefix sum
+		uint newSum;
+		{
+			newSum = highestOffset + subgroupExclusiveAdd(localThreadElement);
+
+			if((localIndex + 1u) % gl_SubgroupSize == 0)
+				loadedElements[localIndex / gl_SubgroupSize] = newSum - highestOffset + localThreadElement;
+			barrier();
+
+			uint numIt = localIndex / gl_SubgroupSize;
+			for(uint j = 0; j < numIt; ++j)
+			{
+				newSum += loadedElements[j];
+			}
+		}
+
+		// Write to global buffer
+		if(loadIndex < numScanElements)
+			inputOutputBuffer.data[loadIndex].x = newSum;
+
+		// Highest offset for next iteration
+		if(localIndex == WORK_GROUP_SIZE - 1u)
+			highestOffset = newSum + localThreadElement;
+	}
+}

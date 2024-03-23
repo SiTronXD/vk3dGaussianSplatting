@@ -27,8 +27,8 @@ private:
 protected:
 	void createGpuBuffer(
 		const GfxAllocContext& gfxAllocContext,
-		const VkBufferUsageFlags& usageFlags,
-		const VkDeviceSize& bufferSize,
+		VkBufferUsageFlags usageFlags,
+		VkDeviceSize bufferSize,
 		const void* cpuData);
 
 	inline const VkBuffer& getVkBuffer(const uint32_t& index) const { return this->buffers[index]; }
@@ -40,10 +40,10 @@ public:
 
 	void createBuffer(
 		const GfxAllocContext& gfxAllocContext,
-		const VkDeviceSize& size,
-		const VkBufferUsageFlags& usage,
-		const VkMemoryPropertyFlags& properties,
-		const uint32_t& numBuffers = 1);
+		VkDeviceSize size,
+		VkBufferUsageFlags usage,
+		VkMemoryPropertyFlags properties,
+		uint32_t numBuffers = 1);
 	void updateBuffer(const void* cpuData);
 
 	static void copyBuffer(

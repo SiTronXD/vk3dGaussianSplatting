@@ -1,0 +1,171 @@
+#version 450
+
+#extension GL_GOOGLE_include_directive: require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64: require
+#extension GL_KHR_shader_subgroup_arithmetic: require
+
+#include "../Common/Common.glsl"
+#include "../Common/CommonRadix.glsl"
+#include "../Common/GaussiansStructs.glsl"
+
+// Receive work group size as a specialization constant
+layout(constant_id = 0) const uint WORK_GROUP_SIZE = 512u;
+
+layout (local_size_x_id = 0, local_size_y = 1, local_size_z = 1) in;
+
+// SBO
+layout(binding = 0) readonly buffer RadixIndirectDispatchBuffer
+{
+	RadixIndirectSetupData data;
+} indirectBuffer;
+
+// SBO
+layout(binding = 1) readonly buffer SumBuffer
+{
+	uvec4 data[];
+} sumTableBuffer;
+
+// SBO
+layout(binding = 2) readonly buffer SortSourceBuffer
+{
+	GaussianSortData sortData[];
+} srcBuffer;
+
+// SBO
+layout(binding = 3) writeonly buffer SortDestinationBuffer
+{
+	GaussianSortData sortData[];
+} dstBuffer;
+
+// Push constant
+layout(push_constant) uniform PushConstantData
+{
+	uvec4 data; // uvec4(shiftBits, 0, 0, 0)
+} pc;
+
+// Shared memory (1024 * 16 = 16384 bytes are guaranteed to be available in Vulkan)
+shared uint binOffsets[BIN_COUNT]; // AMD incorrectly allocate WORK_GROUP_SIZE, but should be BIN_COUNT
+shared uint histogram[BIN_COUNT];
+shared uint prefixSums[WORK_GROUP_SIZE];
+shared uint singleScratchArea;
+shared uint scratchArea[WORK_GROUP_SIZE];
+shared uint64_t sums[WORK_GROUP_SIZE];
+
+// Odd choices by AMD:
+// 1. Allocate WORK_GROUP_SIZE number of elements in shared memory binOffsets, should be BIN_COUNT
+// 2. Not checking if DataIndex < NumKeys when loading srcKeys.
+
+void main()
+{
+	uint localIndex = gl_LocalInvocationID.x;
+	uint groupIndex = gl_WorkGroupID.x;
+	uint threadIndex = gl_GlobalInvocationID.x;
+	uint numThreadGroups = indirectBuffer.data.countSizeX;
+	uint numSortElements = indirectBuffer.data.numSortElements;
+	uint shift = pc.data.x;
+
+	uint dataIndex = threadIndex;
+
+	// Load bin offsets into shared memory
+	// (offsets are otherwise scattered in global memory)
+	if(localIndex < BIN_COUNT)
+		binOffsets[localIndex] = sumTableBuffer.data[localIndex * numThreadGroups + groupIndex].x;
+
+	{
+		uint64_t srcKey = dataIndex < numSortElements ? 
+			(uint64_t(srcBuffer.sortData[dataIndex].data.x) << 32u) | uint64_t(srcBuffer.sortData[dataIndex].data.y) : 
+			~uint64_t(0); // Max value to push unused keys back in the list
+		uint srcValue = dataIndex < numSortElements ?
+			srcBuffer.sortData[dataIndex].data.z : 
+			0u;
+
+		{
+			// Clear histogram
+			if(localIndex < BIN_COUNT)
+				histogram[localIndex] = 0u;
+
+			uint64_t localKey = srcKey;
+			uint64_t localValue = srcValue;
+
+			// Sort within shared memory (2 bits at a time)
+			for(uint bitShift = 0u; bitShift < BITS_PER_PASS_SIZE; bitShift += 2u)
+			{
+				uint keyIndex = uint(localKey >> uint64_t(shift)) & SHIFT_MASK;
+				uint bitKey = (keyIndex >> bitShift) & 3u;
+
+				uint packedHistogram = 1u << (bitKey << 3u);
+
+				// Prefix sum
+				uint localSum = 0u;
+				{
+					localSum = subgroupExclusiveAdd(packedHistogram);
+
+					if((localIndex + 1u) % gl_SubgroupSize == 0)
+						prefixSums[localIndex / gl_SubgroupSize] = localSum + packedHistogram;
+					barrier();
+					uint numIt = localIndex / gl_SubgroupSize;
+					for(uint i = 0; i < numIt; ++i)
+					{
+						localSum += prefixSums[i];
+					}
+				}
+
+				if(localIndex == WORK_GROUP_SIZE - 1u)
+					singleScratchArea = localSum + packedHistogram;
+				barrier();
+
+				packedHistogram = singleScratchArea;
+				packedHistogram = (packedHistogram << 8u) + (packedHistogram << 16u) + (packedHistogram << 24u);
+				localSum += packedHistogram;
+
+				// Target offset
+				uint keyOffset = (localSum >> (bitKey << 3u)) & 0xff; // Assumption: WORK_GROUP_SIZE <= 256
+
+				// Re-arrange keys (This can most likely be done as 2 operations to split 64-bit keys)
+				sums[keyOffset] = localKey;
+				barrier();
+				localKey = sums[localIndex];
+
+				barrier();
+
+				// Re-arrange values
+				sums[keyOffset] = localValue;
+				barrier();
+				localValue = sums[localIndex];
+			}
+
+			// Recalculate key index after re-arrangement
+			uint keyIndex = uint(localKey >> uint64_t(shift)) & SHIFT_MASK;
+
+			// Create histogram
+			atomicAdd(histogram[keyIndex], 1u);
+
+			barrier();
+
+			// Prefix histogram
+			uint histogramLocalSum = localIndex < BIN_COUNT ? histogram[localIndex] : 0u;
+			uint histogramPrefixSum = subgroupExclusiveAdd(histogramLocalSum); // Assumption: gl_SubgroupSize <= BIN_COUNT
+
+			// Store prefix in shared memory
+			if(localIndex < BIN_COUNT)
+				scratchArea[localIndex] = histogramPrefixSum;
+
+			uint globalOffset = binOffsets[keyIndex];
+
+			barrier();
+
+			uint localOffset = localIndex - scratchArea[keyIndex];
+
+			// Final offset
+			uint totalOffset = globalOffset + localOffset;
+
+			// Store
+			if(totalOffset < numSortElements)
+			{
+				dstBuffer.sortData[totalOffset].data.x = uint(localKey >> 32u);
+				dstBuffer.sortData[totalOffset].data.y = uint(localKey);
+				dstBuffer.sortData[totalOffset].data.z = uint(localValue);
+			}
+		}
+	}
+}

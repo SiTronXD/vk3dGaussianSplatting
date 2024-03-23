@@ -20,6 +20,6 @@ void TrainScene::update()
 {
 	this->camera.update();
 
-	Log::write("Cam pos: " + StrHelper::vecToStr(this->camera.getPosition()));
-	Log::write("Cam rot: (" + std::to_string(this->camera.getYaw()) + ", " + std::to_string(this->camera.getPitch()) + ")");
+	/*Log::write("Cam pos: " + StrHelper::vecToStr(this->camera.getPosition()));
+	Log::write("Cam rot: (" + std::to_string(this->camera.getYaw()) + ", " + std::to_string(this->camera.getPitch()) + ")");*/
 }

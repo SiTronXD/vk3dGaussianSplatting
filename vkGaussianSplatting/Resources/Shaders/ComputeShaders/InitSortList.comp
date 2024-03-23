@@ -124,6 +124,7 @@ void main()
 			uint tileKey = y * gridSize.x + x;
 
 			// Add gaussian to list
+			// TODO: fix for overflow
 			uint id = atomicAdd(cullData.data.numGaussiansToRender.x, 1u);
 			if(id < cullData.data.numGaussiansToRender.y) // Temporary solution to avoid overflow
 			{

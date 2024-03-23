@@ -65,7 +65,7 @@
       <Command>xcopy $(ProjectDir)Resources $(Outdir)Resources /Y /I /E</Command>
     </PostBuildEvent>
     <CustomBuild>
-      <Command>glslangValidator -V %(FullPath) -o $(ProjectDir)Resources\Shaders\%(Filename)%(Extension).spv</Command>
+      <Command>glslangValidator --target-env vulkan1.1 -V %(FullPath) -o $(ProjectDir)Resources\Shaders\%(Filename)%(Extension).spv</Command>
     </CustomBuild>
     <CustomBuild>
       <Outputs>%(Filename)%(Extension).spv</Outputs>
@@ -102,7 +102,7 @@
       <Command>xcopy $(ProjectDir)Resources $(Outdir)Resources /Y /I /E</Command>
     </PostBuildEvent>
     <CustomBuild>
-      <Command>glslangValidator -V %(FullPath) -o $(ProjectDir)Resources\Shaders\%(Filename)%(Extension).spv</Command>
+      <Command>glslangValidator --target-env vulkan1.1 -V %(FullPath) -o $(ProjectDir)Resources\Shaders\%(Filename)%(Extension).spv</Command>
     </CustomBuild>
     <CustomBuild>
       <Outputs>%(Filename)%(Extension).spv</Outputs>
@@ -294,6 +294,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </None>
+    <None Include="Resources\Shaders\Common\CommonRadix.glsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </None>
     <None Include="Resources\Shaders\Common\GaussiansStructs.glsl">
       <FileType>Document</FileType>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
@@ -304,6 +308,24 @@
       </ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
       </ExcludedFromBuild>
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortCount.comp">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortReduce.comp">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortScan.comp">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortScanAdd.comp">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortScatter.comp">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortIndirectSetup.comp">
       <FileType>Document</FileType>
     </CustomBuild>
   </ItemGroup>

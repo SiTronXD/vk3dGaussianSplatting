@@ -34,6 +34,7 @@ private:
 	static uint32_t memoryTypeCount;
 	static VkMemoryType memoryTypes[32];
 
+	static bool assertGpu(bool condition, const std::string& warningMessage);
 	static void updateProperties(
 		VkPhysicalDevice* physicalDevice);
 	static void queryPhysicalDeviceSwapchainSupport(

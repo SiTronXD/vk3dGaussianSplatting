@@ -57,12 +57,10 @@ void Window::update()
 	glfwPollEvents();
 
 	// Close when clicking escape
-#ifdef _DEBUG
 	if (Input::isKeyDown(Keys::ESCAPE))
 	{
 		glfwSetWindowShouldClose(this->windowHandle, GLFW_TRUE);
 	}
-#endif
 
 	// Update cursor position
 	double cursorX, cursorY;

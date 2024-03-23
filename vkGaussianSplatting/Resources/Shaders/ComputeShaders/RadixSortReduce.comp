@@ -1,0 +1,72 @@
+#version 450
+
+#extension GL_GOOGLE_include_directive: require
+#extension GL_KHR_shader_subgroup_arithmetic: require
+
+#include "../Common/CommonRadix.glsl"
+
+// Receive work group size as a specialization constant
+layout(constant_id = 0) const uint WORK_GROUP_SIZE = 512u;
+
+layout (local_size_x_id = 0, local_size_y = 1, local_size_z = 1) in;
+
+// SBO
+layout(binding = 0) readonly buffer RadixIndirectDispatchBuffer
+{
+	RadixIndirectSetupData data;
+} indirectBuffer;
+
+// SBO
+layout(binding = 1) readonly buffer SumTableBuffer
+{
+	uvec4 buckets[];
+} sumTable;
+
+// SBO
+layout(binding = 2) writeonly buffer ReduceBuffer
+{
+	uvec4 data[];
+} reduce;
+
+// Shared memory (1024 * 16 = 16384 bytes are guaranteed to be available in Vulkan)
+shared uint loadedElements[WORK_GROUP_SIZE];
+
+void main()
+{
+	uint localIndex = gl_LocalInvocationID.x;
+	uint groupIndex = gl_WorkGroupID.x;
+	uint numCountWorkGroups = indirectBuffer.data.countSizeX;
+	uint numReduceGroupsPerBin = indirectBuffer.data.reduceSizeX / BIN_COUNT;
+
+	uint binId = groupIndex / numReduceGroupsPerBin;
+	uint binOffset = binId * numCountWorkGroups;
+	uint baseIndex = (groupIndex % numReduceGroupsPerBin) * WORK_GROUP_SIZE;
+	
+	// Load
+	uint dataIndex = baseIndex + localIndex;
+	uint localThreadElement = 
+		dataIndex < numCountWorkGroups ? 
+		sumTable.buckets[binOffset + dataIndex].x : 
+		0u;
+
+	// Sum in subgroup
+	uint subgroupSum = subgroupAdd(localThreadElement);
+	if(subgroupElect())
+	{
+		uint subgroupIndex = localIndex / gl_SubgroupSize;
+		loadedElements[subgroupIndex] = subgroupSum;
+	}
+	barrier();
+
+	// Sum in shared memory
+	uint numSubgroups = WORK_GROUP_SIZE / gl_SubgroupSize;
+	uint sum = 0u;
+	for(uint i = 0; i < numSubgroups; ++i)
+	{
+		sum += loadedElements[i];
+	}
+
+	// Write
+	if(localIndex == 0)
+		reduce.data[groupIndex].x = sum;
+}

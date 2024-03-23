@@ -424,11 +424,18 @@
     <None Include="Resources\Shaders\Common\ColorTransformations.glsl" />
     <None Include="Resources\Shaders\Common\GaussiansStructs.glsl" />
     <None Include="Resources\Shaders\Common\Common.glsl" />
+    <None Include="Resources\Shaders\Common\CommonRadix.glsl" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="Resources\Shaders\ComputeShaders\RenderGaussians.comp" />
     <CustomBuild Include="Resources\Shaders\ComputeShaders\BitonicMergeSort.comp" />
     <CustomBuild Include="Resources\Shaders\ComputeShaders\InitSortList.comp" />
     <CustomBuild Include="Resources\Shaders\ComputeShaders\FindRanges.comp" />
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortCount.comp" />
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortReduce.comp" />
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortScan.comp" />
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortScanAdd.comp" />
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortScatter.comp" />
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortIndirectSetup.comp" />
   </ItemGroup>
 </Project>

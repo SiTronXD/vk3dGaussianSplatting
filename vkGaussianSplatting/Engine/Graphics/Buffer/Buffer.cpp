@@ -46,10 +46,10 @@ Buffer::~Buffer()
 
 void Buffer::createBuffer(
 	const GfxAllocContext& gfxAllocContext, 
-	const VkDeviceSize& bufferSize,
-	const VkBufferUsageFlags& usage, 
-	const VkMemoryPropertyFlags& properties,
-	const uint32_t& numBuffers)
+	VkDeviceSize bufferSize,
+	VkBufferUsageFlags usage, 
+	VkMemoryPropertyFlags properties,
+	uint32_t numBuffers)
 {
 	this->gfxAllocContext = &gfxAllocContext;
 	this->bufferSize = bufferSize;
@@ -71,8 +71,8 @@ void Buffer::createBuffer(
 
 void Buffer::createGpuBuffer(
 	const GfxAllocContext& gfxAllocContext, 
-	const VkBufferUsageFlags& usageFlags,
-	const VkDeviceSize& bufferSize, 
+	VkBufferUsageFlags usageFlags,
+	VkDeviceSize bufferSize, 
 	const void* cpuData)
 {
 	// Create staging buffer
