@@ -253,7 +253,7 @@ void Renderer::computeSortGaussiansBMS(CommandBuffer& commandBuffer, uint32_t nu
 	}
 }
 
-void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t numElemToSort)
+void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer)
 {
 	// TODO: add static asserts concerning shared memory limitations based on 
 	// WORK_GROUP_SIZE and BIN_COUNT.
@@ -266,11 +266,6 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t num
 	// Limitation of the scatter shader
 	assert(RS_BITS_PER_PASS % 2 == 0);
 	assert(RS_WORK_GROUP_SIZE >= RS_BIN_COUNT);
-
-	uint32_t numThreadGroups = (numElemToSort + RS_WORK_GROUP_SIZE - 1) / RS_WORK_GROUP_SIZE;
-	//uint32_t numReducedThreadGroups = RS_BIN_COUNT * ((RS_WORK_GROUP_SIZE > numThreadGroups) ? 1 : (numThreadGroups + RS_WORK_GROUP_SIZE - 1) / RS_WORK_GROUP_SIZE);
-	uint32_t numReducedThreadGroups = RS_BIN_COUNT * ((numThreadGroups + RS_WORK_GROUP_SIZE - 1) / RS_WORK_GROUP_SIZE);
-	assert(!(RS_WORK_GROUP_SIZE > numThreadGroups));
 
 	// Wait for work on initialization of the sorting list to finish
 	std::array<VkBufferMemoryBarrier2, 3> initBufferBarriers =
@@ -642,7 +637,7 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t num
 void Renderer::computeSortGaussians(CommandBuffer& commandBuffer, uint32_t numElemToSort)
 {
 	//this->computeSortGaussiansBMS(commandBuffer, numElemToSort);
-	this->computeSortGaussiansRS(commandBuffer, numElemToSort);
+	this->computeSortGaussiansRS(commandBuffer);
 }
 
 void Renderer::computeRanges(CommandBuffer& commandBuffer)

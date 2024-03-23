@@ -156,7 +156,7 @@ private:
 	void cleanupImgui();
 
 	void computeSortGaussiansBMS(CommandBuffer& commandBuffer, uint32_t numElemToSort);
-	void computeSortGaussiansRS(CommandBuffer& commandBuffer, uint32_t numElemToSort);
+	void computeSortGaussiansRS(CommandBuffer& commandBuffer);
 
 	void renderImgui(CommandBuffer& commandBuffer, ImDrawData* imguiDrawData, uint32_t imageIndex);
 	void computeInitSortList(CommandBuffer& commandBuffer, const Camera& camera);
