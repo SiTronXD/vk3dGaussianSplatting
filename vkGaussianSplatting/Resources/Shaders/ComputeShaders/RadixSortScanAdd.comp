@@ -35,21 +35,22 @@ void main()
 {
 	uint localIndex = gl_LocalInvocationID.x;
 	uint groupIndex = gl_WorkGroupID.x;
-	uint numScanAddElements = indirectBuffer.data.countSizeX;
-	uint numReduceWorkGroupsPerBin = indirectBuffer.data.reduceSizeX / BIN_COUNT;
-
-	uint binOffset = uint(groupIndex / numReduceWorkGroupsPerBin) * numScanAddElements;
-	uint baseIndex = (groupIndex % numReduceWorkGroupsPerBin) * WORK_GROUP_SIZE;
-	uint dataIndex = baseIndex + localIndex;
+	uint numCountWorkGroups = indirectBuffer.data.countSizeX;
+	uint numReduceGroupsPerBin = indirectBuffer.data.reduceSizeX / BIN_COUNT;
+	
+	uint binId = groupIndex / numReduceGroupsPerBin;
+	uint binOffset = binId * numCountWorkGroups;
+	uint baseIndex = (groupIndex % numReduceGroupsPerBin) * WORK_GROUP_SIZE;
 
 	// Load
+	uint dataIndex = baseIndex + localIndex;
 	loadedElements[localIndex] = 
-		dataIndex < numScanAddElements ? 
+		dataIndex < numCountWorkGroups ? 
 		sumTableBuffer.data[binOffset + dataIndex].x : 
 		0u;
 	barrier();
 
-	// Sum
+	// Sum in shared memory
 	uint sum = 0u;
 	for(uint i = 0u; i < localIndex; ++i)
 	{
@@ -60,6 +61,6 @@ void main()
 	sum += reduceBuffer.data[groupIndex].x;
 
 	// Write
-	if(dataIndex < numScanAddElements)
+	if(dataIndex < numCountWorkGroups)
 		sumTableBuffer.data[binOffset + dataIndex].x = sum;
 }

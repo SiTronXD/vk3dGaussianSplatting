@@ -36,15 +36,16 @@ void main()
 	uint localIndex = gl_LocalInvocationID.x;
 	uint groupIndex = gl_WorkGroupID.x;
 	uint numCountWorkGroups = indirectBuffer.data.countSizeX;
-	uint numReduceGroupPerBin = indirectBuffer.data.reduceSizeX / BIN_COUNT;
+	uint numReduceGroupsPerBin = indirectBuffer.data.reduceSizeX / BIN_COUNT;
 
-	uint binId = groupIndex / numReduceGroupPerBin;
+	uint binId = groupIndex / numReduceGroupsPerBin;
 	uint binOffset = binId * numCountWorkGroups;
-	uint baseIndex = (groupIndex % numReduceGroupPerBin) * WORK_GROUP_SIZE;
+	uint baseIndex = (groupIndex % numReduceGroupsPerBin) * WORK_GROUP_SIZE;
 	
 	// Load
 	uint dataIndex = baseIndex + localIndex;
-	uint localThreadElement = dataIndex < numCountWorkGroups ? 
+	uint localThreadElement = 
+		dataIndex < numCountWorkGroups ? 
 		sumTable.buckets[binOffset + dataIndex].x : 
 		0u;
 
