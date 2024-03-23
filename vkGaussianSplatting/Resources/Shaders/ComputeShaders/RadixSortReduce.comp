@@ -1,6 +1,7 @@
 #version 450
 
 #extension GL_GOOGLE_include_directive: require
+#extension GL_KHR_shader_subgroup_arithmetic: require
 
 #include "../Common/CommonRadix.glsl"
 
@@ -27,44 +28,44 @@ layout(binding = 2) writeonly buffer ReduceBuffer
 	uvec4 data[];
 } reduce;
 
+// Shared memory (1024 * 16 = 16384 bytes are guaranteed to be available in Vulkan)
+shared uint loadedElements[WORK_GROUP_SIZE];
+
 void main()
 {
-	uint groupIndex = gl_WorkGroupID.x;
 	uint localIndex = gl_LocalInvocationID.x;
+	uint groupIndex = gl_WorkGroupID.x;
 	uint numCountWorkGroups = indirectBuffer.data.countSizeX;
 	uint numReduceGroupPerBin = indirectBuffer.data.reduceSizeX / BIN_COUNT;
 
 	uint binId = groupIndex / numReduceGroupPerBin;
 	uint binOffset = binId * numCountWorkGroups;
-
 	uint baseIndex = (groupIndex % numReduceGroupPerBin) * WORK_GROUP_SIZE;
-	//uint dataIndex = baseIndex + localIndex;
-	//uint loadedValue = dataIndex < numCountWorkGroups ? sumTable.buckets[binOffset + dataIndex].x : 0u;
+	
+	// Load
+	uint dataIndex = baseIndex + localIndex;
+	uint localThreadElement = dataIndex < numCountWorkGroups ? 
+		sumTable.buckets[binOffset + dataIndex].x : 
+		0u;
 
-	// TODO: Replace with sum from shared memory or subgroups
-	uint sum = 0u;
-	for(uint i = 0; i < WORK_GROUP_SIZE; ++i)
+	// Sum in subgroup
+	uint subgroupSum = subgroupAdd(localThreadElement);
+	if(subgroupElect())
 	{
-		uint dataIndex = baseIndex + i;
-		sum += dataIndex < numCountWorkGroups ? sumTable.buckets[binOffset + dataIndex].x : 0u;
+		uint subgroupIndex = localIndex / gl_SubgroupSize;
+		loadedElements[subgroupIndex] = subgroupSum;
+	}
+	barrier();
+
+	// Sum in shared memory
+	uint numSubgroups = WORK_GROUP_SIZE / gl_SubgroupSize;
+	uint sum = 0u;
+	for(uint i = 0; i < numSubgroups; ++i)
+	{
+		sum += loadedElements[i];
 	}
 
+	// Write
 	if(localIndex == 0)
 		reduce.data[groupIndex].x = sum;
-
-	// ----------------------- Assume this is incorrect for now -----------------------
-	/*uint localThreadIndex = gl_LocalInvocationID.x;
-	uint threadGroupId = gl_WorkGroupID.x;
-
-	uint sum = 0;
-	for(int i = 0; i < WORK_GROUP_SIZE; ++i)
-	{
-		sum += sumTable.buckets[i].x;
-	}
-
-	if(localThreadIndex == 0)
-	{
-		reduce.data[threadGroupId].x = sum;
-	}*/
-	// --------------------------------------------------------------------------------
 }
