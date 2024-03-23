@@ -116,16 +116,12 @@ void main()
 	uvec4 gExtents = getGaussianTileExtents(threadIndex, viewSpacePos, gridSize);
 	
 	// Add sort element per gaussian per overlapped tile
-	for(uint y = gExtents.y; y < gExtents.w; ++y) // TODO: uncomment after sorting is implemented
+	for(uint y = gExtents.y; y < gExtents.w; ++y)
 	{
-		for(uint x = gExtents.x; x < gExtents.z; ++x) // TODO: uncomment after sorting is implemented
+		for(uint x = gExtents.x; x < gExtents.z; ++x)
 		{
 			// Tile key
-			uint tileKey = y * gridSize.x + x; // TODO: uncomment after sorting is implemented
-			//depthKey = threadIndex % 256; // TODO: remove after sorting is implemented
-			//depthKey = threadIndex; // TODO: remove after sorting is implemented
-			//depthKey = uint(abs(sin(threadIndex * 1235.344) * 212334.12)); // TODO: remove after sorting is implemented
-			//tileKey = uint(abs(sin(threadIndex * 15.34) * 2124.12)); // TODO: remove after sorting is implemented
+			uint tileKey = y * gridSize.x + x;
 
 			// Add gaussian to list
 			// TODO: fix for overflow
