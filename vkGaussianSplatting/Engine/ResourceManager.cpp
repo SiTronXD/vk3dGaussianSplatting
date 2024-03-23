@@ -283,26 +283,36 @@ void ResourceManager::loadGaussians(const std::string& filePath)
 	}*/
 	for (uint32_t i = 0; i < numGaussians; ++i)
 	{
-		this->gaussians[i].position = glm::vec4(
+		GaussianData& gaussian = this->gaussians[i];
+
+		gaussian.position = glm::vec4(
 			gPositionsX[i] * -1.0f,
 			gPositionsY[i] * -1.0f,
 			gPositionsZ[i],
 			0.0f
 		);
-		this->gaussians[i].scale = glm::vec4(
+		gaussian.scale = glm::vec4(
 			std::exp(gScalesX[i]),
 			std::exp(gScalesY[i]),
 			std::exp(gScalesZ[i]),
 			0.0f
 		);
-		this->gaussians[i].rot = glm::vec4(
-			gRot0[i],
-			gRot1[i],
-			gRot2[i],
-			gRot3[i]
-		);
-		//this->gaussians[i].rot /= this->gaussians[i].rot.length();
-		this->gaussians[i].color = glm::vec4(
+		{
+			gaussian.rot = glm::vec4(
+				gRot0[i],
+				gRot1[i],
+				gRot2[i],
+				gRot3[i]
+			);
+			gaussian.rot = glm::normalize(gaussian.rot);
+			gaussian.rot = glm::vec4(
+				-gaussian.rot[2],
+				-gaussian.rot[3],
+				gaussian.rot[0],
+				-gaussian.rot[1]
+			);
+		}
+		gaussian.color = glm::vec4(
 			0.5f + gFeature0[i] * 0.28209479177387814f,
 			0.5f + gFeature1[i] * 0.28209479177387814f,
 			0.5f + gFeature2[i] * 0.28209479177387814f, // TODO: evaluate SH in shader

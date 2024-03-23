@@ -12,6 +12,10 @@ void TrainScene::init()
 	this->camera.setRotation(1.361593, 0.005841);
 
 
+	// Temporary setup to find correct gaussian rotation
+	/*this->camera.setPosition(glm::vec3(2.662566, -0.471186, -2.291058));
+	this->camera.setRotation(-0.008407, -0.044159);*/
+
 	// Load gaussians from file
 	this->getResourceManager().loadGaussians("D:/DownloadedAssets/GaussianFiles/train/point_cloud/iteration_7000/point_cloud.ply");
 }
