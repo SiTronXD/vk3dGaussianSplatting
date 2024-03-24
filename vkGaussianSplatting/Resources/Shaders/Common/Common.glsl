@@ -1,6 +1,13 @@
 
 #define FOV_Y (3.1415f * 0.5f)
 
+// Culling limit in ndc
+#define CULLING_NDC_LIMIT 1.3f
+
+// lower: incorrect rotation at screen edges
+// higher: stretched gaussian artifacts at screen edges
+#define IN_VIEW_LIMIT 0.8f 
+
 // Has to match TILE_SIZE in Renderer.h
 #define TILE_SIZE 16
 
@@ -46,9 +53,17 @@ vec3 getCovarianceMatrix(
 	float tanFovX = tanFovY * width / height;
 	float focalX = width / (2.0f * tanFovX);
 	float focalY = height / (2.0f * tanFovY);
-	mat3x3 J = mat3x3(	focalX / gPosV.z, 0.0f, -(focalX * gPosV.x) / (gPosV.z * gPosV.z),
-						0.0f, focalY / gPosV.z, -(focalY * gPosV.y) / (gPosV.z * gPosV.z),
-						0.0f, 0.0f, 0.0f);
+
+	// Limit gaussians within view, 
+	// to mitigate artifacts when gaussians are close to screen borders.
+	vec2 lim = vec2(tanFovX, tanFovY) * IN_VIEW_LIMIT;
+	vec2 tempPos = gPosV.xy / gPosV.z;
+	gPosV.x = clamp(tempPos.x, -lim.x, lim.x) * gPosV.z;
+	gPosV.y = clamp(tempPos.y, -lim.y, lim.y) * gPosV.z;
+
+	mat3x3 J = mat3x3(				focalX / gPosV.z,								0.0f,						0.0f,
+										0.0f,									focalY / gPosV.z,				0.0f,
+						-(focalX * gPosV.x) / (gPosV.z * gPosV.z), -(focalY * gPosV.y) / (gPosV.z * gPosV.z),	0.0f);
 	mat3x3 sigmaPrime = J * W * sigma * transpose(W) * transpose(J);
 
 	vec3 cov = vec3(sigmaPrime[0][0], sigmaPrime[0][1], sigmaPrime[1][1]);

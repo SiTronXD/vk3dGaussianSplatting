@@ -876,7 +876,7 @@ void Renderer::initForScene(Scene& scene)
 		gaussiansData.data()
 	);
 	this->numGaussians = (uint32_t) gaussiansData.size();
-	this->numSortElements = this->getCeilPowTwo(this->numGaussians + 48 * 16 * this->getNumTiles());
+	this->numSortElements = this->getCeilPowTwo(this->numGaussians + 64 * 16 * this->getNumTiles());
 
 	// Gaussians list SBO for sorting
 	std::vector<GaussianSortData> sortData(this->numSortElements); // Dummy data

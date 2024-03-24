@@ -98,11 +98,11 @@ void main()
 		return;
 
 	vec4 viewSpacePos = ubo.viewMat * vec4(gaussiansBuffer.gaussians[threadIndex].position.xyz, 1.0f);
-	/*vec4 ndcPos = ubo.projMat * viewSpacePos;
-	ndcPos.xyz /= ndcPos.w;*/
+	vec4 ndcPos = ubo.projMat * viewSpacePos;
+	ndcPos.xyz /= ndcPos.w;
 
-	// "Frustum culling"
-	if(-viewSpacePos.z <= pc.clipPlanes.x /*|| abs(ndcPos.x) > 1.3f || abs(ndcPos.y) > 1.3f*/)
+	// Non-conservative frustum culling
+	if(-viewSpacePos.z <= pc.clipPlanes.x || abs(ndcPos.x) > CULLING_NDC_LIMIT || abs(ndcPos.y) > CULLING_NDC_LIMIT)
 		return;
 
 	// Depth key
