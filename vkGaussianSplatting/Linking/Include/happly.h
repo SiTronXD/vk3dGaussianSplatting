@@ -208,67 +208,6 @@ public:
   virtual std::string propertyTypeName() = 0;
 };
 
-namespace {
-
-/**
- * Check if the platform is little endian.
- * (not foolproof, but will work on most platforms)
- *
- * @return true if little endian
- */
-bool isLittleEndian() {
-  int32_t oneVal = 0x1;
-  char* numPtr = (char*)&oneVal;
-  return (numPtr[0] == 1);
-}
-
-/**
- * Swap endianness.
- *
- * @param value Value to swap.
- *
- * @return Swapped value.
- */
-template <typename T>
-T swapEndian(T val) {
-  char* bytes = reinterpret_cast<char*>(&val);
-  for (unsigned int i = 0; i < sizeof(val) / 2; i++) {
-    std::swap(bytes[sizeof(val) - 1 - i], bytes[i]);
-  }
-  return val;
-}
-
-// The following specializations for single-byte types are used to avoid compiler warnings.
-template <> int8_t swapEndian<int8_t>(int8_t val) { return val; }
-template <> uint8_t swapEndian<uint8_t>(uint8_t val) { return val; }
-
-
-// Unpack flattened list from the convention used in TypedListProperty
-template <typename T>
-std::vector<std::vector<T>> unflattenList(const std::vector<T>& flatList, const std::vector<size_t> flatListStarts) {
-  size_t outerCount = flatListStarts.size() - 1;
-
-  // Put the output here
-  std::vector<std::vector<T>> outLists(outerCount);
-
-  if (outerCount == 0) {
-    return outLists; // quick out for empty
-  }
-
-  // Copy each sublist
-  for (size_t iOuter = 0; iOuter < outerCount; iOuter++) {
-    size_t iFlatStart = flatListStarts[iOuter];
-    size_t iFlatEnd = flatListStarts[iOuter + 1];
-    outLists[iOuter].insert(outLists[iOuter].begin(), flatList.begin() + iFlatStart, flatList.begin() + iFlatEnd);
-  }
-
-  return outLists;
-}
-
-
-}; // namespace
-
-
 /**
  * @brief A property which takes a single value (not a list).
  */
@@ -307,7 +246,7 @@ public:
    *
    * @param capacity Expected number of elements.
    */
-  virtual void reserve(size_t capacity) override { data.reserve(capacity); }
+  virtual void reserve(size_t capacity) override;
 
   /**
    * @brief (ASCII reading) Parse out the next value of this property from a list of tokens.
@@ -315,35 +254,21 @@ public:
    * @param tokens The list of property tokens for the element.
    * @param currEntry Index in to tokens, updated after this property is read.
    */
-  virtual void parseNext(const std::vector<std::string>& tokens, size_t& currEntry) override {
-    data.emplace_back();
-    std::istringstream iss(tokens[currEntry]);
-    typename SerializeType<T>::type tmp; // usually the same type as T
-    iss >> tmp;
-    data.back() = tmp;
-    currEntry++;
-  };
+  virtual void parseNext(const std::vector<std::string>& tokens, size_t& currEntry) override;
 
   /**
    * @brief (binary reading) Copy the next value of this property from a stream of bits.
    *
    * @param stream Stream to read from.
    */
-  virtual void readNext(std::istream& stream) override {
-    data.emplace_back();
-    stream.read((char*)&data.back(), sizeof(T));
-  }
+  virtual void readNext(std::istream& stream) override;
 
   /**
    * @brief (binary reading) Copy the next value of this property from a stream of bits.
    *
    * @param stream Stream to read from.
    */
-  virtual void readNextBigEndian(std::istream& stream) override {
-    data.emplace_back();
-    stream.read((char*)&data.back(), sizeof(T));
-    data.back() = swapEndian(data.back());
-  }
+  virtual void readNextBigEndian(std::istream& stream) override;
 
   /**
    * @brief (reading) Write a header entry for this property.
@@ -381,10 +306,7 @@ public:
    * @param outStream Stream to write to.
    * @param iElement index of the element to write.
    */
-  virtual void writeDataBinaryBigEndian(std::ostream& outStream, size_t iElement) override {
-    auto value = swapEndian(data[iElement]);
-    outStream.write((char*)&value, sizeof(T));
-  }
+  virtual void writeDataBinaryBigEndian(std::ostream& outStream, size_t iElement) override;
 
   /**
    * @brief Number of element entries for this property
@@ -456,10 +378,7 @@ public:
    *
    * @param capacity Expected number of elements.
    */
-  virtual void reserve(size_t capacity) override {
-    flattenedData.reserve(3 * capacity); // optimize for triangle meshes
-    flattenedIndexStart.reserve(capacity + 1);
-  }
+  virtual void reserve(size_t capacity) override;
 
   /**
    * @brief (ASCII reading) Parse out the next value of this property from a list of tokens.
@@ -467,79 +386,21 @@ public:
    * @param tokens The list of property tokens for the element.
    * @param currEntry Index in to tokens, updated after this property is read.
    */
-  virtual void parseNext(const std::vector<std::string>& tokens, size_t& currEntry) override {
-
-    std::istringstream iss(tokens[currEntry]);
-    size_t count;
-    iss >> count;
-    currEntry++;
-
-    size_t currSize = flattenedData.size();
-    size_t afterSize = currSize + count;
-    flattenedData.resize(afterSize);
-    for (size_t iFlat = currSize; iFlat < afterSize; iFlat++) {
-      std::istringstream iss(tokens[currEntry]);
-      typename SerializeType<T>::type tmp; // usually the same type as T
-      iss >> tmp;
-      flattenedData[iFlat] = tmp;
-      currEntry++;
-    }
-    flattenedIndexStart.emplace_back(afterSize);
-  }
+  virtual void parseNext(const std::vector<std::string>& tokens, size_t& currEntry) override;
 
   /**
    * @brief (binary reading) Copy the next value of this property from a stream of bits.
    *
    * @param stream Stream to read from.
    */
-  virtual void readNext(std::istream& stream) override {
-
-    // Read the size of the list
-    size_t count = 0;
-    stream.read(((char*)&count), listCountBytes);
-
-    // Read list elements
-    size_t currSize = flattenedData.size();
-    size_t afterSize = currSize + count;
-    flattenedData.resize(afterSize);
-    if (count > 0) {
-      stream.read((char*)&flattenedData[currSize], count * sizeof(T));
-    }
-    flattenedIndexStart.emplace_back(afterSize);
-  }
+  virtual void readNext(std::istream& stream) override;
 
   /**
    * @brief (binary reading) Copy the next value of this property from a stream of bits.
    *
    * @param stream Stream to read from.
    */
-  virtual void readNextBigEndian(std::istream& stream) override {
-
-    // Read the size of the list
-    size_t count = 0;
-    stream.read(((char*)&count), listCountBytes);
-    if (listCountBytes == 8) {
-      count = (size_t)swapEndian((uint64_t)count);
-    } else if (listCountBytes == 4) {
-      count = (size_t)swapEndian((uint32_t)count);
-    } else if (listCountBytes == 2) {
-      count = (size_t)swapEndian((uint16_t)count);
-    }
-
-    // Read list elements
-    size_t currSize = flattenedData.size();
-    size_t afterSize = currSize + count;
-    flattenedData.resize(afterSize);
-    if (count > 0) {
-      stream.read((char*)&flattenedData[currSize], count * sizeof(T));
-    }
-    flattenedIndexStart.emplace_back(afterSize);
-
-    // Swap endian order of list elements
-    for (size_t iFlat = currSize; iFlat < afterSize; iFlat++) {
-      flattenedData[iFlat] = swapEndian(flattenedData[iFlat]);
-    }
-  }
+  virtual void readNextBigEndian(std::istream& stream) override;
 
   /**
    * @brief (reading) Write a header entry for this property. Note that we already use "uchar" for the list count type.
@@ -603,24 +464,7 @@ public:
    * @param outStream Stream to write to.
    * @param iElement index of the element to write.
    */
-  virtual void writeDataBinaryBigEndian(std::ostream& outStream, size_t iElement) override {
-    size_t dataStart = flattenedIndexStart[iElement];
-    size_t dataEnd = flattenedIndexStart[iElement + 1];
-
-    // Get the number of list elements as a uchar, and ensure the value fits
-    size_t dataCount = dataEnd - dataStart;
-    if (dataCount > std::numeric_limits<uint8_t>::max()) {
-      throw std::runtime_error(
-          "List property has an element with more entries than fit in a uchar. See note in README.");
-    }
-    uint8_t count = static_cast<uint8_t>(dataCount);
-
-    outStream.write((char*)&count, sizeof(uint8_t));
-    for (size_t iFlat = dataStart; iFlat < dataEnd; iFlat++) {
-      T value = swapEndian(flattenedData[iFlat]);
-      outStream.write((char*)&value, sizeof(T));
-    }
-  }
+  virtual void writeDataBinaryBigEndian(std::ostream& outStream, size_t iElement) override;
 
   /**
    * @brief Number of element entries for this property
@@ -1230,45 +1074,6 @@ public:
   }
 };
 
-
-// Some string helpers
-namespace {
-
-inline std::string trimSpaces(const std::string& input) {
-  size_t start = 0;
-  while (start < input.size() && input[start] == ' ') start++;
-  size_t end = input.size();
-  while (end > start && (input[end - 1] == ' ' || input[end - 1] == '\n' || input[end - 1] == '\r')) end--;
-  return input.substr(start, end - start);
-}
-
-inline std::vector<std::string> tokenSplit(const std::string& input) {
-  std::vector<std::string> result;
-  size_t curr = 0;
-  size_t found = 0;
-  while ((found = input.find_first_of(' ', curr)) != std::string::npos) {
-    std::string token = input.substr(curr, found - curr);
-    token = trimSpaces(token);
-    if (token.size() > 0) {
-      result.push_back(token);
-    }
-    curr = found + 1;
-  }
-  std::string token = input.substr(curr);
-  token = trimSpaces(token);
-  if (token.size() > 0) {
-    result.push_back(token);
-  }
-
-  return result;
-}
-
-inline bool startsWith(const std::string& input, const std::string& query) {
-  return input.compare(0, query.length(), query) == 0;
-}
-}; // namespace
-
-
 /**
  * @brief Primary class; represents a set of data in the .ply format.
  */
@@ -1286,27 +1091,7 @@ public:
    * @param filename The file to read from.
    * @param verbose If true, print useful info about the file to stdout
    */
-  PLYData(const std::string& filename, bool verbose = false) {
-
-    using std::cout;
-    using std::endl;
-    using std::string;
-    using std::vector;
-
-    if (verbose) cout << "PLY parser: Reading ply file: " << filename << endl;
-
-    // Open a file in binary always, in case it turns out to have binary data.
-    std::ifstream inStream(filename, std::ios::binary);
-    if (inStream.fail()) {
-      throw std::runtime_error("PLY parser: Could not open file " + filename);
-    }
-
-    parsePLY(inStream, verbose);
-
-    if (verbose) {
-      cout << "  - Finished parsing file." << endl;
-    }
-  }
+  PLYData(const std::string& filename, bool verbose = false);
 
   /**
    * @brief Initialize a PLYData by reading from a stringstream. Throws if any failures occur.
@@ -1677,25 +1462,7 @@ private:
    * @param inStream
    * @param verbose
    */
-  void parsePLY(std::istream& inStream, bool verbose) {
-
-    // == Process the header
-    parseHeader(inStream, verbose);
-
-
-    // === Parse data from a binary file
-    if (inputDataFormat == DataFormat::Binary) {
-      parseBinary(inStream, verbose);
-    }
-    // === Parse data from an binary file
-    else if (inputDataFormat == DataFormat::BinaryBigEndian) {
-      parseBinaryBigEndian(inStream, verbose);
-    }
-    // === Parse data from an ASCII file
-    else if (inputDataFormat == DataFormat::ASCII) {
-      parseASCII(inStream, verbose);
-    }
-  }
+  void parsePLY(std::istream& inStream, bool verbose);
 
   /**
    * @brief Read the header for a file
@@ -1703,127 +1470,7 @@ private:
    * @param inStream
    * @param verbose
    */
-  void parseHeader(std::istream& inStream, bool verbose) {
-
-    using std::cout;
-    using std::endl;
-    using std::string;
-    using std::vector;
-
-    // First two lines are predetermined
-    { // First line is magic constant
-      string plyLine;
-      std::getline(inStream, plyLine);
-      if (trimSpaces(plyLine) != "ply") {
-        throw std::runtime_error("PLY parser: File does not appear to be ply file. First line should be 'ply'");
-      }
-    }
-
-    { // second line is version
-      string styleLine;
-      std::getline(inStream, styleLine);
-      vector<string> tokens = tokenSplit(styleLine);
-      if (tokens.size() != 3) throw std::runtime_error("PLY parser: bad format line");
-      std::string formatStr = tokens[0];
-      std::string typeStr = tokens[1];
-      std::string versionStr = tokens[2];
-
-      // "format"
-      if (formatStr != "format") throw std::runtime_error("PLY parser: bad format line");
-
-      // ascii/binary
-      if (typeStr == "ascii") {
-        inputDataFormat = DataFormat::ASCII;
-        if (verbose) cout << "  - Type: ascii" << endl;
-      } else if (typeStr == "binary_little_endian") {
-        inputDataFormat = DataFormat::Binary;
-        if (verbose) cout << "  - Type: binary" << endl;
-      } else if (typeStr == "binary_big_endian") {
-        inputDataFormat = DataFormat::BinaryBigEndian;
-        if (verbose) cout << "  - Type: binary big endian" << endl;
-      } else {
-        throw std::runtime_error("PLY parser: bad format line");
-      }
-
-      // version
-      if (versionStr != "1.0") {
-        throw std::runtime_error("PLY parser: encountered file with version != 1.0. Don't know how to parse that");
-      }
-      if (verbose) cout << "  - Version: " << versionStr << endl;
-    }
-
-    // Consume header line by line
-    while (inStream.good()) {
-      string line;
-      std::getline(inStream, line);
-
-      // Parse a comment
-      if (startsWith(line, "comment")) {
-        string comment = line.substr(8);
-        if (verbose) cout << "  - Comment: " << comment << endl;
-        comments.push_back(comment);
-        continue;
-      }
-
-      // Parse an obj_info comment
-      if (startsWith(line, "obj_info")) {
-        string infoComment = line.substr(9);
-        if (verbose) cout << "  - obj_info: " << infoComment << endl;
-        objInfoComments.push_back(infoComment);
-        continue;
-      }
-
-      // Parse an element
-      else if (startsWith(line, "element")) {
-        vector<string> tokens = tokenSplit(line);
-        if (tokens.size() != 3) throw std::runtime_error("PLY parser: Invalid element line");
-        string name = tokens[1];
-        size_t count;
-        std::istringstream iss(tokens[2]);
-        iss >> count;
-        elements.emplace_back(name, count);
-        if (verbose) cout << "  - Found element: " << name << " (count = " << count << ")" << endl;
-        continue;
-      }
-
-      // Parse a property list
-      else if (startsWith(line, "property list")) {
-        vector<string> tokens = tokenSplit(line);
-        if (tokens.size() != 5) throw std::runtime_error("PLY parser: Invalid property list line");
-        if (elements.size() == 0) throw std::runtime_error("PLY parser: Found property list without previous element");
-        string countType = tokens[2];
-        string type = tokens[3];
-        string name = tokens[4];
-        elements.back().properties.push_back(createPropertyWithType(name, type, true, countType));
-        if (verbose)
-          cout << "    - Found list property: " << name << " (count type = " << countType << ", data type = " << type
-               << ")" << endl;
-        continue;
-      }
-
-      // Parse a property
-      else if (startsWith(line, "property")) {
-        vector<string> tokens = tokenSplit(line);
-        if (tokens.size() != 3) throw std::runtime_error("PLY parser: Invalid property line");
-        if (elements.size() == 0) throw std::runtime_error("PLY parser: Found property without previous element");
-        string type = tokens[1];
-        string name = tokens[2];
-        elements.back().properties.push_back(createPropertyWithType(name, type, false, ""));
-        if (verbose) cout << "    - Found property: " << name << " (type = " << type << ")" << endl;
-        continue;
-      }
-
-      // Parse end of header
-      else if (startsWith(line, "end_header")) {
-        break;
-      }
-
-      // Error!
-      else {
-        throw std::runtime_error("Unrecognized header line: " + line);
-      }
-    }
-  }
+  void parseHeader(std::istream& inStream, bool verbose);
 
   /**
    * @brief Read the actual data for a file, in ASCII
@@ -1831,42 +1478,7 @@ private:
    * @param inStream
    * @param verbose
    */
-  void parseASCII(std::istream& inStream, bool verbose) {
-
-    using std::string;
-    using std::vector;
-
-    // Read all elements
-    for (Element& elem : elements) {
-
-      if (verbose) {
-        std::cout << "  - Processing element: " << elem.name << std::endl;
-      }
-
-      for (size_t iP = 0; iP < elem.properties.size(); iP++) {
-        elem.properties[iP]->reserve(elem.count);
-      }
-      for (size_t iEntry = 0; iEntry < elem.count; iEntry++) {
-
-        string line;
-        std::getline(inStream, line);
-
-        // Some .ply files seem to include empty lines before the start of property data (though this is not specified
-        // in the format description). We attempt to recover and parse such files by skipping any empty lines.
-        if (!elem.properties.empty()) { // if the element has no properties, the line _should_ be blank, presumably
-          while (line.empty()) { // skip lines until we hit something nonempty
-            std::getline(inStream, line);
-          }
-        }
-
-        vector<string> tokens = tokenSplit(line);
-        size_t iTok = 0;
-        for (size_t iP = 0; iP < elem.properties.size(); iP++) {
-          elem.properties[iP]->parseNext(tokens, iTok);
-        }
-      }
-    }
-  }
+  void parseASCII(std::istream& inStream, bool verbose);
 
   /**
    * @brief Read the actual data for a file, in binary.
@@ -1874,32 +1486,7 @@ private:
    * @param inStream
    * @param verbose
    */
-  void parseBinary(std::istream& inStream, bool verbose) {
-
-    if (!isLittleEndian()) {
-      throw std::runtime_error("binary reading assumes little endian system");
-    }
-
-    using std::string;
-    using std::vector;
-
-    // Read all elements
-    for (Element& elem : elements) {
-
-      if (verbose) {
-        std::cout << "  - Processing element: " << elem.name << std::endl;
-      }
-
-      for (size_t iP = 0; iP < elem.properties.size(); iP++) {
-        elem.properties[iP]->reserve(elem.count);
-      }
-      for (size_t iEntry = 0; iEntry < elem.count; iEntry++) {
-        for (size_t iP = 0; iP < elem.properties.size(); iP++) {
-          elem.properties[iP]->readNext(inStream);
-        }
-      }
-    }
-  }
+  void parseBinary(std::istream& inStream, bool verbose);
 
   /**
    * @brief Read the actual data for a file, in binary.
@@ -1907,32 +1494,7 @@ private:
    * @param inStream
    * @param verbose
    */
-  void parseBinaryBigEndian(std::istream& inStream, bool verbose) {
-
-    if (!isLittleEndian()) {
-      throw std::runtime_error("binary reading assumes little endian system");
-    }
-
-    using std::string;
-    using std::vector;
-
-    // Read all elements
-    for (Element& elem : elements) {
-
-      if (verbose) {
-        std::cout << "  - Processing element: " << elem.name << std::endl;
-      }
-
-      for (size_t iP = 0; iP < elem.properties.size(); iP++) {
-        elem.properties[iP]->reserve(elem.count);
-      }
-      for (size_t iEntry = 0; iEntry < elem.count; iEntry++) {
-        for (size_t iP = 0; iP < elem.properties.size(); iP++) {
-          elem.properties[iP]->readNextBigEndian(inStream);
-        }
-      }
-    }
-  }
+  void parseBinaryBigEndian(std::istream& inStream, bool verbose);
 
   // === Writing ===
 
@@ -1942,27 +1504,7 @@ private:
    *
    * @param outStream
    */
-  void writePLY(std::ostream& outStream) {
-
-    writeHeader(outStream);
-
-    // Write all elements
-    for (Element& e : elements) {
-      if (outputDataFormat == DataFormat::Binary) {
-        if (!isLittleEndian()) {
-          throw std::runtime_error("binary writing assumes little endian system");
-        }
-        e.writeDataBinary(outStream);
-      } else if (outputDataFormat == DataFormat::BinaryBigEndian) {
-        if (!isLittleEndian()) {
-          throw std::runtime_error("binary writing assumes little endian system");
-        }
-        e.writeDataBinaryBigEndian(outStream);
-      } else if (outputDataFormat == DataFormat::ASCII) {
-        e.writeDataASCII(outStream);
-      }
-    }
-  }
+  void writePLY(std::ostream& outStream);
 
 
   /**
