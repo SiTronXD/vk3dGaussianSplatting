@@ -281,6 +281,8 @@ void ResourceManager::loadGaussians(const std::string& filePath)
 
 		gOpacities.erase(gOpacities.begin() + randomIndex);
 	}*/
+	glm::vec3 minPos(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
+	glm::vec3 maxPos(std::numeric_limits<float>::min(), std::numeric_limits<float>::min(), std::numeric_limits<float>::min());
 	for (uint32_t i = 0; i < numGaussians; ++i)
 	{
 		GaussianData& gaussian = this->gaussians[i];
@@ -318,5 +320,28 @@ void ResourceManager::loadGaussians(const std::string& filePath)
 			0.5f + gFeature2[i] * 0.28209479177387814f, // TODO: evaluate SH in shader
 			(1.0f / (1.0f + std::exp(-gOpacities[i])))
 		);
+
+		maxPos.x = std::max(maxPos.x, gaussian.position.x);
+		maxPos.y = std::max(maxPos.y, gaussian.position.y);
+		maxPos.z = std::max(maxPos.z, gaussian.position.z);
+
+		minPos.x = std::min(minPos.x, gaussian.position.x);
+		minPos.y = std::min(minPos.y, gaussian.position.y);
+		minPos.z = std::min(minPos.z, gaussian.position.z);
 	}
+	const glm::vec3 deltaMinMax = maxPos - minPos;
+	const uint32_t mortonSpaceSize = (1 << 10) - 1;
+
+	// Sort gaussians to be more cache coherent
+	std::sort(
+		std::begin(this->gaussians), 
+		std::end(this->gaussians), 
+		[&](const GaussianData& a, const GaussianData& b) 
+		{
+			const glm::vec3 mortonSpacePosA = (glm::vec3(a.position) - minPos) / deltaMinMax * (float) mortonSpaceSize;
+			const glm::vec3 mortonSpacePosB = (glm::vec3(b.position) - minPos) / deltaMinMax * (float) mortonSpaceSize;
+
+			return SMath::encodeZorderCurve(glm::uvec3(mortonSpacePosA)) < SMath::encodeZorderCurve(glm::uvec3(mortonSpacePosB));
+		}
+	);
 }
