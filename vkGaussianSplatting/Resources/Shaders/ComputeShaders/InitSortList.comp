@@ -115,7 +115,9 @@ void main()
 	);
 	uvec4 gExtents = getGaussianTileExtents(threadIndex, viewSpacePos, gridSize);
 	
-	// Add sort element per gaussian per overlapped tile
+	// Add 1 element per gaussian per overlapped tile, which are then sorted in subsequent passes
+	uint numElemsToAdd = (gExtents.z - gExtents.x) * (gExtents.w - gExtents.y);
+	uint idOffset = atomicAdd(cullData.data.numGaussiansToRender.x, numElemsToAdd);
 	for(uint y = gExtents.y; y < gExtents.w; ++y)
 	{
 		for(uint x = gExtents.x; x < gExtents.z; ++x)
@@ -125,7 +127,8 @@ void main()
 
 			// Add gaussian to list
 			// TODO: fix for overflow
-			uint id = atomicAdd(cullData.data.numGaussiansToRender.x, 1u);
+			uint idLocal = (y - gExtents.y) * (gExtents.z - gExtents.x) + (x - gExtents.x);
+			uint id = idOffset + idLocal;
 			if(id < cullData.data.numGaussiansToRender.y) // Temporary solution to avoid overflow
 			{
 				listBuffer.sortData[id].data.x = tileKey;
