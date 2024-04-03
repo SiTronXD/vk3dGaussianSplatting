@@ -17,7 +17,7 @@ layout(binding = 0) uniform CamUBO
 } ubo;
 
 // SBO
-layout(binding = 1) readonly buffer GaussiansBuffer
+layout(binding = 1) buffer GaussiansBuffer
 {
 	GaussianData gaussians[];
 } gaussiansBuffer;
@@ -43,18 +43,8 @@ layout(push_constant) uniform PushConstantData
 
 // Get extents uvec4(minX, minY, maxX, maxY), including min, excluding max
 // (to avoid adding gaussians beyond screen edges)
-uvec4 getGaussianTileExtents(uint threadIndex, vec4 gPosV, ivec2 gridSize)
+uvec4 getGaussianTileExtents(uint threadIndex, vec4 gPosV, ivec2 gridSize, vec3 cov, float width, float height)
 {
-	const float width = float(pc.resolution.x);
-	const float height = float(pc.resolution.y);
-	vec3 cov = getCovarianceMatrix(
-		width, 
-		height, 
-		gaussiansBuffer.gaussians[threadIndex].scale.xyz, 
-		gaussiansBuffer.gaussians[threadIndex].rot.xyzw,
-		gPosV, 
-		ubo.viewMat
-	);
 	float det = (cov.x * cov.z - cov.y * cov.y);
 
 	// Eigenvalues of covariance matrix corresponds to the gaussian's extents.
@@ -113,8 +103,21 @@ void main()
 		(int(pc.resolution.x) + TILE_SIZE - 1) / TILE_SIZE,
 		(int(pc.resolution.y) + TILE_SIZE - 1) / TILE_SIZE
 	);
-	uvec4 gExtents = getGaussianTileExtents(threadIndex, viewSpacePos, gridSize);
+	const float width = float(pc.resolution.x);
+	const float height = float(pc.resolution.y);
+	vec3 cov = getCovarianceMatrix(
+		width, 
+		height, 
+		gaussiansBuffer.gaussians[threadIndex].scale.xyz, 
+		gaussiansBuffer.gaussians[threadIndex].rot.xyzw,
+		viewSpacePos,
+		ubo.viewMat
+	);
+	uvec4 gExtents = getGaussianTileExtents(threadIndex, viewSpacePos, gridSize, cov, width, height);
 	
+	// Store symmetric covariance matrix
+	gaussiansBuffer.gaussians[threadIndex].covariance.xyz = cov;
+
 	// Add 1 element per gaussian per overlapped tile, which are then sorted in subsequent passes
 	uint numElemsToAdd = (gExtents.z - gExtents.x) * (gExtents.w - gExtents.y);
 	uint idOffset = atomicAdd(cullData.data.numGaussiansToRender.x, numElemsToAdd);

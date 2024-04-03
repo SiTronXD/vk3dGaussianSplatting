@@ -179,13 +179,32 @@ void Renderer::computeSortGaussiansBMS(CommandBuffer& commandBuffer, uint32_t nu
 	// Make sure number of elements is large enough
 	assert(numElemToSort >= BMS_WORK_GROUP_SIZE * 2);
 
+	// Wait for work on initialization of the sorting list to finish
+	std::array<VkBufferMemoryBarrier2, 2> initBufferBarriers =
+	{
+		// Gaussians sort list
+		PipelineBarrier::bufferMemoryBarrier2(
+			VK_ACCESS_SHADER_WRITE_BIT,
+			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			this->gaussiansSortListSBO->getVkBuffer(),
+			this->gaussiansSortListSBO->getBufferSize()
+		),
+
+		// Gaussians
+		PipelineBarrier::bufferMemoryBarrier2(
+			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+			VK_ACCESS_SHADER_READ_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			this->gaussiansSBO.getVkBuffer(),
+			this->gaussiansSBO.getBufferSize()
+		)
+	};
 	commandBuffer.bufferMemoryBarrier(
-		VK_ACCESS_SHADER_WRITE_BIT,
-		VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
-		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-		this->gaussiansSortListSBO->getVkBuffer(),
-		this->gaussiansSortListSBO->getBufferSize()
+		initBufferBarriers.data(),
+		(uint32_t) initBufferBarriers.size()
 	);
 
 	// Compute pipeline
@@ -268,7 +287,7 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer)
 	assert(RS_WORK_GROUP_SIZE >= RS_BIN_COUNT);
 
 	// Wait for work on initialization of the sorting list to finish
-	std::array<VkBufferMemoryBarrier2, 3> initBufferBarriers =
+	std::array<VkBufferMemoryBarrier2, 4> initBufferBarriers =
 	{
 		// Gaussians sort list
 		PipelineBarrier::bufferMemoryBarrier2(
@@ -278,6 +297,16 @@ void Renderer::computeSortGaussiansRS(CommandBuffer& commandBuffer)
 			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 			this->gaussiansSortListSBO->getVkBuffer(),
 			this->gaussiansSortListSBO->getBufferSize()
+		),
+
+		// Gaussians
+		PipelineBarrier::bufferMemoryBarrier2(
+			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+			VK_ACCESS_SHADER_READ_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			this->gaussiansSBO.getVkBuffer(),
+			this->gaussiansSBO.getBufferSize()
 		),
 
 		// Gaussians cull data

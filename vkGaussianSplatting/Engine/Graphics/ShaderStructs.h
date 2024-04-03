@@ -60,7 +60,8 @@ struct GaussianData
 	glm::vec4 position; // vec4(x, y, z, 0.0f)
 	glm::vec4 scale; // vec4(x, y, z, 0.0f)
 	glm::vec4 rot = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-	glm::vec4 color; // TODO: remove once SH are implemented
+	glm::vec4 color; // vec4(r, g, b, alpha)
+	glm::vec4 covariance; // vec4(cov.x, cov.y, cov.z, 0.0f)
 };
 
 struct GaussianSortData

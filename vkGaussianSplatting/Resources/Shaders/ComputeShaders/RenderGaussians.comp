@@ -74,20 +74,20 @@ void main()
 		// Gaussian	data
 		vec4 gColorAlpha = gaussiansBuffer.gaussians[gaussianIndex].color.xyzw;
 		float gAlpha = gColorAlpha.w;
-		vec3 gColor = gColorAlpha.xyz; // TODO: should eventually use SH
+		vec3 gColor = gColorAlpha.xyz;
 		vec3 gScale = gaussiansBuffer.gaussians[gaussianIndex].scale.xyz;
 		vec4 gRot = gaussiansBuffer.gaussians[gaussianIndex].rot.xyzw;
+		vec3 gCov = gaussiansBuffer.gaussians[gaussianIndex].covariance.xyz;
 		vec3 gPosW = gaussiansBuffer.gaussians[gaussianIndex].position.xyz;
 		vec4 gPosV = viewMat * vec4(gPosW, 1.0f);
 
 		{
-			vec3 cov = getCovarianceMatrix(width, height, gScale, gRot, gPosV, viewMat);
-			float det = (cov.x * cov.z - cov.y * cov.y);
+			float det = (gCov.x * gCov.z - gCov.y * gCov.y);
 
 			if(det != 0.0f)
 			{
 				float det_inv = 1.f / det;
-				vec3 covInv = vec3(cov.z * det_inv, -cov.y * det_inv, cov.x * det_inv);
+				vec3 covInv = vec3(gCov.z * det_inv, -gCov.y * det_inv, gCov.x * det_inv);
 			
 				// Screen space position
 				vec4 gaussianPosScreen = getScreenSpacePosition(width, height, gPosV, ubo.projMat);

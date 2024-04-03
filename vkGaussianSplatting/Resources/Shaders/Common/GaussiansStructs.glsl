@@ -5,6 +5,7 @@ struct GaussianData
 	vec4 scale;
 	vec4 rot;
 	vec4 color;
+	vec4 covariance;
 };
 
 // Data for sorting per gaussian
