@@ -5,7 +5,11 @@
 #include "../Common/Common.glsl"
 #include "../Common/GaussiansStructs.glsl"
 
-layout (local_size_x = 16, local_size_y = 16) in;
+#define GROUP_SIZE_X 16
+#define GROUP_SIZE_Y 16
+#define ENTIRE_GROUP_SIZE (GROUP_SIZE_X * GROUP_SIZE_Y)
+
+layout (local_size_x = GROUP_SIZE_X, local_size_y = GROUP_SIZE_Y) in;
 
 // SBO
 layout(binding = 0) readonly buffer GaussiansBuffer
@@ -40,14 +44,20 @@ layout(push_constant) uniform PushConstantData
 	uvec4 resolution;
 } pc;
 
+struct SharedGaussianData
+{
+	vec2 gScreenPos;
+	vec4 gColorAlpha;
+	vec3 gCovInv;
+};
+
+shared SharedGaussianData sharedGaussianData[ENTIRE_GROUP_SIZE];
+
 void main()
 {
 	uvec2 threadIndex = gl_GlobalInvocationID.xy;
+	uint localIndex = gl_LocalInvocationID.x + gl_LocalInvocationID.y * GROUP_SIZE_X;
 	uvec2 res = pc.resolution.xy;
-
-	// Make sure compute work is within bounds
-	if(threadIndex.x >= res.x || threadIndex.y >= res.y)
-		return;
 
 	// UVs
 	float width = float(res.x);
@@ -67,58 +77,72 @@ void main()
 	uvec2 tileRange = rangesBuffer.rangeData[tileIndex].range.xy;
 
 	// Loop through gaussians and render them
-	for(uint i = tileRange.x; i < tileRange.y; ++i)
+	for(uint i = tileRange.x; i < tileRange.y; i += ENTIRE_GROUP_SIZE)
 	{
-		uint gaussianIndex = listBuffer.sortData[i].data.z;
-
 		// Gaussian	data
-		vec4 gColorAlpha = gaussiansBuffer.gaussians[gaussianIndex].color.xyzw;
-		float gAlpha = gColorAlpha.w;
-		vec3 gColor = gColorAlpha.xyz;
-		vec3 gScale = gaussiansBuffer.gaussians[gaussianIndex].scale.xyz;
-		vec4 gRot = gaussiansBuffer.gaussians[gaussianIndex].rot.xyzw;
-		vec3 gCov = gaussiansBuffer.gaussians[gaussianIndex].covariance.xyz;
-		vec3 gPosW = gaussiansBuffer.gaussians[gaussianIndex].position.xyz;
-		vec4 gPosV = viewMat * vec4(gPosW, 1.0f);
-
+		barrier();
+		uint tempIndex = i + localIndex;
+		if(tempIndex < tileRange.y)
 		{
-			float det = (gCov.x * gCov.z - gCov.y * gCov.y);
+			uint gaussianIndex = listBuffer.sortData[tempIndex].data.z;
+			vec4 gPosV = viewMat * vec4(gaussiansBuffer.gaussians[gaussianIndex].position.xyz, 1.0f);
+			sharedGaussianData[localIndex].gScreenPos = getScreenSpacePosition(width, height, gPosV, ubo.projMat).xy;
+			
+			sharedGaussianData[localIndex].gColorAlpha = gaussiansBuffer.gaussians[gaussianIndex].color.xyzw;
 
+			vec3 gCovInv = vec3(0.0f);
+			vec3 gCov = gaussiansBuffer.gaussians[gaussianIndex].covariance.xyz;
+			float det = (gCov.x * gCov.z - gCov.y * gCov.y);
 			if(det != 0.0f)
 			{
-				float det_inv = 1.f / det;
-				vec3 covInv = vec3(gCov.z * det_inv, -gCov.y * det_inv, gCov.x * det_inv);
-			
-				// Screen space position
-				vec4 gaussianPosScreen = getScreenSpacePosition(width, height, gPosV, ubo.projMat);
-				
-				// x^T * Sigma^(-1) * x
-				vec2 evalX = gaussianPosScreen.xy - vec2(threadIndex);
-				evalX.y = -evalX.y;
-
-				// exp(-0.5f * x^T * Sigma^(-1) * x)
-				float f = -0.5f * (covInv.x * evalX.x * evalX.x + covInv.z * evalX.y * evalX.y) - covInv.y * evalX.x * evalX.y;
-				float alpha = gAlpha * exp(f);
-
-				// Important for precision
-				if(f > 0.0f || alpha < 1.0f / 255.0f)
-					continue;
-				
-				// Apply gaussian
-				color += Ti * alpha * gColor;
-
-				float nextT = Ti * (1.0f - alpha);
-
-				// Important for precision
-				if(nextT < 0.0001f) 
-					break;
-			
-				Ti = nextT;
+				float detInv = 1.0f / det;
+				gCovInv = vec3(gCov.z, -gCov.y, gCov.x) * detInv;
 			}
+			else
+			{
+				sharedGaussianData[localIndex].gColorAlpha.a = 0.0f;
+			}
+
+			sharedGaussianData[localIndex].gCovInv = gCovInv;
+		}
+		barrier();
+
+		uint limit = min(ENTIRE_GROUP_SIZE, tileRange.y - i);
+		for(uint j = 0; j < limit; ++j)
+		{
+			vec2 gScreenPos = sharedGaussianData[j].gScreenPos;
+			vec4 gColorAlpha = sharedGaussianData[j].gColorAlpha;
+			vec3 gCovInv = sharedGaussianData[j].gCovInv;
+
+			// x^T * Sigma^(-1) * x
+			vec2 evalX = gScreenPos - vec2(threadIndex);
+			evalX.y = -evalX.y;
+
+			// exp(-0.5f * x^T * Sigma^(-1) * x)
+			float f = -0.5f * (gCovInv.x * evalX.x * evalX.x + gCovInv.z * evalX.y * evalX.y) - gCovInv.y * evalX.x * evalX.y;
+			float alpha = gColorAlpha.a * exp(f);
+
+			// Important for precision
+			if(f > 0.0f || alpha < 1.0f / 255.0f)
+				continue;
+				
+			// Apply gaussian
+			color += Ti * alpha * gColorAlpha.rgb;
+
+			float nextT = Ti * (1.0f - alpha);
+
+			// Important for precision
+			if(nextT < 0.0001f) 
+				break;
+			
+			Ti = nextT;
 		}
 	}
 
 	// Write color
-	color = clamp(color, vec3(0.0f), vec3(1.0f));
-	imageStore(swapchainImage, ivec2(threadIndex), vec4(color, 1.0f));
+	if(threadIndex.x < res.x && threadIndex.y < res.y)
+	{
+		color = clamp(color, vec3(0.0f), vec3(1.0f));
+		imageStore(swapchainImage, ivec2(threadIndex), vec4(color, 1.0f));
+	}
 }
