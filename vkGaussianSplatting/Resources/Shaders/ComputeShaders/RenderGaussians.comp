@@ -77,6 +77,7 @@ void main()
 	uvec2 tileRange = rangesBuffer.rangeData[tileIndex].range.xy;
 
 	// Loop through gaussians and render them
+	bool done = false;
 	for(uint i = tileRange.x; i < tileRange.y; i += ENTIRE_GROUP_SIZE)
 	{
 		// Gaussian	data
@@ -107,7 +108,7 @@ void main()
 		}
 		barrier();
 
-		uint limit = min(ENTIRE_GROUP_SIZE, tileRange.y - i);
+		uint limit = done ? 0 : min(ENTIRE_GROUP_SIZE, tileRange.y - i);
 		for(uint j = 0; j < limit; ++j)
 		{
 			vec2 gScreenPos = sharedGaussianData[j].gScreenPos;
@@ -132,8 +133,11 @@ void main()
 			float nextT = Ti * (1.0f - alpha);
 
 			// Important for precision
-			if(nextT < 0.0001f) 
+			if(nextT < 0.0001f)
+			{
+				done = true;
 				break;
+			}
 			
 			Ti = nextT;
 		}
