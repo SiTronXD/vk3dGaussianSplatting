@@ -89,7 +89,7 @@ void main()
 			vec4 gPosV = viewMat * vec4(gaussiansBuffer.gaussians[gaussianIndex].position.xyz, 1.0f);
 			sharedGaussianData[localIndex].gScreenPos = getScreenSpacePosition(width, height, gPosV, ubo.projMat).xy;
 			
-			sharedGaussianData[localIndex].gColorAlpha = gaussiansBuffer.gaussians[gaussianIndex].color.xyzw;
+			sharedGaussianData[localIndex].gColorAlpha = gaussiansBuffer.gaussians[gaussianIndex].color.rgba;
 
 			vec3 gCovInv = vec3(0.0f);
 			vec3 gCov = gaussiansBuffer.gaussians[gaussianIndex].covariance.xyz;
