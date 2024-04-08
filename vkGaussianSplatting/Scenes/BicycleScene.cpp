@@ -13,7 +13,7 @@ void BicycleScene::init()
 	
 
 	// Load gaussians from file
-	this->getResourceManager().loadGaussians("C:/DownloadedGaussianAssets/models/bicycle/point_cloud/iteration_7000/point_cloud.ply");
+	this->getResourceManager().loadGaussians("D:/DownloadedAssets/GaussianFiles/bicycle/point_cloud/iteration_7000/point_cloud.ply");
 }
 
 void BicycleScene::update()
