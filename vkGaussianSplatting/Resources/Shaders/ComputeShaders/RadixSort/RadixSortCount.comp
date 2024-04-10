@@ -2,8 +2,8 @@
 
 #extension GL_GOOGLE_include_directive: require
 
-#include "../Common/GaussiansStructs.glsl"
-#include "../Common/CommonRadix.glsl"
+#include "../../Common/GaussiansStructs.glsl"
+#include "../../Common/CommonRadix.glsl"
 
 // Receive work group size as a specialization constant
 layout(constant_id = 0) const uint WORK_GROUP_SIZE = 512u;

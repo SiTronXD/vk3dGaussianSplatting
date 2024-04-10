@@ -2,6 +2,8 @@
 #include "Renderer.h"
 #include "../ResourceManager.h"
 #include "../Dev/StrHelper.h"
+#include "Sort/BitonicMergeSort.h"
+#include "Sort/RadixSort.h"
 
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
@@ -97,139 +99,8 @@ void Renderer::initVulkan()
 		"Resources/Shaders/InitSortList.comp.spv"
 	);
 
-	// Sort gaussians bitonic merge sort compute pipeline
-	this->sortGaussiansBmsPipelineLayout.createPipelineLayout(
-		this->device,
-		{
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
-		},
-		VK_SHADER_STAGE_COMPUTE_BIT,
-		sizeof(SortGaussiansBmsPCD)
-	);
-	this->sortGaussiansBmsPipeline.createComputePipeline(
-		this->device,
-		this->sortGaussiansBmsPipelineLayout,
-		"Resources/Shaders/BitonicMergeSort.comp.spv",
-		{
-			SpecializationConstant{ (void*) Renderer::BMS_WORK_GROUP_SIZE, sizeof(uint32_t)}
-		}
-	);
-
-	// Radix sort compute pipeline (indirect setup)
-	this->radixSortIndirectSetupPipelineLayout.createPipelineLayout(
-		this->device,
-		{
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
-		},
-		VK_SHADER_STAGE_COMPUTE_BIT
-	);
-	this->radixSortIndirectSetupPipeline.createComputePipeline(
-		this->device,
-		this->radixSortIndirectSetupPipelineLayout,
-		"Resources/Shaders/RadixSortIndirectSetup.comp.spv",
-		{
-			SpecializationConstant{ (void*) Renderer::RS_WORK_GROUP_SIZE, sizeof(uint32_t)}
-		}
-	);
-
-	// Radix sort compute pipeline (count)
-	this->radixSortCountPipelineLayout.createPipelineLayout(
-		this->device,
-		{
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
-		},
-		VK_SHADER_STAGE_COMPUTE_BIT,
-		sizeof(SortGaussiansRsPCD)
-	);
-	this->radixSortCountPipeline.createComputePipeline(
-		this->device,
-		this->radixSortCountPipelineLayout,
-		"Resources/Shaders/RadixSortCount.comp.spv",
-		{
-			SpecializationConstant{ (void*)Renderer::RS_WORK_GROUP_SIZE, sizeof(uint32_t)}
-		}
-	);
-
-	// Radix sort compute pipeline (reduce)
-	this->radixSortReducePipelineLayout.createPipelineLayout(
-		this->device,
-		{
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
-		},
-		VK_SHADER_STAGE_COMPUTE_BIT
-	);
-	this->radixSortReducePipeline.createComputePipeline(
-		this->device,
-		this->radixSortReducePipelineLayout,
-		"Resources/Shaders/RadixSortReduce.comp.spv",
-		{
-			SpecializationConstant{ (void*)Renderer::RS_WORK_GROUP_SIZE, sizeof(uint32_t)}
-		}
-	);
-
-	// Radix sort compute pipeline (scan)
-	this->radixSortScanPipelineLayout.createPipelineLayout(
-		this->device,
-		{
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
-		},
-		VK_SHADER_STAGE_COMPUTE_BIT
-	);
-	this->radixSortScanPipeline.createComputePipeline(
-		this->device,
-		this->radixSortScanPipelineLayout,
-		"Resources/Shaders/RadixSortScan.comp.spv",
-		{
-			SpecializationConstant{ (void*)Renderer::RS_SCAN_WORK_GROUP_SIZE, sizeof(uint32_t)}
-		}
-	);
-
-	// Radix sort compute pipeline (scan add)
-	this->radixSortScanAddPipelineLayout.createPipelineLayout(
-		this->device,
-		{
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
-		},
-		VK_SHADER_STAGE_COMPUTE_BIT
-	);
-	this->radixSortScanAddPipeline.createComputePipeline(
-		this->device,
-		this->radixSortScanAddPipelineLayout,
-		"Resources/Shaders/RadixSortScanAdd.comp.spv",
-		{
-			SpecializationConstant{ (void*)Renderer::RS_WORK_GROUP_SIZE, sizeof(uint32_t)}
-		}
-	);
-
-	// Radix sort compute pipeline (scatter)
-	this->radixSortScatterPipelineLayout.createPipelineLayout(
-		this->device,
-		{
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT }
-		},
-		VK_SHADER_STAGE_COMPUTE_BIT,
-		sizeof(SortGaussiansRsPCD)
-	);
-	this->radixSortScatterPipeline.createComputePipeline(
-		this->device,
-		this->radixSortScatterPipelineLayout,
-		"Resources/Shaders/RadixSortScatter.comp.spv",
-		{
-			SpecializationConstant{ (void*)Renderer::RS_WORK_GROUP_SIZE, sizeof(uint32_t)}
-		}
-	);
+	// Init resources specific to a gpu sorting algorithm
+	this->gpuSort->singleInitResources(this->gfxAllocContext);
 
 	// Find ranges compute pipeline
 	this->findRangesPipelineLayout.createPipelineLayout(
@@ -362,10 +233,7 @@ void Renderer::cleanup()
 
 	this->swapchain.cleanup();
 
-	this->radixSortPingPongBuffer->cleanup();
-	this->radixSortReduceBuffer.cleanup();
-	this->radixSortSumTableBuffer.cleanup();
-	this->radixSortIndirectDispatchBuffer.cleanup();
+	this->gpuSort->cleanup();
 
 	this->gaussiansSortListSBO->cleanup();
 	this->gaussiansTileRangesSBO.cleanup();
@@ -387,22 +255,6 @@ void Renderer::cleanup()
 	this->renderGaussiansPipelineLayout.cleanup();
 	this->findRangesPipeline.cleanup();
 	this->findRangesPipelineLayout.cleanup();
-
-	this->radixSortScatterPipelineLayout.cleanup();
-	this->radixSortScatterPipeline.cleanup();
-	this->radixSortScanAddPipelineLayout.cleanup();
-	this->radixSortScanAddPipeline.cleanup();
-	this->radixSortScanPipelineLayout.cleanup();
-	this->radixSortScanPipeline.cleanup();
-	this->radixSortReducePipelineLayout.cleanup();
-	this->radixSortReducePipeline.cleanup();
-	this->radixSortCountPipelineLayout.cleanup();
-	this->radixSortCountPipeline.cleanup();
-	this->radixSortIndirectSetupPipelineLayout.cleanup();
-	this->radixSortIndirectSetupPipeline.cleanup();
-
-	this->sortGaussiansBmsPipeline.cleanup();
-	this->sortGaussiansBmsPipelineLayout.cleanup();
 
 	this->initSortListPipeline.cleanup();
 	this->initSortListPipelineLayout.cleanup();
@@ -727,10 +579,10 @@ void Renderer::recordCommandBuffer(
 	);
 #endif
 
-	this->computeSortGaussians(
-		commandBuffer,
-		this->numSortElements
-	);
+	this->gpuSort->computeSort(
+		commandBuffer, 
+		this->gaussiansCullDataSBO, 
+		this->gaussiansSortListSBO);
 
 #ifdef RECORD_GPU_TIMES
 	commandBuffer.writeTimestamp(
@@ -817,10 +669,15 @@ Renderer::Renderer()
 	avgCpuFrameTimeMs(0.0f),
 #endif
 
+#if GPU_SORT_ALGORITHM == BITONIC_MERGE_SORT
+	gpuSort(std::make_shared<BitonicMergeSort>()),
+#elif GPU_SORT_ALGORITHM == RADIX_SORT
+	gpuSort(std::make_shared<RadixSort>()),
+#endif
+
 	vmaAllocator(nullptr),
 	numGaussians(0),
-	numSortElements(0),
-	radixSortNumSortBits(0)
+	numSortElements(0)
 {
 }
 
@@ -850,17 +707,6 @@ uint32_t Renderer::getCeilPowTwo(uint32_t x) const
 		num *= 2;
 
 	return num;
-}
-
-uint32_t Renderer::getMinNumBits(uint32_t x) const
-{
-	for (int32_t i = 32 - 1; i >= 0; --i)
-	{
-		if (uint32_t(x >> i) & 1)
-			return static_cast<uint32_t>(i + 1);
-	}
-
-	return 0;
 }
 
 void Renderer::initForScene(Scene& scene)
@@ -905,55 +751,8 @@ void Renderer::initForScene(Scene& scene)
 		dummyRangeData.data()
 	);
 
-
-
-	// -------------- Buffers for radix sort --------------
-
-	uint32_t numCountThreadGroups = (this->numSortElements + RS_WORK_GROUP_SIZE - 1) / RS_WORK_GROUP_SIZE;
-	uint32_t numSumElements = numCountThreadGroups * RS_BIN_COUNT;
-	uint32_t numReduceBlocks = (numCountThreadGroups + RS_WORK_GROUP_SIZE - 1) / RS_WORK_GROUP_SIZE;
-	uint32_t numReduceElements = numReduceBlocks * RS_BIN_COUNT;
-
-	// Indirect dispatch buffer
-	RadixIndirectDispatch initIndirectDispatch{};
-	initIndirectDispatch.numSortElements = this->numSortElements;
-	initIndirectDispatch.countSizeX = numCountThreadGroups;
-	initIndirectDispatch.reduceSizeX = numReduceElements;
-	this->radixSortIndirectDispatchBuffer.createGpuBuffer(
-		this->gfxAllocContext,
-		sizeof(RadixIndirectDispatch),
-		&initIndirectDispatch,
-		VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT
-	);
-
-	// Sum table
-	const std::vector<glm::uvec4> dummySumTableData(numSumElements);
-	this->radixSortSumTableBuffer.createGpuBuffer(
-		this->gfxAllocContext,
-		sizeof(dummySumTableData[0]) * dummySumTableData.size(),
-		dummySumTableData.data()
-	);
-
-	// Reduce buffer
-	const std::vector<glm::uvec4> dummyReduceData(numReduceElements);
-	this->radixSortReduceBuffer.createGpuBuffer(
-		this->gfxAllocContext,
-		sizeof(dummyReduceData[0]) * dummyReduceData.size(),
-		dummyReduceData.data()
-	);
-
-	// Ping pong buffer
-	this->radixSortPingPongBuffer = std::make_shared<StorageBuffer>();
-	this->radixSortPingPongBuffer->createGpuBuffer(
-		this->gfxAllocContext,
-		sizeof(sortData[0]) * sortData.size(),
-		sortData.data()
-	);
-
-	// Not all of the highest bits in the sorting keys are utilized, 
-	// meaning that sorting only needs to be done for the lowest bits actually being used.
-	uint32_t sortBits = 32 + this->getMinNumBits(this->getNumTiles() - 1);
-	this->radixSortNumSortBits = uint32_t((sortBits + RS_BITS_PER_PASS - 1) / RS_BITS_PER_PASS) * RS_BITS_PER_PASS;
+	// Init gpu buffers specific to the gaussians within the current scene
+	this->gpuSort->initForScene(this->numSortElements, numTiles);
 }
 
 void Renderer::setWindow(Window& window)

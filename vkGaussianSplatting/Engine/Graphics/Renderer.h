@@ -18,6 +18,7 @@
 #include "Vulkan/QueryPoolArray.h"
 #include "Buffer/UniformBuffer.h"
 #include "Buffer/StorageBuffer.h"
+#include "Sort/GpuSort.h"
 #include "Swapchain.h"
 #include "Camera.h"
 #include "GfxAllocContext.h"
@@ -29,13 +30,7 @@
 class ResourceManager;
 class DescriptorPool;
 
-enum class BmsSubAlgorithm
-{
-	LOCAL_BMS = 0,
-	LOCAL_DISPERSE = 1,
-	BIG_FLIP = 2,
-	BIG_DISPERSE = 3
-};
+#define GPU_SORT_ALGORITHM (RADIX_SORT)
 
 //#define RECORD_GPU_TIMES
 //#define RECORD_CPU_TIMES
@@ -87,24 +82,6 @@ private:
 	PipelineLayout renderGaussiansPipelineLayout;
 	Pipeline renderGaussiansPipeline;
 
-	// Pipeline/layouts for bitonic merge sort
-	PipelineLayout sortGaussiansBmsPipelineLayout;
-	Pipeline sortGaussiansBmsPipeline;
-
-	// Pipeline/layouts for radix sort
-	PipelineLayout radixSortIndirectSetupPipelineLayout;
-	Pipeline radixSortIndirectSetupPipeline;
-	PipelineLayout radixSortCountPipelineLayout;
-	Pipeline radixSortCountPipeline;
-	PipelineLayout radixSortReducePipelineLayout;
-	Pipeline radixSortReducePipeline;
-	PipelineLayout radixSortScanPipelineLayout;
-	Pipeline radixSortScanPipeline;
-	PipelineLayout radixSortScanAddPipelineLayout;
-	Pipeline radixSortScanAddPipeline;
-	PipelineLayout radixSortScatterPipelineLayout;
-	Pipeline radixSortScatterPipeline;
-
 	CommandPool commandPool;
 	CommandPool singleTimeCommandPool;
 	CommandBufferArray commandBuffers;
@@ -125,16 +102,10 @@ private:
 	StorageBuffer gaussiansTileRangesSBO;
 	std::shared_ptr<StorageBuffer> gaussiansSortListSBO;
 
-	// Buffers for radix sort
-	StorageBuffer radixSortIndirectDispatchBuffer;
-	StorageBuffer radixSortSumTableBuffer;
-	StorageBuffer radixSortReduceBuffer;
-	std::shared_ptr<StorageBuffer> radixSortPingPongBuffer;
-	std::shared_ptr<StorageBuffer> tempSwapPingPongBuffer;
+	std::shared_ptr<GpuSort> gpuSort;
 
 	uint32_t numGaussians;
 	uint32_t numSortElements;
-	uint32_t radixSortNumSortBits;
 
 	Window* window;
 	ResourceManager* resourceManager;
@@ -155,22 +126,15 @@ private:
 	void resizeWindow();
 	void cleanupImgui();
 
-	void computeSortGaussiansBMS(CommandBuffer& commandBuffer, uint32_t numElemToSort);
-	void computeSortGaussiansRS(CommandBuffer& commandBuffer);
-
 	void renderImgui(CommandBuffer& commandBuffer, ImDrawData* imguiDrawData, uint32_t imageIndex);
 	void computeInitSortList(CommandBuffer& commandBuffer, const Camera& camera);
-	void computeSortGaussians(CommandBuffer& commandBuffer, uint32_t numElemToSort);
 	void computeRanges(CommandBuffer& commandBuffer);
 	void computeRenderGaussians(CommandBuffer& commandBuffer, uint32_t imageIndex);
-
-	void dispatchBms(CommandBuffer& commandBuffer, BmsSubAlgorithm subAlgorithm, uint32_t h, uint32_t numElemToSort);
 
 	inline float getNewAvgTime(float avgValue, float newValue, float t) const { return (1.0f - t)* avgValue + t * newValue; }
 
 	uint32_t getNumTiles() const;
 	uint32_t getCeilPowTwo(uint32_t x) const;
-	uint32_t getMinNumBits(uint32_t x) const;
 
 	inline const VkDevice& getVkDevice() const { return this->device.getVkDevice(); }
 
@@ -179,13 +143,6 @@ public:
 	const static uint32_t WAIT_ELAPSED_FRAMES_FOR_AVG = 1000;
 
 	const static uint32_t INIT_LIST_WORK_GROUP_SIZE = 32;
-	const static uint32_t BMS_WORK_GROUP_SIZE = 512;
-
-	const static uint32_t RS_BITS_PER_PASS = 4;
-	const static uint32_t RS_BIN_COUNT = 1u << RS_BITS_PER_PASS;
-	const static uint32_t RS_WORK_GROUP_SIZE = 64; // 128 saves 0.5 ms on sorting, but seems to worsen rendering timings by 1 ms (before rendering optimization).
-	const static uint32_t RS_SCAN_WORK_GROUP_SIZE = 1024;
-
 	const static uint32_t TILE_SIZE = 16;
 	const static uint32_t FIND_RANGES_GROUP_SIZE = 16;
 

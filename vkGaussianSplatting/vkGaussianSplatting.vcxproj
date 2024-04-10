@@ -115,6 +115,9 @@
     </CustomBuild>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Engine\Graphics\Sort\BitonicMergeSort.cpp" />
+    <ClCompile Include="Engine\Graphics\Sort\GpuSort.cpp" />
+    <ClCompile Include="Engine\Graphics\Sort\RadixSort.cpp" />
     <ClCompile Include="Scenes\BicycleScene.cpp" />
     <ClCompile Include="Engine\Application\Input.cpp" />
     <ClCompile Include="Engine\Application\Scene.cpp" />
@@ -206,6 +209,9 @@
     <ClCompile Include="Scenes\TestSortScene.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Engine\Graphics\Sort\BitonicMergeSort.h" />
+    <ClInclude Include="Engine\Graphics\Sort\GpuSort.h" />
+    <ClInclude Include="Engine\Graphics\Sort\RadixSort.h" />
     <ClInclude Include="Scenes\BicycleScene.h" />
     <ClInclude Include="Engine\Application\Input.h" />
     <ClInclude Include="Engine\Application\Scene.h" />
@@ -284,7 +290,7 @@
     <CustomBuild Include="Resources\Shaders\ComputeShaders\RenderGaussians.comp">
       <FileType>Document</FileType>
     </CustomBuild>
-    <CustomBuild Include="Resources\Shaders\ComputeShaders\BitonicMergeSort.comp">
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\BitonicMergeSort\BitonicMergeSort.comp">
       <FileType>Document</FileType>
     </CustomBuild>
     <CustomBuild Include="Resources\Shaders\ComputeShaders\InitSortList.comp">
@@ -310,22 +316,22 @@
       </ExcludedFromBuild>
       <FileType>Document</FileType>
     </CustomBuild>
-    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortCount.comp">
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSort\RadixSortCount.comp">
       <FileType>Document</FileType>
     </CustomBuild>
-    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortReduce.comp">
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSort\RadixSortReduce.comp">
       <FileType>Document</FileType>
     </CustomBuild>
-    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortScan.comp">
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSort\RadixSortScan.comp">
       <FileType>Document</FileType>
     </CustomBuild>
-    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortScanAdd.comp">
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSort\RadixSortScanAdd.comp">
       <FileType>Document</FileType>
     </CustomBuild>
-    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortScatter.comp">
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSort\RadixSortScatter.comp">
       <FileType>Document</FileType>
     </CustomBuild>
-    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSortIndirectSetup.comp">
+    <CustomBuild Include="Resources\Shaders\ComputeShaders\RadixSort\RadixSortIndirectSetup.comp">
       <FileType>Document</FileType>
     </CustomBuild>
   </ItemGroup>

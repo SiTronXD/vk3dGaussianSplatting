@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "GpuProperties.h"
 #include "Renderer.h"
+#include "Sort/RadixSort.h"
 
 VkPhysicalDevice* GpuProperties::physicalDevice = nullptr;
 float GpuProperties::maxAnisotropy = 0.0f;
@@ -247,7 +248,7 @@ bool GpuProperties::isPhysicalDeviceSuitable(
 
 	// Assert subgroup size
 	assertFound(
-		subgroupProperties.subgroupSize >= Renderer::RS_BIN_COUNT, 
+		subgroupProperties.subgroupSize >= RadixSort::RS_BIN_COUNT,
 		"GPU has insufficient subgroup size: " + std::to_string(subgroupProperties.subgroupSize)
 	);
 
