@@ -8,7 +8,7 @@ Implemented optimizations which were proposed by the original paper:
 * Frustum culling
 
 Optimizations from my own experimentation:
-* Utilizing GPU-based radix sort rather than bitonic merge sort (there is still room for improvement of the sorting implementation)
+* Utilizing GPU-based radix sort rather than bitonic merge sort (there is still lots of room for improving the sorting implementation)
 * Indirect dispatches, to sort only the necessary number of gaussians per screen space tile
 * Subgroups, to share data and operations among threads where possible
 * Ordering gaussians in the GPU buffer according to a Z-order curve w.r.t. 3D position, to increase cache coherency
@@ -17,6 +17,7 @@ Optimizations from my own experimentation:
 * Version 1.3
 * Synchronization 2
 * Push descriptors
+* 64-bit shader integers
 
 # Assets used
 * Pre-trained 3D gaussian models: https://github.com/graphdeco-inria/gaussian-splatting
