@@ -19,7 +19,7 @@ Optimizations from my own experimentation:
 * Push descriptors
 
 # Assets used
-* Pre-trained models: https://github.com/graphdeco-inria/gaussian-splatting
+* Pre-trained 3D gaussian models: https://github.com/graphdeco-inria/gaussian-splatting
 
 # Libraries and APIs used
 * Dear ImGUI: GUI for debugging
