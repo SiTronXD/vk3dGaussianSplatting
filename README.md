@@ -23,12 +23,12 @@ Optimizations from my own experimentation:
 * Pre-trained 3D gaussian models: https://github.com/graphdeco-inria/gaussian-splatting
 
 # Libraries and APIs used
-* Dear ImGUI: GUI for debugging
+* Dear ImGUI: GUI for debugging (though unused in this project)
 * EnTT: entity components system
-* hapPLY: 3D gaussian importing
-* fast_obj: OBJ mesh importing
+* hapPLY: PLY importing
+* fast_obj: OBJ mesh importing (though unused in this project)
 * GLFW: window management
 * GLM: vector and matrix math
-* stb: image importing
+* stb: image importing (though unused in this project)
 * Vulkan: graphics and GPU management
 * Vulkan Memory allocator: GPU memory management
