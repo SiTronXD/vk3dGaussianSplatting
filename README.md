@@ -27,6 +27,17 @@ Optimizations from my own experimentation:
 
 The radix sort implementation consists of 5 shaders. One pass of executing these 5 shaders results in 4 bits being sorted (due to memory constraints). These shaders are therefore executed in N number of passes within one rendering frame to sort the full 64-bit keys.
 
+# Benchmarks
+
+### My scene (999999 gaussians)
+| GPU pass | 1280x720 | 1600x900 | 1920x1080 |
+| :--- | :---:  | :---: | :---: |
+| InitSortList | -99.99ms | -99.99ms | -99.99ms |
+| Radix Sort | -99.99ms | -99.99ms | -99.99ms |
+| FindRanges | -99.99ms | -99.99ms | -99.99ms |
+| RenderGaussians | -99.99ms | -99.99ms | -99.99ms |
+| Total GPU Time | -99.99ms | -99.99ms | -99.99ms |
+
 # Vulkan features used
 * Version 1.3
 * Synchronization 2
