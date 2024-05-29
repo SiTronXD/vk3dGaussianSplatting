@@ -15,8 +15,8 @@ Optimizations from my own experimentation:
 
 # Pipeline
 
-1. "InitSortList": Adds one element per gaussian per overlapping tile into the list to be sorted. The element consists of a 64-bit key and a 32-bit payload. The key is using the higher 32-bits for tile ID, lower 32-bits for depth, and payload contains the gaussian ID.
-2. "IndirectSetup": Computes the number of work groups for the various radix sort shaders.
+1. "InitSortList": Adds one element per gaussian per overlapping tile into the list to be sorted. A 64-bit key and a 32-bit payload make up an element for sorting. The key is using the higher 32-bits for tile ID and lower 32-bits for view space depth, while the payload contains a gaussian ID.
+2. "IndirectSetup": Computes the number of work groups for the various indirect radix sort shader dispatches.
 3. "Count": Counts the number of occurred 4-bit key values and stores the sum in a sum table.
 4. "Reduce": Uses the sum table to sum values within a work group, and stores the result in a reduce buffer.
 5. "Scan": Computes the exclusive prefix sum over the reduce buffer.
