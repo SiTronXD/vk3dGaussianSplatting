@@ -50,12 +50,9 @@ The main difference between this implementation and AMD FidelityFX, is that this
 * Pre-trained 3D gaussian models: https://github.com/graphdeco-inria/gaussian-splatting
 
 # Libraries and APIs used
-* Dear ImGUI: GUI for debugging (though unused in this project)
 * EnTT: entity components system
 * hapPLY: PLY importing
-* fast_obj: OBJ mesh importing (though unused in this project)
 * GLFW: window management
 * GLM: vector and matrix math
-* stb: image importing (though unused in this project)
 * Vulkan: graphics and GPU management
 * Vulkan Memory allocator: GPU memory management
