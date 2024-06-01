@@ -31,6 +31,20 @@ The main difference between this implementation and AMD FidelityFX, is that this
 
 # Benchmarks
 
+GPU: NVIDIA RTX 3080 Ti
+GPU Driver Version: 555.85
+Vulkan Version: 1.3.278
+OS: Windows 11 Home 23H2 (22631.3593)
+
+### My scene (999999 gaussians)
+| GPU pass | 1280x720 | 1600x900 | 1920x1080 |
+| :--- | :---:  | :---: | :---: |
+| InitSortList | -99.99ms | -99.99ms | -99.99ms |
+| Radix Sort | -99.99ms | -99.99ms | -99.99ms |
+| FindRanges | -99.99ms | -99.99ms | -99.99ms |
+| RenderGaussians | -99.99ms | -99.99ms | -99.99ms |
+| Total GPU Time | -99.99ms | -99.99ms | -99.99ms |
+
 ### My scene (999999 gaussians)
 | GPU pass | 1280x720 | 1600x900 | 1920x1080 |
 | :--- | :---:  | :---: | :---: |

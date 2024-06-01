@@ -344,4 +344,6 @@ void ResourceManager::loadGaussians(const std::string& filePath)
 			return SMath::encodeZorderCurve(glm::uvec3(mortonSpacePosA)) < SMath::encodeZorderCurve(glm::uvec3(mortonSpacePosB));
 		}
 	);
+
+	Log::write("Number of gaussians: " + std::to_string(this->gaussians.size()));
 }
