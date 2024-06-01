@@ -21,7 +21,7 @@ Optimizations from my own experimentation:
 The pipeline for rendering one frame is comprised of 9 compute shaders:
 1. "InitSortList": Adds one element per gaussian per overlapping tile into the list to be sorted. A 64-bit key and a 32-bit payload make up an element for sorting. The key is using the higher 32-bits for tile ID and lower 32-bits for view space depth, while the payload contains a gaussian ID.
 2. "IndirectSetup": Computes the number of work groups for the various indirect radix sort shader dispatches.
-3. "Count": Counts the number of masked 4-bit key values and stores the sum in a sum table.
+3. "Count": Counts the number of 4-bit masked keys and stores the sum in a sum table.
 4. "Reduce": Uses the sum table to sum values within a work group, and stores the result in a reduce buffer.
 5. "Scan": Computes the exclusive prefix sum over the reduce buffer.
 6. "ScanAdd": Uses the reduce buffer to compute the exclusive prefix sum over the sum table.
@@ -106,6 +106,6 @@ The main difference between this implementation and AMD FidelityFX, is that this
 * EnTT: entity components system
 * GLFW: window management
 * GLM: vector and matrix math
-* hapPLY: PLY importing
+* hapPLY: .ply importing
 * Vulkan: graphics and GPU management
 * Vulkan Memory allocator: GPU memory management
