@@ -204,6 +204,7 @@
     </ClCompile>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Engine\Graphics\Buffer\StagingBuffer.cpp" />
+    <ClCompile Include="Scenes\GardenScene.cpp" />
     <ClCompile Include="Scenes\SimpleTestGaussiansScene.cpp" />
     <ClCompile Include="Scenes\TrainScene.cpp" />
     <ClCompile Include="Scenes\TestSortScene.cpp" />
@@ -278,6 +279,7 @@
     <ClInclude Include="Linking\Include\imgui\imstb_textedit.h" />
     <ClInclude Include="Linking\Include\imgui\imstb_truetype.h" />
     <ClInclude Include="Engine\Graphics\Buffer\StagingBuffer.h" />
+    <ClInclude Include="Scenes\GardenScene.h" />
     <ClInclude Include="Scenes\SimpleTestGaussiansScene.h" />
     <ClInclude Include="Scenes\TrainScene.h" />
     <ClInclude Include="Scenes\TestSortScene.h" />

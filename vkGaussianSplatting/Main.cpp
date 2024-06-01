@@ -3,6 +3,7 @@
 #include "Engine/Engine.h"
 
 #include "Scenes/BicycleScene.h"
+#include "Scenes/GardenScene.h"
 #include "Scenes/SimpleTestGaussiansScene.h"
 #include "Scenes/TestSortScene.h"
 #include "Scenes/TrainScene.h"
