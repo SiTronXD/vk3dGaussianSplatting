@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <fstream>
 #include <vk_mem_alloc.h>
+#include <filesystem>
 
 #include "../Application/Input.h"
 #include "../Application/Time.h"

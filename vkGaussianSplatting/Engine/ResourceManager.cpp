@@ -165,6 +165,12 @@ uint32_t ResourceManager::addGaussian(const GaussianData& gaussianData)
 
 void ResourceManager::loadGaussians(const std::string& filePath)
 {
+	if (!std::filesystem::exists(filePath))
+	{
+		Log::error("File cannot be found: " + filePath);
+		return;
+	}
+
 	// Load ply file
 	happly::PLYData plyData(filePath);
 
