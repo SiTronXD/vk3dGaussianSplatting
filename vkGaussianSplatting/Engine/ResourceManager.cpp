@@ -176,6 +176,8 @@ void ResourceManager::loadGaussians(const std::string& filePath)
 
 	const std::vector<std::string> names = plyData.getElementNames();
 	happly::Element& element = plyData.getElement(names[0]);
+	const std::vector<std::string> propertyNames = element.getPropertyNames();
+	const size_t count = element.count;
 	std::vector<float> gPositionsX;
 	std::vector<float> gPositionsY;
 	std::vector<float> gPositionsZ;
@@ -355,10 +357,73 @@ void ResourceManager::loadGaussians(const std::string& filePath)
 
 	// Write ply for experimentation
 	{
-		happly::PLYData outPly(filePath);
-		const std::vector<std::string> outNames = outPly.getElementNames();
-		happly::Element& outElement = outPly.getElement(outNames[0]);
-		const std::vector<std::string> outPropertyNames = outElement.getPropertyNames();
+		happly::PLYData outPly;
+
+		outPly.addElement(names[0], count + 1);
+		happly::Element& outElement = outPly.getElement(names[0]);
+
+		pushPlyProperty<float>(element, outElement, "x", 0.0f);
+		pushPlyProperty<float>(element, outElement, "y", 0.0f);
+		pushPlyProperty<float>(element, outElement, "z", 0.0f);
+		pushPlyProperty<float>(element, outElement, "nx", 0.0f);
+		pushPlyProperty<float>(element, outElement, "ny", 0.0f);
+		pushPlyProperty<float>(element, outElement, "nz", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_dc_0", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_dc_1", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_dc_2", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_0", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_1", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_2", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_3", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_4", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_5", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_6", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_7", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_8", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_9", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_10", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_11", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_12", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_13", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_14", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_15", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_16", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_17", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_18", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_19", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_20", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_21", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_22", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_23", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_24", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_25", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_26", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_27", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_28", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_29", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_30", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_31", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_32", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_33", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_34", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_35", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_36", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_37", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_38", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_39", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_40", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_41", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_42", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_43", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_44", 0.0f);
+		pushPlyProperty<float>(element, outElement, "opacity", 0.0f);
+		pushPlyProperty<float>(element, outElement, "scale_0", 0.0f);
+		pushPlyProperty<float>(element, outElement, "scale_1", 0.0f);
+		pushPlyProperty<float>(element, outElement, "scale_2", 0.0f);
+		pushPlyProperty<float>(element, outElement, "rot_0", 0.0f);
+		pushPlyProperty<float>(element, outElement, "rot_1", 0.0f);
+		pushPlyProperty<float>(element, outElement, "rot_2", 0.0f);
+		pushPlyProperty<float>(element, outElement, "rot_3", 0.0f);
 
 		outPly.write(
 			"D:/DownloadedAssets/GaussianFiles/train_modified/point_cloud/iteration_7000/point_cloud.ply", 
