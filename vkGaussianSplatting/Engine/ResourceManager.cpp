@@ -352,4 +352,17 @@ void ResourceManager::loadGaussians(const std::string& filePath)
 	);
 
 	Log::write("Number of gaussians: " + std::to_string(this->gaussians.size()));
+
+	// Write ply for experimentation
+	{
+		happly::PLYData outPly(filePath);
+		const std::vector<std::string> outNames = outPly.getElementNames();
+		happly::Element& outElement = outPly.getElement(outNames[0]);
+		const std::vector<std::string> outPropertyNames = outElement.getPropertyNames();
+
+		outPly.write(
+			"D:/DownloadedAssets/GaussianFiles/train_modified/point_cloud/iteration_7000/point_cloud.ply", 
+			happly::DataFormat::Binary
+		);
+	}
 }
