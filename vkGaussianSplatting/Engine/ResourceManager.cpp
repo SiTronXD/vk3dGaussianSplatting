@@ -368,10 +368,14 @@ void ResourceManager::loadGaussians(const std::string& filePath)
 		pushPlyProperty<float>(element, outElement, "nx", 1.0f);
 		pushPlyProperty<float>(element, outElement, "ny", 0.0f);
 		pushPlyProperty<float>(element, outElement, "nz", 0.0f);
-		pushPlyProperty<float>(element, outElement, "f_dc_0", 5.0f);
+
+		// Red, green blue
+		pushPlyProperty<float>(element, outElement, "f_dc_0", 0.0f); // 5.0f
 		pushPlyProperty<float>(element, outElement, "f_dc_1", 0.0f);
 		pushPlyProperty<float>(element, outElement, "f_dc_2", 0.0f);
-		pushPlyProperty<float>(element, outElement, "f_rest_0", 0.0f);
+
+		// Red
+		pushPlyProperty<float>(element, outElement, "f_rest_0", -10.0f);
 		pushPlyProperty<float>(element, outElement, "f_rest_1", 0.0f);
 		pushPlyProperty<float>(element, outElement, "f_rest_2", 0.0f);
 		pushPlyProperty<float>(element, outElement, "f_rest_3", 0.0f);
@@ -387,8 +391,10 @@ void ResourceManager::loadGaussians(const std::string& filePath)
 		pushPlyProperty<float>(element, outElement, "f_rest_13", 0.0f);
 		pushPlyProperty<float>(element, outElement, "f_rest_14", 0.0f);
 		pushPlyProperty<float>(element, outElement, "f_rest_15", 0.0f);
+
+		// Green
 		pushPlyProperty<float>(element, outElement, "f_rest_16", 0.0f);
-		pushPlyProperty<float>(element, outElement, "f_rest_17", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_17", 10.0f);
 		pushPlyProperty<float>(element, outElement, "f_rest_18", 0.0f);
 		pushPlyProperty<float>(element, outElement, "f_rest_19", 0.0f);
 		pushPlyProperty<float>(element, outElement, "f_rest_20", 0.0f);
@@ -403,9 +409,11 @@ void ResourceManager::loadGaussians(const std::string& filePath)
 		pushPlyProperty<float>(element, outElement, "f_rest_29", 0.0f);
 		pushPlyProperty<float>(element, outElement, "f_rest_30", 0.0f);
 		pushPlyProperty<float>(element, outElement, "f_rest_31", 0.0f);
+
+		// Blue
 		pushPlyProperty<float>(element, outElement, "f_rest_32", 0.0f);
 		pushPlyProperty<float>(element, outElement, "f_rest_33", 0.0f);
-		pushPlyProperty<float>(element, outElement, "f_rest_34", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_rest_34", 10.0f);
 		pushPlyProperty<float>(element, outElement, "f_rest_35", 0.0f);
 		pushPlyProperty<float>(element, outElement, "f_rest_36", 0.0f);
 		pushPlyProperty<float>(element, outElement, "f_rest_37", 0.0f);
@@ -416,10 +424,11 @@ void ResourceManager::loadGaussians(const std::string& filePath)
 		pushPlyProperty<float>(element, outElement, "f_rest_42", 0.0f);
 		pushPlyProperty<float>(element, outElement, "f_rest_43", 0.0f);
 		pushPlyProperty<float>(element, outElement, "f_rest_44", 0.0f);
+
 		pushPlyProperty<float>(element, outElement, "opacity", 4.0f);
-		pushPlyProperty<float>(element, outElement, "scale_0", -1.0f);
-		pushPlyProperty<float>(element, outElement, "scale_1", -1.0f);
-		pushPlyProperty<float>(element, outElement, "scale_2", -1.0f);
+		pushPlyProperty<float>(element, outElement, "scale_0", -1.5f);
+		pushPlyProperty<float>(element, outElement, "scale_1", -1.5f);
+		pushPlyProperty<float>(element, outElement, "scale_2", -1.5f);
 		pushPlyProperty<float>(element, outElement, "rot_0", 1.0f);
 		pushPlyProperty<float>(element, outElement, "rot_1", 0.0f);
 		pushPlyProperty<float>(element, outElement, "rot_2", 0.0f);
