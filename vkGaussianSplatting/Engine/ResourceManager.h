@@ -88,13 +88,5 @@ inline void ResourceManager::pushPlyProperty(
 	loadPlyProperty(srcElement, propertyStr, propertyVector);
 	propertyVector.push_back(valueToPush);
 
-	/*if (propertyStr == "x") 
-	{
-		for (size_t i = 0; i < propertyVector.size(); ++i)
-		{
-			propertyVector[i] *= 1.5f;
-		}
-	}*/
-
 	dstElement.addProperty(propertyStr, propertyVector);
 }

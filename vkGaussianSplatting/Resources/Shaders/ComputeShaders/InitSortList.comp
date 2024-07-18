@@ -87,7 +87,7 @@ void main()
 	if(threadIndex >= numGaussians) 
 		return;
 
-	// Non-conservative frustumg culling (near plane)
+	// Non-conservative frustum culling (near plane)
 	vec4 viewSpacePos = ubo.viewMat * vec4(gaussiansBuffer.gaussians[threadIndex].position.xyz, 1.0f);
 	if(-viewSpacePos.z <= pc.clipPlanes.x)
 		return;
