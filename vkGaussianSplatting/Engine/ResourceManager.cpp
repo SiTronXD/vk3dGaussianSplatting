@@ -362,13 +362,13 @@ void ResourceManager::loadGaussians(const std::string& filePath)
 		outPly.addElement(names[0], count + 1);
 		happly::Element& outElement = outPly.getElement(names[0]);
 
-		pushPlyProperty<float>(element, outElement, "x", 0.0f);
-		pushPlyProperty<float>(element, outElement, "y", 0.0f);
-		pushPlyProperty<float>(element, outElement, "z", 0.0f);
-		pushPlyProperty<float>(element, outElement, "nx", 0.0f);
+		pushPlyProperty<float>(element, outElement, "x", 0.1f);
+		pushPlyProperty<float>(element, outElement, "y", -0.1f);
+		pushPlyProperty<float>(element, outElement, "z", -0.8f);
+		pushPlyProperty<float>(element, outElement, "nx", 1.0f);
 		pushPlyProperty<float>(element, outElement, "ny", 0.0f);
 		pushPlyProperty<float>(element, outElement, "nz", 0.0f);
-		pushPlyProperty<float>(element, outElement, "f_dc_0", 0.0f);
+		pushPlyProperty<float>(element, outElement, "f_dc_0", 5.0f);
 		pushPlyProperty<float>(element, outElement, "f_dc_1", 0.0f);
 		pushPlyProperty<float>(element, outElement, "f_dc_2", 0.0f);
 		pushPlyProperty<float>(element, outElement, "f_rest_0", 0.0f);
@@ -416,11 +416,11 @@ void ResourceManager::loadGaussians(const std::string& filePath)
 		pushPlyProperty<float>(element, outElement, "f_rest_42", 0.0f);
 		pushPlyProperty<float>(element, outElement, "f_rest_43", 0.0f);
 		pushPlyProperty<float>(element, outElement, "f_rest_44", 0.0f);
-		pushPlyProperty<float>(element, outElement, "opacity", 0.0f);
-		pushPlyProperty<float>(element, outElement, "scale_0", 0.0f);
-		pushPlyProperty<float>(element, outElement, "scale_1", 0.0f);
-		pushPlyProperty<float>(element, outElement, "scale_2", 0.0f);
-		pushPlyProperty<float>(element, outElement, "rot_0", 0.0f);
+		pushPlyProperty<float>(element, outElement, "opacity", 4.0f);
+		pushPlyProperty<float>(element, outElement, "scale_0", -1.0f);
+		pushPlyProperty<float>(element, outElement, "scale_1", -1.0f);
+		pushPlyProperty<float>(element, outElement, "scale_2", -1.0f);
+		pushPlyProperty<float>(element, outElement, "rot_0", 1.0f);
 		pushPlyProperty<float>(element, outElement, "rot_1", 0.0f);
 		pushPlyProperty<float>(element, outElement, "rot_2", 0.0f);
 		pushPlyProperty<float>(element, outElement, "rot_3", 0.0f);
