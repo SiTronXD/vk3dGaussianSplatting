@@ -22,7 +22,7 @@ void TestSortScene::init()
 		GaussianData gaussian{};
 		gaussian.position = glm::vec4((-8.0f + (float) i) * 0.01f, 0.0f, zOffset, 0.0f);
 		gaussian.scale = glm::vec4(0.02f);
-		gaussian.color = glm::vec4(
+		gaussian.shCoeffs00 = glm::vec4(
 			(rand() % 10000) / 10000.0f,
 			(rand() % 10000) / 10000.0f,
 			(rand() % 10000) / 10000.0f,

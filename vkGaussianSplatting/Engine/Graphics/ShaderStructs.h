@@ -7,6 +7,7 @@
 struct InitSortListPCD
 {
 	glm::vec4 clipPlanes; // vec4(nearPlane, farPlane, numGaussians, 0)
+	glm::vec4 camPos; // vec4(x, y, z, 0)
 	glm::uvec4 resolution; // uvec4(width, height, 0, 0)
 };
 
@@ -61,10 +62,11 @@ struct GaussianData
 	glm::vec4 position; // vec4(x, y, z, 0.0f)
 	glm::vec4 scale; // vec4(x, y, z, 0.0f)
 	glm::vec4 rot = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-	glm::vec4 color; // vec4(r, g, b, alpha)
+	glm::vec4 shCoeffs00; // vec4(r00, g00, b00, alpha)
 	glm::vec4 shCoeffs[15];
 
-	// This is modified between GPU passes
+	// These are modified between GPU passes
+	glm::vec4 color; // vec4(r, g, b, alpha)
 	glm::vec4 covariance; // vec4(cov.x, cov.y, cov.z, 0.0f)
 };
 
@@ -75,6 +77,8 @@ struct GaussianSortData
 
 struct GaussianCullData
 {
+	// X value is decided by the GPU
+	// Y remains constant
 	glm::uvec4 numGaussiansToRender; // uvec4(num, maxNumSortElements, 0, 0);
 };
 

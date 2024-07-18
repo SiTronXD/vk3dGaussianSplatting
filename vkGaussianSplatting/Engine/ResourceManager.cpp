@@ -254,7 +254,7 @@ void ResourceManager::loadGaussians(const std::string& filePath)
 				-gaussian.rot[1]
 			);
 		}
-		gaussian.color = glm::vec4(
+		gaussian.shCoeffs00 = glm::vec4(
 			0.5f + gRedSh00[i] * 0.28209479177387814f,
 			0.5f + gGreenSh00[i] * 0.28209479177387814f,
 			0.5f + gBlueSh00[i] * 0.28209479177387814f,
