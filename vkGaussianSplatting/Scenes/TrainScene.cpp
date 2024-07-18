@@ -17,7 +17,7 @@ void TrainScene::init()
 	this->camera.setRotation(-0.008407, -0.044159);*/
 
 	// Load gaussians from file
-	this->getResourceManager().loadGaussians("D:/DownloadedAssets/GaussianFiles/train/point_cloud/iteration_7000/point_cloud.ply");
+	this->getResourceManager().loadGaussians("D:/DownloadedAssets/GaussianFiles/train_modified/point_cloud/iteration_7000/point_cloud.ply");
 }
 
 void TrainScene::update()

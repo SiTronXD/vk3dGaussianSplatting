@@ -90,8 +90,8 @@ void getShEval4(const vec3 evalDir, inout float pSH[16])
 	// Rotate evaluation direction
 	float fX, fY, fZ;
 	{
-		fX = evalDir.x;
-		fY = evalDir.y;
+		fX = -evalDir.x;
+		fY = -evalDir.y;
 		fZ = evalDir.z;
 	}
 

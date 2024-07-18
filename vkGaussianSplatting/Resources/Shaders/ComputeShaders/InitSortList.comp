@@ -120,7 +120,7 @@ void main()
 	);
 	uvec4 gExtents = getGaussianTileExtents(threadIndex, viewSpacePos, gridSize, cov, width, height);
 	
-	// Fill coeffs
+	// Load coeffs
 	vec3 shCoeffs[16];
 	shCoeffs[0] = gaussiansBuffer.gaussians[threadIndex].shCoeffs00.rgb;
 	for(int i = 0; i < 15; ++i)
@@ -129,8 +129,8 @@ void main()
 	}
 
 	// Store color and symmetric covariance matrix
-	vec3 toCamDir = normalize(pc.camPos.xyz - worldSpacePos);
-	vec3 shCol = getShColor(toCamDir, shCoeffs);
+	vec3 toGaussDir = normalize(worldSpacePos - pc.camPos.xyz);
+	vec3 shCol = getShColor(toGaussDir, shCoeffs);
 	gaussiansBuffer.gaussians[threadIndex].color = vec4(shCol, gaussiansBuffer.gaussians[threadIndex].shCoeffs00.a);
 	gaussiansBuffer.gaussians[threadIndex].covariance.xyz = cov;
 
