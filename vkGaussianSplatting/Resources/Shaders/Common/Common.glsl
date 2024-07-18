@@ -144,6 +144,7 @@ vec3 getShColor(vec3 evalDir, vec3 shCoeffs[NUM_SH_COEFFS])
 	{
 		result += shCoeffs[i] * shBasisValues[i];
 	}
+	result = max(result, vec3(0.0f));
 	return result;
 
 #endif
