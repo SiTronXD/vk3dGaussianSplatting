@@ -254,16 +254,16 @@ void ResourceManager::loadGaussians(const std::string& filePath)
 				-gaussian.rot[1]
 			);
 		}
-		gaussian.shCoeffs00 = glm::vec4(
-			0.5f + gRedSh00[i] * 0.28209479177387814f,
-			0.5f + gGreenSh00[i] * 0.28209479177387814f,
-			0.5f + gBlueSh00[i] * 0.28209479177387814f,
+
+		gaussian.shCoeffs[0] = glm::vec4(
+			gRedSh00[i],
+			gGreenSh00[i],
+			gBlueSh00[i],
 			(1.0f / (1.0f + std::exp(-gOpacities[i])))
 		);
-
 		for (uint32_t c = 0; c < numRestCoeffs; ++c)
 		{
-			gaussian.shCoeffs[c] = glm::vec4(
+			gaussian.shCoeffs[c + 1] = glm::vec4(
 				gShRest[c + numRestCoeffs * 0][i],
 				gShRest[c + numRestCoeffs * 1][i],
 				gShRest[c + numRestCoeffs * 2][i],

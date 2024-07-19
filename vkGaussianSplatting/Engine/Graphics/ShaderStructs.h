@@ -62,8 +62,7 @@ struct GaussianData
 	glm::vec4 position; // vec4(x, y, z, 0.0f)
 	glm::vec4 scale; // vec4(x, y, z, 0.0f)
 	glm::vec4 rot = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-	glm::vec4 shCoeffs00; // vec4(r00, g00, b00, alpha)
-	glm::vec4 shCoeffs[15];
+	glm::vec4 shCoeffs[16]{ glm::vec4(0.0f, 0.0f, 0.0f, 1.0f) };	// i == 0 ? vec4(r_00, g_00, b_00, alpha) : vec4(r_lm, g_lm, b_lm, 0.0f)
 
 	// These are modified between GPU passes
 	glm::vec4 color; // vec4(r, g, b, alpha)

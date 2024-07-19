@@ -132,18 +132,20 @@ void getShEval4(const vec3 evalDir, inout float pSH[16])
 }
 
 #define NUM_SH_COEFFS 16
-vec3 getShColor(vec3 evalDir, vec3 shCoeffs[NUM_SH_COEFFS])
+vec3 getShColor(vec3 evalDir, vec4 shCoeffs[NUM_SH_COEFFS])
 {
 #if NUM_SH_COEFFS == 16
 
 	float shBasisValues[NUM_SH_COEFFS];
 	getShEval4(evalDir, shBasisValues);
 
-	vec3 result = shCoeffs[0]; // Band 0 has already been computed.
-	for (int i = 1; i < NUM_SH_COEFFS; ++i)
+	vec3 result = vec3(0.0f);
+	for (int i = 0; i < NUM_SH_COEFFS; ++i)
 	{
-		result += shCoeffs[i] * shBasisValues[i];
+		result += shCoeffs[i].xyz * shBasisValues[i];
 	}
+
+	result += vec3(0.5f);
 	result = max(result, vec3(0.0f));
 	return result;
 

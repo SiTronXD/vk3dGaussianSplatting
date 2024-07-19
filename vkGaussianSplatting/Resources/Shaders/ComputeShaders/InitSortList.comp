@@ -120,18 +120,10 @@ void main()
 	);
 	uvec4 gExtents = getGaussianTileExtents(threadIndex, viewSpacePos, gridSize, cov, width, height);
 	
-	// Load coeffs
-	vec3 shCoeffs[16];
-	shCoeffs[0] = gaussiansBuffer.gaussians[threadIndex].shCoeffs00.rgb;
-	for(int i = 0; i < 15; ++i)
-	{
-		shCoeffs[i + 1] = gaussiansBuffer.gaussians[threadIndex].shCoeffs[i].rgb;
-	}
-
 	// Store color and symmetric covariance matrix
 	vec3 toGaussDir = normalize(worldSpacePos - pc.camPos.xyz);
-	vec3 shCol = getShColor(toGaussDir, shCoeffs);
-	gaussiansBuffer.gaussians[threadIndex].color = vec4(shCol, gaussiansBuffer.gaussians[threadIndex].shCoeffs00.a);
+	vec3 shCol = getShColor(toGaussDir, gaussiansBuffer.gaussians[threadIndex].shCoeffs);
+	gaussiansBuffer.gaussians[threadIndex].color = vec4(shCol, gaussiansBuffer.gaussians[threadIndex].shCoeffs[0].a);
 	gaussiansBuffer.gaussians[threadIndex].covariance.xyz = cov;
 
 	// Add 1 element per gaussian per overlapped tile, which are then sorted in subsequent passes
