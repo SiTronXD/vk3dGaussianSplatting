@@ -18,7 +18,7 @@ int main()
 	// Create engine within it's own scope
 	{
 		Engine engine;
-		engine.init(new TrainScene());
+		engine.init(new BicycleScene());
 	}
 
 	// Display validation errors right after exit

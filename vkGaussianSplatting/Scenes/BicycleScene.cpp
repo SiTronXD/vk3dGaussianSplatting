@@ -20,6 +20,13 @@ void BicycleScene::update()
 {
 	this->camera.update();
 
+	// Animation showing specular effect from SH
+	float t = std::sin(Time::getTimeSinceStart()) * 0.5f + 0.5f;
+	glm::vec3 newPos = glm::mix(glm::vec3(0.017753, -0.159444, 1.916727), glm::vec3(-0.959038, -0.159444, 1.328299), t);
+	glm::vec2 newRot = glm::mix(glm::vec2(-2.848421, -0.774159), glm::vec2(-4.708428, -0.554159), t);
+	this->camera.setPosition(newPos);
+	this->camera.setRotation(newRot.x, newRot.y);
+
 	/*Log::write("Cam pos: " + StrHelper::vecToStr(this->camera.getPosition()));
 	Log::write("Cam rot: (" + std::to_string(this->camera.getYaw()) + ", " + std::to_string(this->camera.getPitch()) + ")");*/
 }
