@@ -49,22 +49,22 @@ The main difference between this implementation and AMD FidelityFX, is that this
 | :--- | :---:  | :---: | :---: |
 | Elements To Sort | 6'489'695 | 8'016'855 | 9'708'506 |
 | | | | |
-| InitSortList | 0.903 ms | 1.663 ms | 1.832 ms |
-| Radix Sort | 8.684 ms | 11.621 ms | 14.364 ms |
-| FindRanges | 0.337 ms | 0.499 ms | 0.334 ms |
-| RenderGaussians | 2.839 ms | 3.415 ms | 3.901 ms |
-| Total Measured GPU Time | 12.764 ms | 17.198 ms | 20.431 ms |
+| InitSortList | . ms | . ms | . ms |
+| Radix Sort | . ms | . ms | . ms |
+| FindRanges | . ms | . ms | . ms |
+| RenderGaussians | . ms | . ms | . ms |
+| Total Measured GPU Time | . ms | . ms | . ms |
 
 ### 5'834'784 gaussians
 | GPU pass | 1280x720 | 1600x900 | 1920x1080 |
 | :--- | :---:  | :---: | :---: |
 | Elements To Sort | 8'390'477 | 10'405'878 | 12'654'191 |
 | | | | |
-| InitSortList | 1.709 ms | 1.901 ms | 2.122 ms |
-| Radix Sort | 10.953 ms | 14.780 ms | 18.056 ms |
-| FindRanges | 0.773 ms | 0.705 ms | 0.724 ms |
-| RenderGaussians | 3.485 ms | 4.055 ms | 5.047 ms |
-| Total Measured GPU Time | 16.922 ms | 21.441 ms | 25.951 ms |
+| InitSortList | . ms | . ms | . ms |
+| Radix Sort | . ms | . ms | . ms |
+| FindRanges | . ms | . ms | . ms |
+| RenderGaussians | . ms | . ms | . ms |
+| Total Measured GPU Time | . ms | . ms | . ms |
 
 ## Train
 
@@ -75,22 +75,22 @@ The main difference between this implementation and AMD FidelityFX, is that this
 | :--- | :---:  | :---: | :---: |
 | Elements To Sort | 3'430'798 | 4'740'864 | 6'248'596 |
 | | | | |
-| InitSortList | 0.741 ms | 0.969 ms | 1.715 ms |
-| Radix Sort | 4.660 ms | 6.981 ms | 9.339 ms |
-| FindRanges | 0.264 ms | 0.350 ms | 0.360 ms |
-| RenderGaussians | 2.978 ms | 2.558 ms | 2.801 ms |
-| Total Measured GPU Time | 8.645 ms | 10.860 ms | 14.217 ms |
+| InitSortList | . ms | . ms | . ms |
+| Radix Sort | . ms | . ms | . ms |
+| FindRanges | . ms | . ms | . ms |
+| RenderGaussians | . ms | . ms | . ms |
+| Total Measured GPU Time | . ms | . ms | . ms |
 
 ### 1'026'508 gaussians
 | GPU pass | 1280x720 | 1600x900 | 1920x1080 |
 | :--- | :---:  | :---: | :---: |
 | Elements To Sort | 5'541'391 | 7'639'504 | 10'046'531 |
 | | | | |
-| InitSortList | 0.861 ms | 1.365 ms | 2.497 ms |
-| Radix Sort | 7.290 ms | 10.832 ms | 14.424 ms |
-| FindRanges | 0.368 ms | 0.328 ms | 0.739 ms |
-| RenderGaussians |  3.986 ms | 3.987 ms | 3.769 ms |
-| Total Measured GPU Time | 12.506 ms | 16.514 ms | 21.429 ms |
+| InitSortList | . ms | . ms | . ms |
+| Radix Sort | . ms | . ms | . ms |
+| FindRanges | . ms | . ms | . ms |
+| RenderGaussians |  . ms | . ms | . ms |
+| Total Measured GPU Time | . ms | . ms | . ms |
 
 
 # Vulkan features used

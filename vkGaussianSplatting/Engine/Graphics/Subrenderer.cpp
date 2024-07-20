@@ -141,7 +141,7 @@ void Renderer::computeInitSortList(
 	// Push constant
 	InitSortListPCD initSortListPcData{};
 	initSortListPcData.clipPlanes = glm::vec4(camera.NEAR_PLANE, camera.FAR_PLANE, (float) this->numGaussians, 0.0f);
-	initSortListPcData.camPos = glm::vec4(camera.getPosition(), 0.0f);
+	initSortListPcData.camPos = glm::vec4(camera.getPosition(), (float) camera.getShMode());
 	initSortListPcData.resolution = glm::uvec4(
 		this->swapchain.getVkExtent().width,
 		this->swapchain.getVkExtent().height, 

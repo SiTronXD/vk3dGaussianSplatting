@@ -38,7 +38,7 @@ layout(binding = 3) buffer GaussiansCullDataBuffer
 layout(push_constant) uniform PushConstantData
 {
 	vec4 clipPlanes; // vec4(nearPlane, farPlane, numGaussians, 0)
-	vec4 camPos; // vec4(x, y, z, 0)
+	vec4 camPos; // vec4(x, y, z, sphericalHarmonicsMode)
 	uvec4 resolution; // uvec4(width, height, 0, 0)
 } pc;
 
@@ -122,7 +122,7 @@ void main()
 	
 	// Store color and symmetric covariance matrix
 	vec3 toGaussDir = normalize(worldSpacePos - pc.camPos.xyz);
-	vec3 shCol = getShColor(toGaussDir, gaussiansBuffer.gaussians[threadIndex].shCoeffs);
+	vec3 shCol = getShColor(toGaussDir, gaussiansBuffer.gaussians[threadIndex].shCoeffs, uint(pc.camPos.w + 0.5f));
 	gaussiansBuffer.gaussians[threadIndex].color = vec4(shCol, gaussiansBuffer.gaussians[threadIndex].shCoeffs[0].a);
 	gaussiansBuffer.gaussians[threadIndex].covariance.xyz = cov;
 

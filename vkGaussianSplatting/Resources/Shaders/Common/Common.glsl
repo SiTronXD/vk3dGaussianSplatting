@@ -132,7 +132,7 @@ void getShEval4(const vec3 evalDir, inout float pSH[16])
 }
 
 #define NUM_SH_COEFFS 16
-vec3 getShColor(vec3 evalDir, vec4 shCoeffs[NUM_SH_COEFFS])
+vec3 getShColor(vec3 evalDir, vec4 shCoeffs[NUM_SH_COEFFS], uint sphericalHarmonicsMode)
 {
 #if NUM_SH_COEFFS == 16
 
@@ -140,9 +140,20 @@ vec3 getShColor(vec3 evalDir, vec4 shCoeffs[NUM_SH_COEFFS])
 	getShEval4(evalDir, shBasisValues);
 
 	vec3 result = vec3(0.0f);
-	for (int i = 0; i < NUM_SH_COEFFS; ++i)
+	if (sphericalHarmonicsMode == 0)		// All bands
 	{
-		result += shCoeffs[i].xyz * shBasisValues[i];
+		for (int i = 0; i < NUM_SH_COEFFS; ++i)
+			result += shCoeffs[i].xyz * shBasisValues[i];
+	}
+	else if (sphericalHarmonicsMode == 1)	// Skip first band
+	{
+		for (int i = 1; i < NUM_SH_COEFFS; ++i)
+			result += shCoeffs[i].xyz * shBasisValues[i];
+		result -= vec3(0.5f);
+	}
+	else if (sphericalHarmonicsMode == 2)	// Only first band
+	{
+		result += shCoeffs[0].xyz * shBasisValues[0];
 	}
 
 	result += vec3(0.5f);

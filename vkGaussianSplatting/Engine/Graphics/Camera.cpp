@@ -64,7 +64,8 @@ Camera::Camera()
 	upDir(-1.0f, -1.0f, -1.0f),
 	
 	yaw(SMath::PI),
-	pitch(0.0f)
+	pitch(0.0f),
+	shMode(SphericalHarmonicsMode::ALL_BANDS)
 {
 	
 }
@@ -80,6 +81,29 @@ void Camera::init(const Window& window)
 
 void Camera::update()
 {
+	// Spherical harmonics mode
+	if (Input::isKeyPressed(Keys::NUM_1))
+	{
+		this->shMode = SphericalHarmonicsMode::ALL_BANDS;
+		Log::write("------------------------------------------");
+		Log::write("Use spherical harmonic bands 0-3 (default)");
+		Log::write("------------------------------------------");
+	}
+	else if (Input::isKeyPressed(Keys::NUM_2))
+	{
+		this->shMode = SphericalHarmonicsMode::SKIP_FIRST_BAND;
+		Log::write("------------------------------------------------------------------------------------");
+		Log::write("Use spherical harmonic bands 1-3 (visualize only the effect of view-dependent color)");
+		Log::write("------------------------------------------------------------------------------------");
+	}
+	else if (Input::isKeyPressed(Keys::NUM_3))
+	{
+		this->shMode = SphericalHarmonicsMode::ONLY_FIRST_BAND;
+		Log::write("--------------------------------------------------------------------");
+		Log::write("Use only spherical harmonic band 0 (constant view-independent color)");
+		Log::write("--------------------------------------------------------------------");
+	}
+
 	// Keyboard input
 	float rightSpeed =
 		(float) (Input::isKeyDown(Keys::D) - Input::isKeyDown(Keys::A));
