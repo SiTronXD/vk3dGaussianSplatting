@@ -42,7 +42,8 @@ vec3 getCovarianceMatrix(
 	mat3x3 scaleMat = mat3x3(gScale.x,	0.0f,		0.0f,
 							 0.0f,		gScale.y,	0.0f,
 							 0.0f,		0.0f,		gScale.z);
-	mat3x3 sigma = rotMat * scaleMat * transpose(scaleMat) * transpose(rotMat);
+	mat3x3 RS = rotMat * scaleMat;
+	mat3x3 sigma = RS * transpose(RS);
 
 	// SigmaPrime = J * W * Sigma * W^T * J^T
 	mat3x3 W = mat3x3(	viewMat[0][0], viewMat[0][1], viewMat[0][2],
@@ -64,9 +65,14 @@ vec3 getCovarianceMatrix(
 	mat3x3 J = mat3x3(				focalX / gPosV.z,								0.0f,						0.0f,
 										0.0f,									focalY / gPosV.z,				0.0f,
 						-(focalX * gPosV.x) / (gPosV.z * gPosV.z), -(focalY * gPosV.y) / (gPosV.z * gPosV.z),	0.0f);
-	mat3x3 sigmaPrime = J * W * sigma * transpose(W) * transpose(J);
+	mat3x3 JW = J * W;
+	mat3x3 sigmaPrime = JW * sigma * transpose(JW);
 
 	vec3 cov = vec3(sigmaPrime[0][0], sigmaPrime[0][1], sigmaPrime[1][1]);
+
+	// Ensure each gaussian is at least 1 pixel in both width and height
+	cov.x += 0.3f;
+	cov.z += 0.3f;
 
 	return cov;
 }
