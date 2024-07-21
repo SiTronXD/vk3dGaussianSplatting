@@ -299,14 +299,25 @@ void ResourceManager::loadGaussians(const std::string& filePath)
 	Log::write("Number of gaussians: " + std::to_string(this->gaussians.size()));
 
 	// Write csv for exporting SH coefficient data
-#if 0
+#if 1
 	{
 		std::vector<std::string> splitString;
 		std::string filePathStrCpy = filePath;
 		StrHelper::splitString(filePathStrCpy, '/', splitString);
 
 		std::ofstream outFile("shCoeffs_" + splitString[splitString.size() - 4] + "_" + splitString[splitString.size() - 2] + ".csv");
+		std::ofstream outCompactFile("shCoeffs_" + splitString[splitString.size() - 4] + "_" + splitString[splitString.size() - 2] + "_compact.csv");
 		std::string outStr;
+		std::string outCompactStr;
+
+		auto maxAbs = [](float r, float g, float b)
+		{
+			r = std::abs(r);
+			g = std::abs(g);
+			b = std::abs(b);
+
+			return std::max(r, std::max(g, b));
+		};
 
 		const int MAX_L = 3;
 		const int MAX_L_IND = (MAX_L + 1) * (MAX_L + 1);
@@ -316,12 +327,17 @@ void ResourceManager::loadGaussians(const std::string& filePath)
 			{
 				std::string lm = "_" + std::to_string(l) + "_" + std::to_string(m);
 				outStr += "R" + lm + ",G" + lm + ",B" + lm;
+				outCompactStr += "C" + lm;
 
 				if (m != l || l != MAX_L)
+				{
 					outStr += ",";
+					outCompactStr += ",";
+				}
 			}
 		}
 		outStr += "\n";
+		outCompactStr += "\n";
 		for (int i = 0; i < numGaussians; ++i)
 		{
 			GaussianData& g = this->gaussians[i];
@@ -329,14 +345,22 @@ void ResourceManager::loadGaussians(const std::string& filePath)
 			for (int j = 0; j < MAX_L_IND; ++j)
 			{
 				outStr += std::to_string(g.shCoeffs[j].r) + ',' + std::to_string(g.shCoeffs[j].g) + ',' + std::to_string(g.shCoeffs[j].b);
+				outCompactStr += std::to_string(maxAbs(g.shCoeffs[j].r, g.shCoeffs[j].g, g.shCoeffs[j].b));
 				if (j < MAX_L_IND - 1)
+				{
 					outStr += ",";
+					outCompactStr += ",";
+				}
 			}
 
 			outStr += "\n";
+			outCompactStr += "\n";
 		}
 		outFile << outStr;
 		outFile.close();
+
+		outCompactFile << outCompactStr;
+		outCompactFile.close();
 	}
 #endif
 
