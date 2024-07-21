@@ -4,6 +4,7 @@
 #include "Graphics/MeshData.h"
 #include "Graphics/Texture/TextureCube.h"
 #include "Graphics/Texture/Texture2D.h"
+#include "../Dev/StrHelper.h"
 
 ResourceManager::ResourceManager()
 	: gfxAllocContext(nullptr)
@@ -297,8 +298,50 @@ void ResourceManager::loadGaussians(const std::string& filePath)
 
 	Log::write("Number of gaussians: " + std::to_string(this->gaussians.size()));
 
+	// Write csv for exporting SH coefficient data
 #if 0
+	{
+		std::vector<std::string> splitString;
+		std::string filePathStrCpy = filePath;
+		StrHelper::splitString(filePathStrCpy, '/', splitString);
+
+		std::ofstream outFile("shCoeffs_" + splitString[splitString.size() - 4] + "_" + splitString[splitString.size() - 2] + ".csv");
+		std::string outStr;
+
+		const int MAX_L = 3;
+		const int MAX_L_IND = (MAX_L + 1) * (MAX_L + 1);
+		for (int l = 0; l <= MAX_L; ++l)
+		{
+			for (int m = -l; m <= l; ++m)
+			{
+				std::string lm = "_" + std::to_string(l) + "_" + std::to_string(m);
+				outStr += "R" + lm + ",G" + lm + ",B" + lm;
+
+				if (m != l || l != MAX_L)
+					outStr += ",";
+			}
+		}
+		outStr += "\n";
+		for (int i = 0; i < numGaussians; ++i)
+		{
+			GaussianData& g = this->gaussians[i];
+
+			for (int j = 0; j < MAX_L_IND; ++j)
+			{
+				outStr += std::to_string(g.shCoeffs[j].r) + ',' + std::to_string(g.shCoeffs[j].g) + ',' + std::to_string(g.shCoeffs[j].b);
+				if (j < MAX_L_IND - 1)
+					outStr += ",";
+			}
+
+			outStr += "\n";
+		}
+		outFile << outStr;
+		outFile.close();
+	}
+#endif
+
 	// Write ply for experimentation
+#if 0
 	{
 		happly::PLYData outPly;
 
