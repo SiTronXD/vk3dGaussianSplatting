@@ -299,7 +299,7 @@ void ResourceManager::loadGaussians(const std::string& filePath)
 	Log::write("Number of gaussians: " + std::to_string(this->gaussians.size()));
 
 	// Write csv for exporting SH coefficient data
-#if 1
+#if 0
 	{
 		std::vector<std::string> splitString;
 		std::string filePathStrCpy = filePath;
