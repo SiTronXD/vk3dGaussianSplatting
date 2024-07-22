@@ -7,7 +7,7 @@
 struct InitSortListPCD
 {
 	glm::vec4 clipPlanes; // vec4(nearPlane, farPlane, numGaussians, 0)
-	glm::vec4 camPos; // vec4(x, y, z, 0)
+	glm::vec4 camPos; // vec4(x, y, z, shMode)
 	glm::uvec4 resolution; // uvec4(width, height, 0, 0)
 };
 
