@@ -4,6 +4,7 @@
 #include "Graphics/MeshData.h"
 #include "Graphics/Texture/TextureCube.h"
 #include "Graphics/Texture/Texture2D.h"
+#include "../Dev/StrHelper.h"
 
 ResourceManager::ResourceManager()
 	: gfxAllocContext(nullptr)
@@ -176,10 +177,12 @@ void ResourceManager::loadGaussians(const std::string& filePath)
 
 	const std::vector<std::string> names = plyData.getElementNames();
 	happly::Element& element = plyData.getElement(names[0]);
+	const std::vector<std::string> propertyNames = element.getPropertyNames();
+	const size_t count = element.count;
+
 	std::vector<float> gPositionsX;
 	std::vector<float> gPositionsY;
 	std::vector<float> gPositionsZ;
-
 	this->loadPlyProperty<float>(element, "x", gPositionsX);
 	this->loadPlyProperty<float>(element, "y", gPositionsY);
 	this->loadPlyProperty<float>(element, "z", gPositionsZ);
@@ -187,7 +190,6 @@ void ResourceManager::loadGaussians(const std::string& filePath)
 	std::vector<float> gScalesX;
 	std::vector<float> gScalesY;
 	std::vector<float> gScalesZ;
-
 	this->loadPlyProperty<float>(element, "scale_0", gScalesX);
 	this->loadPlyProperty<float>(element, "scale_1", gScalesY);
 	this->loadPlyProperty<float>(element, "scale_2", gScalesZ);
@@ -196,97 +198,30 @@ void ResourceManager::loadGaussians(const std::string& filePath)
 	std::vector<float> gRot1;
 	std::vector<float> gRot2;
 	std::vector<float> gRot3;
-
 	this->loadPlyProperty<float>(element, "rot_0", gRot0);
 	this->loadPlyProperty<float>(element, "rot_1", gRot1);
 	this->loadPlyProperty<float>(element, "rot_2", gRot2);
 	this->loadPlyProperty<float>(element, "rot_3", gRot3);
 
 	std::vector<float> gOpacities;
-
 	this->loadPlyProperty<float>(element, "opacity", gOpacities);
 
-	std::vector<float> gFeature0;
-	std::vector<float> gFeature1;
-	std::vector<float> gFeature2;
+	std::vector<float> gRedSh00;
+	std::vector<float> gGreenSh00;
+	std::vector<float> gBlueSh00;
+	this->loadPlyProperty<float>(element, "f_dc_0", gRedSh00);
+	this->loadPlyProperty<float>(element, "f_dc_1", gGreenSh00);
+	this->loadPlyProperty<float>(element, "f_dc_2", gBlueSh00);
 
-	this->loadPlyProperty<float>(element, "f_dc_0", gFeature0);
-	this->loadPlyProperty<float>(element, "f_dc_1", gFeature1);
-	this->loadPlyProperty<float>(element, "f_dc_2", gFeature2);
-
-	std::vector<float> gFeatureRest0;
-	std::vector<float> gFeatureRest1;
-	std::vector<float> gFeatureRest2;
-
-	this->loadPlyProperty<float>(element, "f_rest_0", gFeatureRest0);
-	this->loadPlyProperty<float>(element, "f_rest_1", gFeatureRest1);
-	this->loadPlyProperty<float>(element, "f_rest_2", gFeatureRest2);
-
-	// For inspecting while debugging
-	// TODO: remove once loading is implemented
-	//std::vector<std::string> propertyNames = element.getPropertyNames();
+	uint32_t numRestCoeffs = 15;
+	std::vector<std::vector<float>> gShRest(numRestCoeffs * 3);
+	for (size_t i = 0; i < gShRest.size(); ++i)
+	{
+		this->loadPlyProperty<float>(element, "f_rest_" + std::to_string(i), gShRest[i]);
+	}
 
 	uint32_t numGaussians = (uint32_t)gPositionsX.size();
-
-	assert(
-		numGaussians == gPositionsY.size() &&
-		numGaussians == gPositionsZ.size() &&
-
-		numGaussians == gScalesX.size() &&
-		numGaussians == gScalesY.size() &&
-		numGaussians == gScalesZ.size() &&
-
-		numGaussians == gRot0.size() &&
-		numGaussians == gRot1.size() &&
-		numGaussians == gRot2.size() &&
-		numGaussians == gRot3.size() &&
-
-		numGaussians == gOpacities.size()
-	);
-
 	this->gaussians.resize(numGaussians);
-	/*for (uint32_t i = 0; i < this->numGaussians; ++i)
-	{
-		uint32_t randomIndex = rand() % gPositionsX.size();
-
-		GaussianData gaussian{};
-		gaussian.position = glm::vec4(
-			gPositionsX[randomIndex],
-			gPositionsY[randomIndex] * -1.0f,
-			gPositionsZ[randomIndex],
-			0.0f
-		);
-		gaussian.scale = glm::vec4(
-			gScalesX[randomIndex] * 0.01f,
-			gScalesY[randomIndex] * 0.01f,
-			gScalesZ[randomIndex] * 0.01f,
-			0.0f
-		);
-		gaussian.color = glm::vec4(
-			std::abs(gFeature0[randomIndex]) * 0.28209479177387814f,
-			std::abs(gFeature1[randomIndex]) * 0.28209479177387814f,
-			std::abs(gFeature2[randomIndex]) * 0.28209479177387814f,
-			gOpacities[randomIndex]
-		);
-
-		// Apply
-		outputGaussianData[i] = gaussian;
-
-		// Remove
-		gPositionsX.erase(gPositionsX.begin() + randomIndex);
-		gPositionsY.erase(gPositionsY.begin() + randomIndex);
-		gPositionsZ.erase(gPositionsZ.begin() + randomIndex);
-
-		gScalesX.erase(gScalesX.begin() + randomIndex);
-		gScalesY.erase(gScalesY.begin() + randomIndex);
-		gScalesZ.erase(gScalesZ.begin() + randomIndex);
-
-		gFeature0.erase(gFeature0.begin() + randomIndex);
-		gFeature1.erase(gFeature1.begin() + randomIndex);
-		gFeature2.erase(gFeature2.begin() + randomIndex);
-
-		gOpacities.erase(gOpacities.begin() + randomIndex);
-	}*/
 	glm::vec3 minPos(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
 	glm::vec3 maxPos(std::numeric_limits<float>::min(), std::numeric_limits<float>::min(), std::numeric_limits<float>::min());
 	for (uint32_t i = 0; i < numGaussians; ++i)
@@ -320,12 +255,22 @@ void ResourceManager::loadGaussians(const std::string& filePath)
 				-gaussian.rot[1]
 			);
 		}
-		gaussian.color = glm::vec4(
-			0.5f + gFeature0[i] * 0.28209479177387814f,
-			0.5f + gFeature1[i] * 0.28209479177387814f,
-			0.5f + gFeature2[i] * 0.28209479177387814f, // TODO: evaluate SH in shader
+
+		gaussian.shCoeffs[0] = glm::vec4(
+			gRedSh00[i],
+			gGreenSh00[i],
+			gBlueSh00[i],
 			(1.0f / (1.0f + std::exp(-gOpacities[i])))
 		);
+		for (uint32_t c = 0; c < numRestCoeffs; ++c)
+		{
+			gaussian.shCoeffs[c + 1] = glm::vec4(
+				gShRest[c + numRestCoeffs * 0][i],
+				gShRest[c + numRestCoeffs * 1][i],
+				gShRest[c + numRestCoeffs * 2][i],
+				0.0f
+			);
+		}
 
 		maxPos.x = std::max(maxPos.x, gaussian.position.x);
 		maxPos.y = std::max(maxPos.y, gaussian.position.y);

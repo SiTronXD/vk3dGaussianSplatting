@@ -397,4 +397,6 @@ FodyWeavers.xsd
 
 # My own stuff
 */VmaDump.json
+*/imgui.ini
 *.spv
+*.csv

@@ -1531,14 +1531,8 @@ private:
     outStream << majorVersion << "." << minorVersion << "\n";
 
     // Write comments
-    bool hasHapplyComment = false;
-    std::string happlyComment = "Written with hapPLY (https://github.com/nmwsharp/happly)";
     for (const std::string& comment : comments) {
-      if (comment == happlyComment) hasHapplyComment = true;
       outStream << "comment " << comment << "\n";
-    }
-    if (!hasHapplyComment) {
-      outStream << "comment " << happlyComment << "\n";
     }
 
     // Write obj_info comments

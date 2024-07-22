@@ -1,9 +1,13 @@
 // Data per gaussian
 struct GaussianData
 {
+	// These remain unmodified
 	vec4 position;
 	vec4 scale;
 	vec4 rot;
+	vec4 shCoeffs[16];
+
+	// These are modified between GPU passes
 	vec4 color;
 	vec4 covariance;
 };

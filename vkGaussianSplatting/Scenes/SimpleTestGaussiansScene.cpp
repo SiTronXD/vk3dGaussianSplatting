@@ -17,7 +17,7 @@ void SimpleTestGaussiansScene::init()
 		GaussianData gaussian{};
 		gaussian.position = glm::vec4(-8.0f + (float)i, 0.0f, -1.0f, 0.0f);
 		gaussian.scale = glm::vec4(0.1f, 0.2f, 0.5f, 0.0f);
-		gaussian.color = glm::vec4(
+		gaussian.shCoeffs[0] = glm::vec4(
 			(rand() % 10000) / 10000.0f,
 			(rand() % 10000) / 10000.0f,
 			(rand() % 10000) / 10000.0f,

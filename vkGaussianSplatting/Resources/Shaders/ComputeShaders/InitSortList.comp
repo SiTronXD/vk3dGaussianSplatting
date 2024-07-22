@@ -38,6 +38,7 @@ layout(binding = 3) buffer GaussiansCullDataBuffer
 layout(push_constant) uniform PushConstantData
 {
 	vec4 clipPlanes; // vec4(nearPlane, farPlane, numGaussians, 0)
+	vec4 camPos; // vec4(x, y, z, sphericalHarmonicsMode)
 	uvec4 resolution; // uvec4(width, height, 0, 0)
 } pc;
 
@@ -87,8 +88,9 @@ void main()
 	if(threadIndex >= numGaussians) 
 		return;
 
-	// Non-conservative frustumg culling (near plane)
-	vec4 viewSpacePos = ubo.viewMat * vec4(gaussiansBuffer.gaussians[threadIndex].position.xyz, 1.0f);
+	// Non-conservative frustum culling (near plane)
+	vec3 worldSpacePos = gaussiansBuffer.gaussians[threadIndex].position.xyz;
+	vec4 viewSpacePos = ubo.viewMat * vec4(worldSpacePos, 1.0f);
 	if(-viewSpacePos.z <= pc.clipPlanes.x)
 		return;
 		
@@ -118,7 +120,10 @@ void main()
 	);
 	uvec4 gExtents = getGaussianTileExtents(threadIndex, viewSpacePos, gridSize, cov, width, height);
 	
-	// Store symmetric covariance matrix
+	// Store color and symmetric covariance matrix
+	vec3 toGaussDir = normalize(worldSpacePos - pc.camPos.xyz);
+	vec3 shCol = getShColor(toGaussDir, gaussiansBuffer.gaussians[threadIndex].shCoeffs, uint(pc.camPos.w + 0.5f));
+	gaussiansBuffer.gaussians[threadIndex].color = vec4(shCol, gaussiansBuffer.gaussians[threadIndex].shCoeffs[0].a);
 	gaussiansBuffer.gaussians[threadIndex].covariance.xyz = cov;
 
 	// Add 1 element per gaussian per overlapped tile, which are then sorted in subsequent passes
@@ -132,7 +137,7 @@ void main()
 			uint tileKey = y * gridSize.x + x;
 
 			// Add gaussian to list
-			// TODO: fix for overflow
+			// TODO: implement long term solution for overflow
 			uint idLocal = (y - gExtents.y) * (gExtents.z - gExtents.x) + (x - gExtents.x);
 			uint id = idOffset + idLocal;
 			if(id < cullData.data.numGaussiansToRender.y) // Temporary solution to avoid overflow
