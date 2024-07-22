@@ -28,13 +28,6 @@ private:
 		const std::string& propertyStr, 
 		std::vector<T>& output);
 
-	template <typename T>
-	void pushPlyProperty(
-		happly::Element& srcElement,
-		happly::Element& dstElement,
-		const std::string& propertyStr,
-		T valueToPush);
-
 public:
 	ResourceManager();
 	~ResourceManager();
@@ -75,18 +68,4 @@ inline void ResourceManager::loadPlyProperty(
 	assert(hasProperty);
 
 	output = element.getProperty<T>(propertyStr);
-}
-
-template<typename T>
-inline void ResourceManager::pushPlyProperty(
-	happly::Element& srcElement,
-	happly::Element& dstElement,
-	const std::string& propertyStr,
-	T valueToPush)
-{
-	std::vector<T> propertyVector;
-	loadPlyProperty(srcElement, propertyStr, propertyVector);
-	propertyVector.push_back(valueToPush);
-
-	dstElement.addProperty(propertyStr, propertyVector);
 }
