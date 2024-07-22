@@ -42,7 +42,7 @@ The main difference between this implementation and AMD FidelityFX, is that this
 
 ## Garden
 
-![github-small](Screenshots/GardenBenchmarks7000Iterations.png)
+![github-small](Screenshots/GardenBenchmarks30000Iterations.png)
 
 ### 7'000 iterations: 4'386'142 gaussians
 | GPU pass | 1280x720 | 1600x900 | 1920x1080 |
