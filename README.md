@@ -44,10 +44,10 @@ The main difference between this implementation and AMD FidelityFX, is that this
 
 ![github-small](Screenshots/GardenBenchmarks7000Iterations.png)
 
-### 4'386'142 gaussians
+### 7'000 iterations: 4'386'142 gaussians
 | GPU pass | 1280x720 | 1600x900 | 1920x1080 |
 | :--- | :---:  | :---: | :---: |
-| Elements To Sort | 6'489'695 | 8'016'855 | 9'708'506 |
+| Elements To Sort | 0 | 0 | 0 |
 | | | | |
 | InitSortList | . ms | . ms | . ms |
 | Radix Sort | . ms | . ms | . ms |
@@ -55,10 +55,10 @@ The main difference between this implementation and AMD FidelityFX, is that this
 | RenderGaussians | . ms | . ms | . ms |
 | Total Measured GPU Time | . ms | . ms | . ms |
 
-### 5'834'784 gaussians
+### 30'000 iterations: 5'834'784 gaussians
 | GPU pass | 1280x720 | 1600x900 | 1920x1080 |
 | :--- | :---:  | :---: | :---: |
-| Elements To Sort | 8'390'477 | 10'405'878 | 12'654'191 |
+| Elements To Sort | 0 | 0 | 0 |
 | | | | |
 | InitSortList | . ms | . ms | . ms |
 | Radix Sort | . ms | . ms | . ms |
@@ -70,10 +70,10 @@ The main difference between this implementation and AMD FidelityFX, is that this
 
 ![github-small](Screenshots/TrainBenchmarks30000Iterations.png)
 
-### 559'263 gaussians
+### 7'000 iterations: 559'263 gaussians
 | GPU pass | 1280x720 | 1600x900 | 1920x1080 |
 | :--- | :---:  | :---: | :---: |
-| Elements To Sort | 3'430'798 | 4'740'864 | 6'248'596 |
+| Elements To Sort | 0 | 0 | 0 |
 | | | | |
 | InitSortList | . ms | . ms | . ms |
 | Radix Sort | . ms | . ms | . ms |
@@ -81,10 +81,10 @@ The main difference between this implementation and AMD FidelityFX, is that this
 | RenderGaussians | . ms | . ms | . ms |
 | Total Measured GPU Time | . ms | . ms | . ms |
 
-### 1'026'508 gaussians
+### 30'000 iterations: 1'026'508 gaussians
 | GPU pass | 1280x720 | 1600x900 | 1920x1080 |
 | :--- | :---:  | :---: | :---: |
-| Elements To Sort | 5'541'391 | 7'639'504 | 10'046'531 |
+| Elements To Sort | 0 | 0 | 0 |
 | | | | |
 | InitSortList | . ms | . ms | . ms |
 | Radix Sort | . ms | . ms | . ms |
