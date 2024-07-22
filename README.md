@@ -19,7 +19,7 @@ Optimizations from my own experimentation:
 ![github-small](Screenshots/Pipeline.png)
 
 The pipeline for rendering one frame is comprised of 9 compute shaders:
-1. "InitSortList": Adds one element per gaussian per overlapping tile into the list to be sorted. A 64-bit key and a 32-bit payload make up an element for sorting. The key is using the higher 32-bits for tile ID and lower 32-bits for view space depth, while the payload contains a gaussian ID.
+1. "InitSortList": Adds one element per gaussian per overlapping tile into the list to be sorted. A 64-bit key and a 32-bit payload make up an element for sorting. The key is using the higher 32-bits for tile ID and lower 32-bits for view space depth, while the payload contains a gaussian ID. Spherical harmonics are evaluated to compute a view-dependent color for each gaussian.
 2. "IndirectSetup": Computes the number of work groups for the various indirect radix sort shader dispatches.
 3. "Count": Counts the number of 4-bit masked keys and stores the sum in a sum table.
 4. "Reduce": Uses the sum table to sum values within a work group, and stores the result in a reduce buffer.
