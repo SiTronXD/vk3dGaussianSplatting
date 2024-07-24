@@ -59,8 +59,18 @@ void Renderer::computeInitSortList(
 		0
 	);
 
-	std::array<VkBufferMemoryBarrier2, 3> initBufferBarriers =
+	std::array<VkBufferMemoryBarrier2, 4> initBufferBarriers =
 	{
+		// Gaussians
+		PipelineBarrier::bufferMemoryBarrier2(
+			VK_ACCESS_NONE,
+			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			this->gaussiansSBO.getVkBuffer(),
+			this->gaussiansSBO.getBufferSize()
+		),
+
 		// Gaussians sort list
 		PipelineBarrier::bufferMemoryBarrier2(
 			VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -84,7 +94,7 @@ void Renderer::computeInitSortList(
 		// Gaussians tile range data
 		PipelineBarrier::bufferMemoryBarrier2(
 			VK_ACCESS_TRANSFER_WRITE_BIT,
-			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, // I got validation errors if only WRITE was specified
 			VK_PIPELINE_STAGE_TRANSFER_BIT,
 			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 			this->gaussiansTileRangesSBO.getVkBuffer(),
@@ -228,7 +238,7 @@ void Renderer::computeRenderGaussians(
 		(uint32_t) renderGaussiansMemoryBarriers.size()
 	);
 
-	std::array<VkBufferMemoryBarrier2, 1> renderGaussiansBufferBarriers =
+	std::array<VkBufferMemoryBarrier2, 2> renderGaussiansBufferBarriers =
 	{
 		// Range data
 		PipelineBarrier::bufferMemoryBarrier2(
@@ -238,10 +248,19 @@ void Renderer::computeRenderGaussians(
 			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 			this->gaussiansTileRangesSBO.getVkBuffer(),
 			this->gaussiansTileRangesSBO.getBufferSize()
+		),
+
+		// Gaussians
+		PipelineBarrier::bufferMemoryBarrier2(
+			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+			VK_ACCESS_SHADER_READ_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			this->gaussiansSBO.getVkBuffer(),
+			this->gaussiansSBO.getBufferSize()
 		)
 	};
 
-	// Gaussians cull data
 	commandBuffer.bufferMemoryBarrier(
 		renderGaussiansBufferBarriers.data(),
 		(uint32_t) renderGaussiansBufferBarriers.size()

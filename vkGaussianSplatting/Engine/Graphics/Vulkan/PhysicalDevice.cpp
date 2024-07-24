@@ -31,6 +31,20 @@ void PhysicalDevice::pickPhysicalDevice(
 	std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
 	vkEnumeratePhysicalDevices(instance.getVkInstance(), &deviceCount, physicalDevices.data());
 
+	// Print device names
+	Log::write("GPUs found:");
+	for (size_t i = 0; i < physicalDevices.size(); ++i)
+	{
+		VkPhysicalDeviceProperties foundProps{};
+		vkGetPhysicalDeviceProperties(physicalDevices[i], &foundProps);
+		std::string foundGpuName = std::to_string(i + 1) + ". " + foundProps.deviceName;
+
+		if (i == physicalDevices.size() - 1)
+			foundGpuName += "\n";
+
+		Log::write(foundGpuName);
+	}
+
 	// Pick the first best found device
 	for (const auto& physDevice : physicalDevices)
 	{
@@ -65,8 +79,8 @@ void PhysicalDevice::pickPhysicalDevice(
 		std::to_string(VK_API_VERSION_MINOR(properties.apiVersion)) + "." +
 		std::to_string(VK_API_VERSION_PATCH(properties.apiVersion));
 
-	Log::write("GPU name: " + gpuName);
-	Log::write("GPU supported API version: " + gpuApiVersion + "\n");
+	Log::write("Chosen GPU: " + gpuName);
+	Log::write("Supported API version for GPU: " + gpuApiVersion + "\n");
 
 	// Update properties for the program
 	GpuProperties::updateProperties(&this->physicalDevice);

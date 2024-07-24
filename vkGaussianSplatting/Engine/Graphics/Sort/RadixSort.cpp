@@ -359,13 +359,30 @@ void RadixSort::computeSort(
 
 		// ------------------ 2. Reduce ------------------
 		{
+			std::array<VkBufferMemoryBarrier2, 2> reduceWaitMemoryBarriers
+			{
+				PipelineBarrier::bufferMemoryBarrier2(
+					VK_ACCESS_SHADER_WRITE_BIT,
+					VK_ACCESS_SHADER_READ_BIT,
+					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+					this->sumTableBuffer.getVkBuffer(),
+					this->sumTableBuffer.getBufferSize()
+				),
+
+				PipelineBarrier::bufferMemoryBarrier2(
+					VK_ACCESS_NONE,
+					VK_ACCESS_SHADER_WRITE_BIT,
+					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+					this->reduceBuffer.getVkBuffer(),
+					this->reduceBuffer.getBufferSize()
+				)
+			};
+
 			commandBuffer.bufferMemoryBarrier(
-				VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
-				VK_ACCESS_SHADER_READ_BIT,
-				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-				this->sumTableBuffer.getVkBuffer(),
-				this->sumTableBuffer.getBufferSize()
+				reduceWaitMemoryBarriers.data(),
+				reduceWaitMemoryBarriers.size()
 			);
 
 			// Compute pipeline
@@ -451,13 +468,30 @@ void RadixSort::computeSort(
 
 		// ------------------ 4. Scan add ------------------
 		{
+			std::array<VkBufferMemoryBarrier2, 2> scanAddWaitMemoryBarriers
+			{
+				PipelineBarrier::bufferMemoryBarrier2(
+					VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+					VK_ACCESS_SHADER_READ_BIT,
+					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+					this->reduceBuffer.getVkBuffer(),
+					this->reduceBuffer.getBufferSize()
+				),
+
+				PipelineBarrier::bufferMemoryBarrier2(
+					VK_ACCESS_SHADER_READ_BIT,
+					VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+					this->sumTableBuffer.getVkBuffer(),
+					this->sumTableBuffer.getBufferSize()
+				)
+			};
+
 			commandBuffer.bufferMemoryBarrier(
-				VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
-				VK_ACCESS_SHADER_READ_BIT,
-				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-				this->reduceBuffer.getVkBuffer(),
-				this->reduceBuffer.getBufferSize()
+				scanAddWaitMemoryBarriers.data(),
+				scanAddWaitMemoryBarriers.size()
 			);
 
 
@@ -502,13 +536,30 @@ void RadixSort::computeSort(
 
 		// ------------------ 5. Scatter ------------------
 		{
+			std::array<VkBufferMemoryBarrier2, 2> scatterWaitMemoryBarriers
+			{
+				PipelineBarrier::bufferMemoryBarrier2(
+					VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+					VK_ACCESS_SHADER_READ_BIT,
+					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+					this->sumTableBuffer.getVkBuffer(),
+					this->sumTableBuffer.getBufferSize()
+				),
+
+				PipelineBarrier::bufferMemoryBarrier2(
+					VK_ACCESS_NONE,
+					VK_ACCESS_SHADER_WRITE_BIT,
+					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+					dstSortBuffer->getVkBuffer(),
+					dstSortBuffer->getBufferSize()
+				)
+			};
+
 			commandBuffer.bufferMemoryBarrier(
-				VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
-				VK_ACCESS_SHADER_READ_BIT,
-				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-				this->sumTableBuffer.getVkBuffer(),
-				this->sumTableBuffer.getBufferSize()
+				scatterWaitMemoryBarriers.data(),
+				scatterWaitMemoryBarriers.size()
 			);
 
 			// Compute pipeline
@@ -564,12 +615,25 @@ void RadixSort::computeSort(
 			// No matter which shader reads dst next, the shader should wait for dst
 			commandBuffer.bufferMemoryBarrier(
 				VK_ACCESS_SHADER_WRITE_BIT,
-				VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+				VK_ACCESS_SHADER_READ_BIT,
 				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 				dstSortBuffer->getVkBuffer(),
 				dstSortBuffer->getBufferSize()
 			);
+
+			// Check if there will be a next iteration of radix sort passes
+			if (shiftBits + RS_BITS_PER_PASS < this->radixSortNumSortBits)
+			{
+				commandBuffer.bufferMemoryBarrier(
+					VK_ACCESS_SHADER_READ_BIT,
+					VK_ACCESS_SHADER_WRITE_BIT,
+					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+					this->sumTableBuffer.getVkBuffer(),
+					this->sumTableBuffer.getBufferSize()
+				);
+			}
 
 			// Swap
 			StorageBuffer* temp = srcSortBuffer;
