@@ -362,7 +362,7 @@ void RadixSort::computeSort(
 			std::array<VkBufferMemoryBarrier2, 2> reduceWaitMemoryBarriers
 			{
 				PipelineBarrier::bufferMemoryBarrier2(
-					VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+					VK_ACCESS_SHADER_WRITE_BIT,
 					VK_ACCESS_SHADER_READ_BIT,
 					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,

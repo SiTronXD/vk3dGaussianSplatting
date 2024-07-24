@@ -18,7 +18,7 @@ int main()
 	// Create engine within it's own scope
 	{
 		Engine engine;
-		engine.init(new SimpleTestGaussiansScene());
+		engine.init(new GardenScene());
 	}
 
 	// Display validation errors right after exit
