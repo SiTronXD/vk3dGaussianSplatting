@@ -10,13 +10,13 @@
 layout (local_size_x = LOCAL_SIZE, local_size_y = 1) in;
 
 // SBO
-layout(binding = 0) buffer GaussiansSortListBuffer
+layout(binding = 0) readonly buffer GaussiansSortListBuffer
 {
 	GaussianSortData sortData[];
 } listBuffer;
 
 // SBO
-layout(binding = 1) buffer GaussiansRangesBuffer
+layout(binding = 1) writeonly buffer GaussiansRangesBuffer
 {
 	GaussianTileRangeData rangeData[];
 } rangesBuffer;
