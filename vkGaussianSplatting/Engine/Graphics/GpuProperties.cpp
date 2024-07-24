@@ -271,7 +271,8 @@ bool GpuProperties::isPhysicalDeviceSuitable(
 	assertFound(outputIndices.isComplete(), "Proper queue families could not be found");
 
 	// Vulkan 1.3
-	assertFound(VK_API_VERSION_MINOR(properties.apiVersion) >= 3, "GPU does not support Vulkan 1.3");
+	uint32_t minorVer = VK_API_VERSION_MINOR(properties.apiVersion);
+	assertFound(minorVer >= 3, "GPU does not support Vulkan 1.3");
 
 	return foundSuitableDevice;
 }
