@@ -94,7 +94,7 @@ void Renderer::computeInitSortList(
 		// Gaussians tile range data
 		PipelineBarrier::bufferMemoryBarrier2(
 			VK_ACCESS_TRANSFER_WRITE_BIT,
-			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, // I got validation errors if only WRITE was specified
 			VK_PIPELINE_STAGE_TRANSFER_BIT,
 			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 			this->gaussiansTileRangesSBO.getVkBuffer(),
