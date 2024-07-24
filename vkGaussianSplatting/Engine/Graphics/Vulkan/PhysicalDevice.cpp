@@ -65,8 +65,8 @@ void PhysicalDevice::pickPhysicalDevice(
 		std::to_string(VK_API_VERSION_MINOR(properties.apiVersion)) + "." +
 		std::to_string(VK_API_VERSION_PATCH(properties.apiVersion));
 
-	Log::write("GPU name: " + gpuName);
-	Log::write("GPU supported API version: " + gpuApiVersion + "\n");
+	Log::write("Chosen GPU: " + gpuName);
+	Log::write("Supported API version for GPU: " + gpuApiVersion + "\n");
 
 	// Update properties for the program
 	GpuProperties::updateProperties(&this->physicalDevice);

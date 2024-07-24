@@ -201,7 +201,7 @@ bool GpuProperties::isPhysicalDeviceSuitable(
 	{
 		foundSuitableDevice = foundSuitableDevice && assertGpu(
 			condition,
-			warningMessage
+			warningMessage + "\n"
 		);
 	};
 
@@ -246,23 +246,25 @@ bool GpuProperties::isPhysicalDeviceSuitable(
 
 	// ------------------ Check support based on features/properties ------------------
 
+	std::string gpuName = std::string(properties.deviceName);
+
 	// Assert subgroup size
 	assertFound(
 		subgroupProperties.subgroupSize >= RadixSort::RS_BIN_COUNT,
-		"GPU has insufficient subgroup size: " + std::to_string(subgroupProperties.subgroupSize)
+		gpuName + " has insufficient subgroup size: " + std::to_string(subgroupProperties.subgroupSize)
 	);
 
 	// Timestamps
-	assertFound(supportsTimestamps, "GPU does not support timestamps");
+	assertFound(supportsTimestamps, gpuName + " does not support timestamps");
 
 	// Sampler anisotropy
-	assertFound(supportedFeatures.samplerAnisotropy, "GPU does not support sampler anisotropy");
+	assertFound(supportedFeatures.samplerAnisotropy, gpuName + " does not support sampler anisotropy");
 
 	// Non-solid fill mode
-	assertFound(supportedFeatures.fillModeNonSolid, "GPU does not support non-solid fill mode");
+	assertFound(supportedFeatures.fillModeNonSolid, gpuName + " does not support non-solid fill mode");
 
 	// Extensions
-	assertFound(extensionsSupported, "GPU does not support the required extensions");
+	assertFound(extensionsSupported, gpuName + " does not support the required extensions");
 
 	// Swapchain
 	assertFound(swapchainAdequate, "Swapchain does not support proper formats or present modes");
@@ -272,7 +274,7 @@ bool GpuProperties::isPhysicalDeviceSuitable(
 
 	// Vulkan 1.3
 	uint32_t minorVer = VK_API_VERSION_MINOR(properties.apiVersion);
-	assertFound(minorVer >= 3, "GPU does not support Vulkan 1.3");
+	assertFound(minorVer >= 3, gpuName + " does not support Vulkan 1.3");
 
 	return foundSuitableDevice;
 }
